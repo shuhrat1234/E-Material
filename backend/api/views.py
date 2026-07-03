@@ -451,23 +451,6 @@ def login_view(request):
     
     if not username or not password:
         return Response({'error': 'Please provide username and password'}, status=status.HTTP_400_BAD_REQUEST)
-        
-    # Auto-migrate and seed if tables are missing or empty
-    from django.contrib.auth.models import User
-    try:
-        if not User.objects.filter(username='karimov').exists() or not User.objects.filter(username='makhmudov').exists():
-            from django.core.management import call_command
-            call_command('makemigrations', 'api', interactive=False)
-            call_command('migrate', interactive=False)
-            call_command('seed_db')
-    except Exception:
-        try:
-            from django.core.management import call_command
-            call_command('makemigrations', 'api', interactive=False)
-            call_command('migrate', interactive=False)
-            call_command('seed_db')
-        except Exception as e:
-            return Response({'error': f'Database initialization failed: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     user = authenticate(username=username, password=password)
     

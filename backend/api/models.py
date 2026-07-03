@@ -10,13 +10,20 @@ class Department(models.Model):
         return f"{self.id} - {self.name_ru}"
 
 class Officer(models.Model):
+    ROLE_CHOICES = [
+        ('registrator',     'Регистратор'),
+        ('investigator',    'Следователь'),
+        ('inquiry_officer', 'Дознаватель'),
+        ('chief',           'Начальник'),
+    ]
+
     id = models.CharField(max_length=50, primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='officer', null=True, blank=True)
     name_ru = models.CharField(max_length=255)
     name_uz = models.CharField(max_length=255)
     rank_ru = models.CharField(max_length=100)
     rank_uz = models.CharField(max_length=100)
-    role = models.CharField(max_length=50) # investigator, inquiry_officer, chief, registrator, citizen
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES)
 
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='officers', null=True, blank=True)
     likes = models.IntegerField(default=0)

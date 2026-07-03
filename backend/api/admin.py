@@ -1,6 +1,41 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from .models import Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate
 
+
+# ---------- Officer inline inside User admin ----------
+class OfficerInline(admin.StackedInline):
+    model = Officer
+    can_delete = False
+    verbose_name = 'Профиль сотрудника'
+    verbose_name_plural = 'Профиль сотрудника (роль)'
+    fk_name = 'user'
+    fields = ('id', 'role', 'name_ru', 'name_uz', 'rank_ru', 'rank_uz', 'department', 'photo')
+    extra = 1
+    max_num = 1
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.base_fields['role'].widget.choices = [
+            ('', '-- Выберите роль --'),
+            ('registrator',   'Регистратор'),
+            ('investigator',  'Следователь'),
+            ('inquiry_officer', 'Дознаватель'),
+            ('chief',         'Начальник'),
+        ]
+        return formset
+
+
+class UserAdmin(BaseUserAdmin):
+    inlines = (OfficerInline,)
+
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
+
+
+# ---------- Other models ----------
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'name_ru', 'name_uz')
