@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate
+    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage
 )
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -25,6 +25,9 @@ class MaterialSerializer(serializers.ModelSerializer):
         model = Material
         fields = '__all__'
         read_only_fields = ['id', 'registered_at', 'deadline', 'department']
+        extra_kwargs = {
+            'status': {'required': False}
+        }
 
 class ApprovalRequestSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,3 +48,20 @@ class SMSTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SMSTemplate
         fields = '__all__'
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChatMessage
+        fields = ['id', 'sender_id', 'sender_name', 'recipient_id', 'text', 'file', 'file_url', 'is_image', 'time']
+        extra_kwargs = {
+            'file': {'write_only': True}
+        }
+
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            url = obj.file.url
+            return request.build_absolute_uri(url) if request else url
+        return None

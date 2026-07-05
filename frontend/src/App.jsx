@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import LoginScreen from './components/LoginScreen';
 import CitizenView from './components/CitizenView';
 import RegistratorView from './components/RegistratorView';
 import InvestigatorView from './components/InvestigatorView';
 import ChiefView from './components/ChiefView';
 import CaseDetailsModal from './components/CaseDetailsModal';
+import DeadlineNotifications from './components/DeadlineNotifications';
+import ProfileModal from './components/ProfileModal';
+import ConfirmHost from './components/ConfirmHost';
+import ToastHost from './components/ToastHost';
+import { confirm } from './confirmService';
 import axios from 'axios';
 
 // API Base URL
@@ -64,19 +69,8 @@ export const TRANSLATIONS = {
 function App() {
   const [lang, setLang] = useState('ru');
   const [user, setUser] = useState(null); // { role, name, id, avatar, roleLabel }
-  const [time, setTime] = useState('');
   const [selectedCaseId, setSelectedCaseId] = useState(null);
-
-  // Clock tick
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      setTime(now.toISOString().replace('T', ' ').substring(0, 19));
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const [showProfile, setShowProfile] = useState(false);
 
   const handleLogin = (selectedUser) => {
     setUser(selectedUser);
@@ -89,8 +83,9 @@ function App() {
     }).catch(err => console.error("Audit log failed", err));
   };
 
-  const handleLogout = () => {
-    if (window.confirm(TRANSLATIONS[lang].logout_confirm)) {
+  const handleLogout = async () => {
+    const ok = await confirm(TRANSLATIONS[lang].logout_confirm);
+    if (ok) {
       axios.post(`${API_BASE}/audit-logs/`, {
         time: new Date().toISOString(),
         user_name: user.name,
@@ -110,7 +105,7 @@ function App() {
       case 'citizen':
         return <CitizenView lang={lang} />;
       case 'registrator':
-        return <RegistratorView lang={lang} />;
+        return <RegistratorView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
       case 'investigator':
       case 'inquiry_officer':
         return <InvestigatorView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
@@ -122,55 +117,60 @@ function App() {
   };
 
   const t = TRANSLATIONS[lang];
+  const hasSidebar = user && (user.role === 'chief' || user.role === 'investigator');
 
   return (
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
-        <header className="bg-gov-navy text-white px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-slate/20 shadow-sm shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="bg-white/10 p-2 rounded border border-white/15">
-              <span className="font-display font-extrabold text-lg text-emerald-400">E</span>
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-lg leading-tight tracking-wide">{t.title}</h1>
-              <p className="text-xs text-gov-muted font-medium">{t.subtitle}</p>
-            </div>
+        <header className={`bg-white text-gov-text px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'md:pl-[17rem]' : ''}`}>
+          <div className="flex flex-col items-start">
+            <p className="text-sm text-gov-text font-semibold">{t.subtitle}</p>
           </div>
-          
-          <div className="flex items-center gap-6 mt-4 md:mt-0">
+
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
             {/* Language Selector */}
-            <div className="flex bg-white/5 p-1 rounded border border-white/10 text-xs font-semibold">
-              <button 
-                onClick={() => setLang('ru')} 
-                className={`px-3 py-1 rounded transition-colors ${lang === 'ru' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}
+            <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold">
+              <button
+                onClick={() => setLang('ru')}
+                className={`px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-white text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 RU
               </button>
-              <button 
-                onClick={() => setLang('uz')} 
-                className={`px-3 py-1 rounded transition-colors ${lang === 'uz' ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'}`}
+              <button
+                onClick={() => setLang('uz')}
+                className={`px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-white text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 UZ
               </button>
             </div>
 
-            {/* Time */}
-            <div className="font-mono text-xs text-gray-400 flex items-center gap-1.5">
-              <span>{time}</span>
-            </div>
+            {/* Deadline notifications */}
+            {(user.role === 'investigator' || user.role === 'chief') && (
+              <DeadlineNotifications lang={lang} user={user} onViewDetails={setSelectedCaseId} />
+            )}
 
             {/* User display */}
-            <div className="flex items-center gap-3 border-l border-white/10 pl-6">
-              <div className="bg-white/10 text-emerald-400 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border border-white/5">
-                {user.photo || user.name[0]}
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-semibold text-gray-200">{user.name}</p>
-                <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider">{user.roleLabel}</p>
-              </div>
-              <button 
-                onClick={handleLogout} 
-                className="ml-3 p-1.5 text-gray-400 hover:text-gov-danger hover:bg-white/5 rounded transition-all"
+            <div className="flex items-center gap-3 border-l border-gov-border pl-4">
+              <button
+                onClick={() => setShowProfile(true)}
+                className="flex items-center gap-2.5 hover:bg-gov-light rounded-lg px-2 py-1.5 -my-1.5 transition-colors"
+                title={lang === 'ru' ? 'Мой профиль' : 'Mening profilim'}
+              >
+                {user.avatar ? (
+                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-gov-border" />
+                ) : (
+                  <div className="bg-gov-primaryLight text-gov-primary w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+                    {user.photo || user.name[0]}
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-xs font-semibold text-gov-text">{user.name}</p>
+                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider">{user.roleLabel}</p>
+                </div>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="ml-1 p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-all"
                 title="Exit"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -182,18 +182,30 @@ function App() {
         </header>
       )}
 
-      <main className="flex-1 p-6 max-w-7xl w-full mx-auto flex flex-col overflow-y-auto">
+      <main className={`flex-1 min-w-0 p-6 w-full flex flex-col overflow-x-hidden overflow-y-auto ${!user ? 'items-center justify-center' : ''}`}>
         {renderView()}
       </main>
 
       {selectedCaseId && (
-        <CaseDetailsModal 
-          caseId={selectedCaseId} 
-          lang={lang} 
+        <CaseDetailsModal
+          caseId={selectedCaseId}
+          lang={lang}
           user={user}
-          onClose={() => setSelectedCaseId(null)} 
+          onClose={() => setSelectedCaseId(null)}
         />
       )}
+
+      {showProfile && user && (
+        <ProfileModal
+          user={user}
+          lang={lang}
+          onClose={() => setShowProfile(false)}
+          onSaved={(updatedUser) => setUser(updatedUser)}
+        />
+      )}
+
+      <ConfirmHost />
+      <ToastHost />
     </div>
   );
 }

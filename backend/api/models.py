@@ -13,7 +13,6 @@ class Officer(models.Model):
     ROLE_CHOICES = [
         ('registrator',     'Регистратор'),
         ('investigator',    'Следователь'),
-        ('inquiry_officer', 'Дознаватель'),
         ('chief',           'Начальник'),
     ]
 
@@ -30,6 +29,7 @@ class Officer(models.Model):
     dislikes = models.IntegerField(default=0)
     index = models.IntegerField(default=100)
     photo = models.CharField(max_length=10, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
     def __str__(self):
         return self.name_ru
@@ -107,6 +107,21 @@ class SMSTemplate(models.Model):
 
     def __str__(self):
         return self.template_id
+
+class ChatMessage(models.Model):
+    sender_id = models.CharField(max_length=50)
+    sender_name = models.CharField(max_length=255)
+    recipient_id = models.CharField(max_length=50, null=True, blank=True)  # null = group chat message
+    text = models.TextField(blank=True)
+    file = models.FileField(upload_to='chat/', null=True, blank=True)
+    is_image = models.BooleanField(default=False)
+    time = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['time']
+
+    def __str__(self):
+        return f"{self.sender_name}: {self.text[:30]}"
 
 
 # Signals to automatically create linked User model when creating Officer

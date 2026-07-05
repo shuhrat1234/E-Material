@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
+import { CheckIcon, ThumbUpIcon, ThumbDownIcon } from './Icons';
 
 function CitizenView({ lang }) {
   const [officers, setOfficers] = useState([]);
@@ -49,9 +50,9 @@ function CitizenView({ lang }) {
 
   if (success) {
     return (
-      <div className="max-w-xl mx-auto my-12 bg-white border border-gov-border rounded-lg p-10 text-center shadow-sm">
-        <div className="w-16 h-16 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gov-success text-2xl font-bold">
-          ✓
+      <div className="max-w-xl mx-auto my-12 bg-white rounded-2xl shadow-card p-10 text-center ">
+        <div className="w-16 h-16 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gov-success">
+          <CheckIcon className="h-8 w-8" />
         </div>
         <h3 className="font-display font-semibold text-lg text-gov-text uppercase tracking-wide">
           {lang === 'ru' ? 'Спасибо! Ваш отзыв принят' : 'Rahmat! Fikr-mulohazangiz qabul qilindi'}
@@ -63,7 +64,7 @@ function CitizenView({ lang }) {
         </p>
         <button
           onClick={resetView}
-          className="px-6 py-2.5 bg-gov-navy text-white text-xs font-bold uppercase tracking-wider rounded hover:bg-gov-slate transition-colors"
+          className="px-6 py-2.5 bg-gov-primary text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors"
         >
           {lang === 'ru' ? 'Вернуться к оценке' : 'Baholashga qaytish'}
         </button>
@@ -74,7 +75,7 @@ function CitizenView({ lang }) {
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-6">
       <div className="text-center">
-        <h2 className="font-display font-bold text-xl text-gov-navy uppercase tracking-wide">
+        <h2 className="font-display font-bold text-xl text-gov-primary uppercase tracking-wide">
           {lang === 'ru' ? 'Оценка качества обслуживания' : 'Xizmat sifatini baholash'}
         </h2>
         <p className="text-xs text-gov-muted font-medium mt-2">
@@ -85,7 +86,7 @@ function CitizenView({ lang }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {officers.map(off => {
+        {officers.filter(off => off.role === 'investigator').map(off => {
           const isSelected = off.id === selectedOfficerId;
           return (
             <div
@@ -97,7 +98,7 @@ function CitizenView({ lang }) {
                   : 'border-gov-border bg-white hover:border-gov-muted/40 hover:bg-gov-light/30'
               }`}
             >
-              <div className="w-10 h-10 rounded-full bg-gov-navy text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-gov-primary text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
                 {off.photo || off.name_ru[0]}
               </div>
               <div className="text-left overflow-hidden">
@@ -114,7 +115,7 @@ function CitizenView({ lang }) {
       </div>
 
       {selectedOfficerId && (
-        <div className="bg-white border border-gov-border rounded-lg p-8 transition-all shadow-sm max-w-2xl mx-auto mt-8">
+        <div className="bg-white rounded-2xl shadow-card p-8 transition-all  max-w-2xl mx-auto mt-8">
           <h3 className="text-center font-display font-semibold text-sm text-gov-text uppercase tracking-wider mb-6">
             {lang === 'ru' ? 'Оцените работу сотрудника' : 'Xodim ishini baholang'}
           </h3>
@@ -123,7 +124,7 @@ function CitizenView({ lang }) {
               onClick={() => handleRate(true)}
               className="py-6 px-4 bg-teal-50 border border-teal-100 hover:border-teal-200 rounded-lg flex flex-col items-center gap-2 hover:bg-teal-100/40 transition-all text-gov-success group"
             >
-              <span className="text-3xl group-hover:scale-105 transition-transform">👍</span>
+              <ThumbUpIcon className="h-8 w-8 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-xs uppercase tracking-wider">{lang === 'ru' ? 'LIKE' : 'LIKE'}</span>
               <span className="text-[10px] text-gov-muted font-normal text-center">
                 {lang === 'ru' ? '(Вежливое, быстрое обслуживание)' : '(Xushmuomala, tezkor xizmat)'}
@@ -133,7 +134,7 @@ function CitizenView({ lang }) {
               onClick={() => handleRate(false)}
               className="py-6 px-4 bg-rose-50 border border-rose-100 hover:border-rose-200 rounded-lg flex flex-col items-center gap-2 hover:bg-rose-100/40 transition-all text-gov-danger group"
             >
-              <span className="text-3xl group-hover:scale-105 transition-transform">👎</span>
+              <ThumbDownIcon className="h-8 w-8 group-hover:scale-105 transition-transform" />
               <span className="font-bold text-xs uppercase tracking-wider">{lang === 'ru' ? 'DISLIKE' : 'DISLIKE'}</span>
               <span className="text-[10px] text-gov-muted font-normal text-center">
                 {lang === 'ru' ? '(Грубое обращение, долгое ожидание)' : '(Qo\'pol muomala, asossiz kutish)'}

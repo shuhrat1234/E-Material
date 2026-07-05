@@ -11,7 +11,7 @@ class OfficerInline(admin.StackedInline):
     verbose_name = 'Профиль сотрудника'
     verbose_name_plural = 'Профиль сотрудника (роль)'
     fk_name = 'user'
-    fields = ('id', 'role', 'name_ru', 'name_uz', 'rank_ru', 'rank_uz', 'department', 'photo')
+    fields = ('id', 'role', 'name_ru', 'name_uz', 'rank_ru', 'rank_uz', 'photo')
     extra = 1
     max_num = 1
 
@@ -21,7 +21,6 @@ class OfficerInline(admin.StackedInline):
             ('', '-- Выберите роль --'),
             ('registrator',   'Регистратор'),
             ('investigator',  'Следователь'),
-            ('inquiry_officer', 'Дознаватель'),
             ('chief',         'Начальник'),
         ]
         return formset
@@ -44,8 +43,9 @@ class DepartmentAdmin(admin.ModelAdmin):
 @admin.register(Officer)
 class OfficerAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'name_ru', 'role', 'index', 'likes', 'dislikes')
-    list_filter = ('role', 'department')
+    list_filter = ('role',)
     search_fields = ('name_ru', 'name_uz')
+    exclude = ('department',)
 
 class AppealStepInline(admin.TabularInline):
     model = AppealStep

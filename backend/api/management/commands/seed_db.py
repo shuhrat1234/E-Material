@@ -89,7 +89,7 @@ class Command(BaseCommand):
               "name_uz": "Toxirov Temur Shavkatovich",
               "rank_ru": "Лейтенант",
               "rank_uz": "Leytenant",
-              "role": "inquiry_officer",
+              "role": "investigator",
               "dept_id": "od",
               "likes": 15, "dislikes": 8, "index": 68, "photo": "T.T."
             },

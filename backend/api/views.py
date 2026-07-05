@@ -2,18 +2,32 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils import timezone
 import datetime
+import mimetypes
 from django.db import transaction
+from django.db.models import Q
 from django.contrib.auth import authenticate
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 from .models import (
-    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate
+    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage
 )
 from .serializers import (
-    DepartmentSerializer, OfficerSerializer, MaterialSerializer, AppealStepSerializer, 
-    ApprovalRequestSerializer, AuditLogSerializer, ActiveVisitSerializer, SMSTemplateSerializer
+    DepartmentSerializer, OfficerSerializer, MaterialSerializer, AppealStepSerializer,
+    ApprovalRequestSerializer, AuditLogSerializer, ActiveVisitSerializer, SMSTemplateSerializer,
+    ChatMessageSerializer
 )
+
+def parse_difficulty(value):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 3
+    return parsed if 1 <= parsed <= 5 else 3
+
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all()
@@ -57,7 +71,10 @@ class MaterialViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         
         # Custom logic for start date and deadline
-        days = int(request.data.get('deadline_days', 10))
+        try:
+            days = int(request.data.get('deadline_days') or 10)
+        except (TypeError, ValueError):
+            days = 10
         reg_date = timezone.now()
         deadline_date = reg_date + datetime.timedelta(days=days)
         
@@ -82,7 +99,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
             department_id=dept_id,
             is_accepted=True,
             extension_count=0,
-            difficulty=int(request.data.get('difficulty', 3)),
+            difficulty=parse_difficulty(request.data.get('difficulty')),
             material_type=request.data.get('material_type', 'ariza'),
             source_from=request.data.get('source_from', 'tashrif'),
         )
@@ -101,31 +118,6 @@ class MaterialViewSet(viewsets.ModelViewSet):
             user_name="Регистратор",
             action_ru=f"Зарегистрирован новый материал {case_id} для исполнителя {off_name}",
             action_uz=f"Yangi tekshiruv materiali {case_id} ijrochi {off_name}ga biriktirildi"
-        )
-        
-        # Auto-create status milestones after registration simulation (2 steps)
-        AppealStep.objects.create(
-            material=new_material,
-            status="Анализ и решение",
-            time=reg_date + datetime.timedelta(minutes=1)
-        )
-        AppealStep.objects.create(
-            material=new_material,
-            status="Оперативная отправка уведомления",
-            time=reg_date + datetime.timedelta(minutes=2)
-        )
-        AppealStep.objects.create(
-            material=new_material,
-            status="Прием гражданином уведомления",
-            time=reg_date + datetime.timedelta(minutes=5)
-        )
-        
-        # Create automated audit logs for SMS notifications
-        AuditLog.objects.create(
-            time=reg_date + datetime.timedelta(minutes=2),
-            user_name="Система информирования",
-            action_ru=f"Отправлено SMS о начале доследственной проверки по делу {case_id} гражданину {new_material.citizen_name}",
-            action_uz=f"Murojaatchi {new_material.citizen_name}ga {case_id}-sonli material bo'yicha tergov oldi tekshiruvi boshlangani haqida SMS yuborildi"
         )
         
         return Response(MaterialSerializer(new_material).data, status=status.HTTP_201_CREATED)
@@ -320,6 +312,49 @@ class SMSTemplateViewSet(viewsets.ModelViewSet):
     queryset = SMSTemplate.objects.all()
     serializer_class = SMSTemplateSerializer
 
+class ChatMessageViewSet(viewsets.ModelViewSet):
+    queryset = ChatMessage.objects.all()
+    serializer_class = ChatMessageSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def get_queryset(self):
+        qs = ChatMessage.objects.all()
+        user_id = self.request.query_params.get('user_id')
+        peer_id = self.request.query_params.get('peer_id')
+
+        if peer_id and user_id:
+            return qs.filter(
+                Q(sender_id=user_id, recipient_id=peer_id) | Q(sender_id=peer_id, recipient_id=user_id)
+            )
+        return qs.filter(recipient_id__isnull=True)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def perform_create(self, serializer):
+        uploaded_file = self.request.FILES.get('file')
+        is_image = False
+        if uploaded_file:
+            content_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.name)[0] or ''
+            is_image = content_type.startswith('image/')
+        message = serializer.save(is_image=is_image)
+        data = ChatMessageSerializer(message, context=self.get_serializer_context()).data
+
+        channel_layer = get_channel_layer()
+        if message.recipient_id:
+            for participant in {message.sender_id, message.recipient_id}:
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{participant}',
+                    {'type': 'chat.message', 'data': data}
+                )
+        else:
+            async_to_sync(channel_layer.group_send)(
+                'chat_global',
+                {'type': 'chat.message', 'data': data}
+            )
+
 class DbOperationsViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['post'], url_path='reset')
@@ -467,7 +502,11 @@ def login_view(request):
                         photo += parts[1][0]
                 else:
                     photo = "О"
-                    
+
+            avatar_url = None
+            if officer.avatar:
+                avatar_url = request.build_absolute_uri(officer.avatar.url)
+
             return Response({
                 'id': officer.id,
                 'username': user.username,
@@ -478,7 +517,8 @@ def login_view(request):
                 'rank_ru': officer.rank_ru,
                 'rank_uz': officer.rank_uz,
                 'roleLabel': officer.rank_ru,
-                'photo': photo
+                'photo': photo,
+                'avatar': avatar_url
             })
         else:
             if user.is_superuser:
