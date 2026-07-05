@@ -12,11 +12,15 @@ import FilterPill from './ui/FilterPill';
 import HeroChartCard from './ui/HeroChartCard';
 import PillBarChart from './ui/PillBarChart';
 import Select from './ui/Select';
+import Modal from './Modal';
+import ExportButton from './ui/ExportButton';
+import { exportToCsv } from '../exportCsv';
 import { confirm } from '../confirmService';
 import { notify } from '../toastService';
 
 function ChiefView({ lang, onViewDetails, user }) {
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ratings, approvals, users
+  const [materialsList, setMaterialsList] = useState(null); // { label, materials }
   const [officers, setOfficers] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [approvalRequests, setApprovalRequests] = useState([]);
@@ -158,7 +162,7 @@ function ChiefView({ lang, onViewDetails, user }) {
   });
 
   const calculateDeadlines = () => {
-    const offsets = { today: 0, tomorrow: 0, indinga: 0, days3: 0, days4: 0, days5: 0, sl1: 0, sl2: 0, sl3: 0, sl4: 0, sl5: 0 };
+    const buckets = { today: [], tomorrow: [], indinga: [], days3: [], days4: [], days5: [], sl1: [], sl2: [], sl3: [], sl4: [], sl5: [] };
     const now = new Date();
     const dStr = (offset) => {
       const d = new Date(now);
@@ -169,22 +173,30 @@ function ChiefView({ lang, onViewDetails, user }) {
     filteredMaterials.forEach(m => {
       if (m.status === 'закрыт_в_срок') return;
       const dl = new Date(m.deadline).toISOString().substring(0,10);
-      if (dl === dStr(0)) offsets.today++;
-      else if (dl === dStr(1)) offsets.tomorrow++;
-      else if (dl === dStr(2)) offsets.indinga++;
-      else if (dl === dStr(3)) offsets.days3++;
-      else if (dl === dStr(4)) offsets.days4++;
-      else if (dl === dStr(5)) offsets.days5++;
-      else if (dl === dStr(6)) offsets.sl1++;
-      else if (dl === dStr(7)) offsets.sl2++;
-      else if (dl === dStr(8)) offsets.sl3++;
-      else if (dl === dStr(9)) offsets.sl4++;
-      else if (dl === dStr(10)) offsets.sl5++;
+      if (dl === dStr(0)) buckets.today.push(m);
+      else if (dl === dStr(1)) buckets.tomorrow.push(m);
+      else if (dl === dStr(2)) buckets.indinga.push(m);
+      else if (dl === dStr(3)) buckets.days3.push(m);
+      else if (dl === dStr(4)) buckets.days4.push(m);
+      else if (dl === dStr(5)) buckets.days5.push(m);
+      else if (dl === dStr(6)) buckets.sl1.push(m);
+      else if (dl === dStr(7)) buckets.sl2.push(m);
+      else if (dl === dStr(8)) buckets.sl3.push(m);
+      else if (dl === dStr(9)) buckets.sl4.push(m);
+      else if (dl === dStr(10)) buckets.sl5.push(m);
     });
-    return offsets;
+    return buckets;
   };
 
-  const dl = calculateDeadlines();
+  const dlBuckets = calculateDeadlines();
+  const dl = Object.fromEntries(Object.entries(dlBuckets).map(([k, v]) => [k, v.length]));
+
+  const openMaterialsList = (label, materials) => {
+    if (!materials || materials.length === 0) return;
+    setMaterialsList({ label, materials });
+  };
+
+  const openDeadlineBucket = (key, label) => openMaterialsList(label, dlBuckets[key]);
 
   // Trailing daily-count series for stat card sparklines / hero chart
   const getTrend = (matchFn, daysCount = 7) => {
@@ -335,6 +347,59 @@ function ChiefView({ lang, onViewDetails, user }) {
     const d = new Date(dateStr);
     const pad = (n) => n.toString().padStart(2, '0');
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const handleExportMaterials = () => {
+    exportToCsv(
+      lang === 'ru' ? 'materialy' : 'materiallar',
+      ['ID', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Дата регистрации' : 'Ro\'yxatga olingan sana', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat', lang === 'ru' ? 'Тип' : 'Turi', lang === 'ru' ? 'Источник' : 'Manba', lang === 'ru' ? 'Сложность' : 'Murakkablik'],
+      filteredMaterials.map(m => {
+        const off = officers.find(o => o.id === m.officer);
+        return [
+          m.id,
+          off ? (lang === 'ru' ? off.name_ru : off.name_uz) : '',
+          m.citizen_name,
+          m.citizen_phone,
+          lang === 'ru' ? m.title_ru : m.title_uz,
+          formatDate(m.registered_at),
+          formatDate(m.deadline),
+          getStatusText(m.status),
+          m.material_type,
+          m.source_from,
+          m.difficulty,
+        ];
+      })
+    );
+  };
+
+  const handleExportInvestigators = () => {
+    exportToCsv(
+      lang === 'ru' ? 'pokazateli_sledovateley' : 'tergovchilar_korsatkichlari',
+      [
+        lang === 'ru' ? 'Следователь' : 'Tergovchi', lang === 'ru' ? 'Всего' : 'Jami', lang === 'ru' ? 'В работе' : 'Ijroda',
+        lang === 'ru' ? 'Исполнено' : 'Bajarildi', lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan', lang === 'ru' ? 'Новые' : 'Yangi',
+        lang === 'ru' ? 'Сегодня' : 'Bugun', lang === 'ru' ? 'Простые' : 'Oddiy', lang === 'ru' ? 'Средние' : 'O\'rtacha',
+        lang === 'ru' ? 'Сложные' : 'Murakkab', lang === 'ru' ? 'Ср. сложность' : 'O\'rt. murakkablik', 'Likes', 'Dislikes',
+        lang === 'ru' ? 'Индекс %' : 'Indeks %',
+      ],
+      investigatorsList.map(o => {
+        const cases = filteredMaterials.filter(m => m.officer === o.id);
+        const active = cases.filter(m => m.status !== 'закрыт_в_срок').length;
+        const closed = cases.filter(m => m.status === 'закрыт_в_срок').length;
+        const overdue = cases.filter(m => m.status === 'срок_нарушен').length;
+        const newOnes = cases.filter(m => (new Date() - new Date(m.registered_at)) < 86400000 * 3).length;
+        const now = new Date();
+        const dueToday = cases.filter(m => m.status !== 'закрыт_в_срок' && new Date(m.deadline).toISOString().substring(0,10) === now.toISOString().substring(0,10)).length;
+        const simple = cases.filter(c => c.difficulty <= 2).length;
+        const medium = cases.filter(c => c.difficulty === 3).length;
+        const hard = cases.filter(c => c.difficulty >= 4).length;
+        const avgDifficulty = cases.length > 0 ? (cases.reduce((sum, c) => sum + c.difficulty, 0) / cases.length).toFixed(1) : 0;
+        return [
+          lang === 'ru' ? o.name_ru : o.name_uz, cases.length, active, closed, overdue, newOnes, dueToday,
+          simple, medium, hard, avgDifficulty, o.likes, o.dislikes, o.index,
+        ];
+      })
+    );
   };
 
   return (
@@ -495,7 +560,7 @@ function ChiefView({ lang, onViewDetails, user }) {
         {activePanel === 'dashboard' && (
           <div className="space-y-6">
             {/* Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <StatCard icon={<FolderIcon />} tone="primary" value={total} label={lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'} trend={trendTotal} />
               <StatCard icon={<TrendUpIcon />} tone="primary" value={newCount} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendNew} />
               <StatCard icon={<ClockIcon />} tone="warning" value={activeCount} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} />
@@ -504,7 +569,7 @@ function ChiefView({ lang, onViewDetails, user }) {
             </div>
 
             {/* Secondary stat row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatCard icon={<UsersIcon />} tone="neutral" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} />
               <StatCard icon={<FolderIcon />} tone="neutral" value={departments.length} label={lang === 'ru' ? 'Подразделений' : 'Bo\'limlar'} />
               <StatCard icon={<ApprovalIcon />} tone="primary" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} />
@@ -566,11 +631,23 @@ function ChiefView({ lang, onViewDetails, user }) {
                 </thead>
                 <tbody className="text-xs">
                   <tr className="hover:bg-gov-light/30">
-                    <td className="px-3 py-3 font-bold text-gov-text text-sm">{total}</td>
-                    <td className="px-3 py-3 font-semibold text-gov-text text-sm">{activeCount}</td>
-                    <td className="px-3 py-3 font-semibold text-gov-success text-sm">{closedCount}</td>
                     <td className="px-3 py-3">
-                      <span className={overdueCount > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded text-sm' : 'text-gov-muted text-sm'}>{overdueCount}</span>
+                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'Всего материалов' : 'Jami materiallar', filteredMaterials)} className="font-bold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={total === 0}>{total}</button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'В работе' : 'Ijroda', filteredMaterials.filter(m => m.status !== 'закрыт_в_срок'))} className="font-semibold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={activeCount === 0}>{activeCount}</button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'Исполнено' : 'Bajarildi', filteredMaterials.filter(m => m.status === 'закрыт_в_срок'))} className="font-semibold text-gov-success text-sm hover:opacity-70 transition-opacity disabled:opacity-40" disabled={closedCount === 0}>{closedCount}</button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => openMaterialsList(lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan', filteredMaterials.filter(m => m.status === 'срок_нарушен'))}
+                        disabled={overdueCount === 0}
+                        className={overdueCount > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded text-sm hover:bg-rose-100 transition-colors' : 'text-gov-muted text-sm disabled:opacity-40'}
+                      >
+                        {overdueCount}
+                      </button>
                     </td>
                     <td className="px-3 py-3">
                       <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold text-sm">{avgIndex}%</span>
@@ -610,17 +687,39 @@ function ChiefView({ lang, onViewDetails, user }) {
                   </thead>
                   <tbody className="text-xs">
                     <tr className="hover:bg-gov-light/30">
-                      <td className="px-3 py-3"><span className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded">{dl.today}</span></td>
-                      <td className="px-3 py-3"><span className="font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded">{dl.tomorrow}</span></td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.indinga}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.days3}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.days4}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.days5}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl1}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl2}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl3}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl4}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl5}</td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('today', lang === 'ru' ? 'Сегодня' : 'Bugun')} className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors disabled:opacity-40" disabled={dl.today === 0}>{dl.today}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('tomorrow', lang === 'ru' ? 'Завтра' : 'Ertaga')} className="font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors disabled:opacity-40" disabled={dl.tomorrow === 0}>{dl.tomorrow}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('indinga', lang === 'ru' ? 'Послезавтра' : 'Indinga')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.indinga === 0}>{dl.indinga}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('days3', lang === 'ru' ? '3 дня' : '3 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days3 === 0}>{dl.days3}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('days4', lang === 'ru' ? '4 дня' : '4 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days4 === 0}>{dl.days4}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('days5', lang === 'ru' ? '5 дней' : '5 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days5 === 0}>{dl.days5}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl1', lang === 'ru' ? 'Неделя 1' : 'H.1')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl1 === 0}>{dl.sl1}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl2', lang === 'ru' ? 'Неделя 2' : 'H.2')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl2 === 0}>{dl.sl2}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl3', lang === 'ru' ? 'Неделя 3' : 'H.3')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl3 === 0}>{dl.sl3}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl4', lang === 'ru' ? 'Неделя 4' : 'H.4')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl4 === 0}>{dl.sl4}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl5', lang === 'ru' ? 'Неделя 5' : 'H.5')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl5 === 0}>{dl.sl5}</button>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -651,9 +750,12 @@ function ChiefView({ lang, onViewDetails, user }) {
 
             {/* Per-investigator stats table */}
             <div className="bg-white rounded-2xl shadow-card p-5 text-left">
-              <h4 className="font-semibold text-sm text-gov-text mb-4 flex items-center gap-2">
-                <UsersIcon /> {lang === 'ru' ? 'Показатели следователей' : 'Tergovchilar ko\'rsatkichlari'}
-              </h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-sm text-gov-text flex items-center gap-2">
+                  <UsersIcon /> {lang === 'ru' ? 'Показатели следователей' : 'Tergovchilar ko\'rsatkichlari'}
+                </h4>
+                <ExportButton lang={lang} onClick={handleExportInvestigators} />
+              </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gov-border text-left">
                   <thead>
@@ -687,25 +789,52 @@ function ChiefView({ lang, onViewDetails, user }) {
                       const medium = cases.filter(c => c.difficulty === 3).length;
                       const hard = cases.filter(c => c.difficulty >= 4).length;
                       const avgDifficulty = cases.length > 0 ? (cases.reduce((sum, c) => sum + c.difficulty, 0) / cases.length).toFixed(1) : '—';
+                      const officerName = lang === 'ru' ? o.name_ru : o.name_uz;
                       return (
                         <tr key={o.id} className="hover:bg-gov-light/30">
                           <td className="px-4 py-3">
-                            <p className="font-semibold text-gov-text">{lang === 'ru' ? o.name_ru : o.name_uz}</p>
+                            <p className="font-semibold text-gov-text">{officerName}</p>
                             <p className="text-[10px] text-gov-muted mt-0.5 uppercase font-medium">{lang === 'ru' ? o.rank_ru : o.rank_uz}</p>
                           </td>
-                          <td className="px-4 py-3 font-bold text-gov-text">{cases.length}</td>
-                          <td className="px-4 py-3 text-gov-text">{active}</td>
-                          <td className="px-4 py-3 text-gov-success">{closed}</td>
                           <td className="px-4 py-3">
-                            {overdue > 0 ? <span className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded">{overdue}</span> : <span className="text-gov-muted">0</span>}
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Всего' : 'Jami'}`, cases)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={cases.length === 0}>{cases.length}</button>
                           </td>
-                          <td className="px-4 py-3 font-semibold text-gov-blue">{newOnes}</td>
                           <td className="px-4 py-3">
-                            {dueToday > 0 ? <span className="font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded">{dueToday}</span> : <span className="text-gov-muted">0</span>}
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'В работе' : 'Ijroda'}`, cases.filter(m => m.status !== 'закрыт_в_срок'))} className="text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={active === 0}>{active}</button>
                           </td>
-                          <td className="px-4 py-3 text-gov-text">{simple}</td>
-                          <td className="px-4 py-3 text-gov-text">{medium}</td>
-                          <td className="px-4 py-3 text-gov-text">{hard}</td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Исполнено' : 'Bajarildi'}`, cases.filter(m => m.status === 'закрыт_в_срок'))} className="text-gov-success hover:opacity-70 transition-opacity disabled:opacity-40" disabled={closed === 0}>{closed}</button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'}`, cases.filter(m => m.status === 'срок_нарушен'))}
+                              disabled={overdue === 0}
+                              className={overdue > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors' : 'text-gov-muted disabled:opacity-40'}
+                            >
+                              {overdue > 0 ? overdue : 0}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Новые' : 'Yangi'}`, cases.filter(m => (new Date() - new Date(m.registered_at)) < 86400000 * 3))} className="font-semibold text-gov-blue hover:opacity-70 transition-opacity disabled:opacity-40" disabled={newOnes === 0}>{newOnes}</button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Сегодня' : 'Bugun'}`, cases.filter(m => m.status !== 'закрыт_в_срок' && new Date(m.deadline).toISOString().substring(0,10) === now.toISOString().substring(0,10)))}
+                              disabled={dueToday === 0}
+                              className={dueToday > 0 ? 'font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors' : 'text-gov-muted disabled:opacity-40'}
+                            >
+                              {dueToday > 0 ? dueToday : 0}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Простые' : 'Oddiy'}`, cases.filter(c => c.difficulty <= 2))} className="text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={simple === 0}>{simple}</button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Средние' : 'O\'rtacha'}`, cases.filter(c => c.difficulty === 3))} className="text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={medium === 0}>{medium}</button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => openMaterialsList(`${officerName} — ${lang === 'ru' ? 'Сложные' : 'Murakkab'}`, cases.filter(c => c.difficulty >= 4))} className="text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={hard === 0}>{hard}</button>
+                          </td>
                           <td className="px-4 py-3 font-semibold text-gov-text">{avgDifficulty}</td>
                           <td className="px-4 py-3 font-bold text-gov-success">{o.likes}</td>
                           <td className="px-4 py-3 font-bold text-gov-danger">{o.dislikes}</td>
@@ -740,12 +869,17 @@ function ChiefView({ lang, onViewDetails, user }) {
                       { key: 'bildirgi', ru: 'Рапорт', uz: 'Bildirgi' },
                       { key: 'sud_ajrimi', ru: 'Суд. решение', uz: 'Sud qarori' },
                       { key: 'boshqa', ru: 'Другое', uz: 'Boshqa' }
-                    ].map(t => (
-                      <tr key={t.key} className="hover:bg-gov-light/30">
-                        <td className="px-4 py-2.5 text-gov-text">{lang === 'ru' ? t.ru : t.uz}</td>
-                        <td className="px-4 py-2.5 font-bold text-gov-text text-right">{filteredMaterials.filter(m => (m.material_type || 'ariza') === t.key).length}</td>
-                      </tr>
-                    ))}
+                    ].map(t => {
+                      const items = filteredMaterials.filter(m => (m.material_type || 'ariza') === t.key);
+                      return (
+                        <tr key={t.key} className="hover:bg-gov-light/30">
+                          <td className="px-4 py-2.5 text-gov-text">{lang === 'ru' ? t.ru : t.uz}</td>
+                          <td className="px-4 py-2.5 text-right">
+                            <button onClick={() => openMaterialsList(lang === 'ru' ? t.ru : t.uz, items)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={items.length === 0}>{items.length}</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -762,12 +896,17 @@ function ChiefView({ lang, onViewDetails, user }) {
                       { key: 'prezident_aparat', ru: 'Аппарат Президента', uz: 'Prezident ap.' },
                       { key: 'iio', ru: 'Другой ИИО', uz: 'Boshqa IIO' },
                       { key: 'portal', ru: 'Портал', uz: 'Portal' }
-                    ].map(s => (
-                      <tr key={s.key} className="hover:bg-gov-light/30">
-                        <td className="px-4 py-2.5 text-gov-text">{lang === 'ru' ? s.ru : s.uz}</td>
-                        <td className="px-4 py-2.5 font-bold text-gov-text text-right">{filteredMaterials.filter(m => (m.source_from || 'tashrif') === s.key).length}</td>
-                      </tr>
-                    ))}
+                    ].map(s => {
+                      const items = filteredMaterials.filter(m => (m.source_from || 'tashrif') === s.key);
+                      return (
+                        <tr key={s.key} className="hover:bg-gov-light/30">
+                          <td className="px-4 py-2.5 text-gov-text">{lang === 'ru' ? s.ru : s.uz}</td>
+                          <td className="px-4 py-2.5 text-right">
+                            <button onClick={() => openMaterialsList(lang === 'ru' ? s.ru : s.uz, items)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={items.length === 0}>{items.length}</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -791,17 +930,30 @@ function ChiefView({ lang, onViewDetails, user }) {
                 <tbody className="text-xs divide-y divide-gov-border">
                   {departments.map(d => {
                     const deptMaterials = filteredMaterials.filter(m => m.department === d.id);
+                    const deptName = lang === 'ru' ? d.name_ru : d.name_uz;
+                    const deptActive = deptMaterials.filter(m => m.status !== 'закрыт_в_срок');
+                    const deptClosed = deptMaterials.filter(m => m.status === 'закрыт_в_срок');
+                    const deptOverdue = deptMaterials.filter(m => m.status === 'срок_нарушен');
                     return (
                       <tr key={d.id} className="hover:bg-gov-light/30">
-                        <td className="px-4 py-3 font-semibold text-gov-text">{lang === 'ru' ? d.name_ru : d.name_uz}</td>
-                        <td className="px-4 py-3 font-bold text-gov-text">{deptMaterials.length}</td>
-                        <td className="px-4 py-3 text-gov-text">{deptMaterials.filter(m => m.status !== 'закрыт_в_срок').length}</td>
-                        <td className="px-4 py-3 text-gov-success">{deptMaterials.filter(m => m.status === 'закрыт_в_срок').length}</td>
+                        <td className="px-4 py-3 font-semibold text-gov-text">{deptName}</td>
                         <td className="px-4 py-3">
-                          {(() => {
-                            const c = deptMaterials.filter(m => m.status === 'срок_нарушен').length;
-                            return c > 0 ? <span className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded">{c}</span> : <span className="text-gov-muted">0</span>;
-                          })()}
+                          <button onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'Всего' : 'Jami'}`, deptMaterials)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={deptMaterials.length === 0}>{deptMaterials.length}</button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'В работе' : 'Ijroda'}`, deptActive)} className="text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={deptActive.length === 0}>{deptActive.length}</button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'Исполнено' : 'Bajarildi'}`, deptClosed)} className="text-gov-success hover:opacity-70 transition-opacity disabled:opacity-40" disabled={deptClosed.length === 0}>{deptClosed.length}</button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'}`, deptOverdue)}
+                            disabled={deptOverdue.length === 0}
+                            className={deptOverdue.length > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors' : 'text-gov-muted disabled:opacity-40'}
+                          >
+                            {deptOverdue.length}
+                          </button>
                         </td>
                       </tr>
                     );
@@ -815,9 +967,12 @@ function ChiefView({ lang, onViewDetails, user }) {
         {/* Panel 2: All Materials with Reassignments */}
         {activePanel === 'materials' && (
           <div className="bg-white rounded-2xl shadow-card p-6">
-            <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
-              {lang === 'ru' ? 'Мониторинг всех материалов доследственной проверки' : 'Barcha tekshiruv materiallari monitoringi'}
-            </h3>
+            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
+              <h3 className="font-semibold text-base text-gov-text text-left">
+                {lang === 'ru' ? 'Мониторинг всех материалов доследственной проверки' : 'Barcha tekshiruv materiallari monitoringi'}
+              </h3>
+              <ExportButton lang={lang} onClick={handleExportMaterials} />
+            </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
@@ -892,9 +1047,29 @@ function ChiefView({ lang, onViewDetails, user }) {
         {/* Panel 3: Staff Rating */}
         {activePanel === 'ratings' && (
           <div className="bg-white rounded-2xl shadow-card p-6">
-            <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
-              {lang === 'ru' ? 'Рейтинг и показатели сотрудников отделения' : 'Bo\'lim xodimlari reytingi va ko\'rsatkichlari'}
-            </h3>
+            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
+              <h3 className="font-semibold text-base text-gov-text text-left">
+                {lang === 'ru' ? 'Рейтинг и показатели сотрудников отделения' : 'Bo\'lim xodimlari reytingi va ko\'rsatkichlari'}
+              </h3>
+              <ExportButton
+                lang={lang}
+                onClick={() => exportToCsv(
+                  lang === 'ru' ? 'reyting_sotrudnikov' : 'xodimlar_reytingi',
+                  [lang === 'ru' ? 'Следователь' : 'Tergovchi', lang === 'ru' ? 'Подразделение' : 'Bo\'lim', 'Likes', 'Dislikes', lang === 'ru' ? 'Всего дел' : 'Jami ishlar', lang === 'ru' ? 'В производстве' : 'Ijroda', lang === 'ru' ? 'Индекс %' : 'Indeks %'],
+                  officers.filter(o => o.role === 'investigator').map(o => {
+                    const cases = materials.filter(m => m.officer === o.id);
+                    const dept = departments.find(d => d.id === o.department);
+                    return [
+                      lang === 'ru' ? o.name_ru : o.name_uz,
+                      dept ? (lang === 'ru' ? dept.name_ru : dept.name_uz) : '',
+                      o.likes, o.dislikes, cases.length,
+                      cases.filter(m => m.status !== 'закрыт_в_срок').length,
+                      o.index,
+                    ];
+                  })
+                )}
+              />
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
@@ -1193,6 +1368,38 @@ function ChiefView({ lang, onViewDetails, user }) {
           <ChatPanel lang={lang} user={user} />
         )}
       </div>
+
+      {materialsList && (
+        <Modal onClose={() => setMaterialsList(null)} maxWidth="max-w-lg">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
+              <h3 className="font-semibold text-base text-gov-text">
+                {lang === 'ru' ? 'Срок:' : 'Muddat:'} {materialsList.label} · {materialsList.materials.length}
+              </h3>
+              <button onClick={() => setMaterialsList(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+              {materialsList.materials.map(m => {
+                const off = officers.find(o => o.id === m.officer);
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => { onViewDetails(m.id); setMaterialsList(null); }}
+                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gov-light transition-colors flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-gov-primary">{m.id}</p>
+                      <p className="text-xs text-gov-text truncate">{m.citizen_name}</p>
+                      <p className="text-[10px] text-gov-muted truncate">{off ? (lang === 'ru' ? off.name_ru : off.name_uz) : ''}</p>
+                    </div>
+                    <EyeIcon className="h-4 w-4 text-gov-muted shrink-0" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

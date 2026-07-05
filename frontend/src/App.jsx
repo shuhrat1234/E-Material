@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import CitizenView from './components/CitizenView';
 import RegistratorView from './components/RegistratorView';
@@ -67,10 +67,26 @@ export const TRANSLATIONS = {
 };
 
 function App() {
-  const [lang, setLang] = useState('ru');
-  const [user, setUser] = useState(null); // { role, name, id, avatar, roleLabel }
+  const [lang, setLang] = useState(() => localStorage.getItem('em_lang') || 'ru');
+  const [user, setUser] = useState(() => {
+    try {
+      const raw = localStorage.getItem('em_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }); // { role, name, id, avatar, roleLabel }
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+
+  useEffect(() => {
+    if (user) localStorage.setItem('em_user', JSON.stringify(user));
+    else localStorage.removeItem('em_user');
+  }, [user]);
+
+  useEffect(() => {
+    localStorage.setItem('em_lang', lang);
+  }, [lang]);
 
   const handleLogin = (selectedUser) => {
     setUser(selectedUser);

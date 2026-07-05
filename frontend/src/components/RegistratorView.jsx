@@ -4,6 +4,8 @@ import { API_BASE, TRANSLATIONS } from '../App';
 import ChatPanel from './ChatPanel';
 import { ChatIcon, EyeIcon } from './Icons';
 import Select from './ui/Select';
+import ExportButton from './ui/ExportButton';
+import { exportToCsv } from '../exportCsv';
 import { notify } from '../toastService';
 
 function RegistratorView({ lang, onViewDetails, user }) {
@@ -166,6 +168,25 @@ function RegistratorView({ lang, onViewDetails, user }) {
     const d = new Date(dateStr);
     const pad = (n) => n.toString().padStart(2, '0');
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const handleExportRegistry = () => {
+    exportToCsv(
+      lang === 'ru' ? 'reestr_materialov' : 'materiallar_reyestri',
+      ['ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
+      materials.map(m => {
+        const off = officers.find(o => o.id === m.officer);
+        return [
+          m.id,
+          m.citizen_name,
+          m.citizen_phone,
+          off ? (lang === 'ru' ? off.name_ru : off.name_uz) : '',
+          lang === 'ru' ? m.title_ru : m.title_uz,
+          formatDate(m.deadline),
+          getStatusText(m.status),
+        ];
+      })
+    );
   };
 
   return (
@@ -374,9 +395,12 @@ function RegistratorView({ lang, onViewDetails, user }) {
 
           {/* Table Registry Right */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-card p-6 overflow-hidden flex flex-col">
-            <h3 className="font-semibold text-sm text-gov-text border-b border-gov-border pb-3 mb-4 text-left">
-              {lang === 'ru' ? 'Реестр зарегистрированных материалов' : 'Ro\'yxatga olingan materiallar reyestri'}
-            </h3>
+            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-4">
+              <h3 className="font-semibold text-sm text-gov-text text-left">
+                {lang === 'ru' ? 'Реестр зарегистрированных материалов' : 'Ro\'yxatga olingan materiallar reyestri'}
+              </h3>
+              <ExportButton lang={lang} onClick={handleExportRegistry} />
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>

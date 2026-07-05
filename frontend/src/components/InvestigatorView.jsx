@@ -17,6 +17,8 @@ import FilterPill from './ui/FilterPill';
 import HeroChartCard from './ui/HeroChartCard';
 import PillBarChart from './ui/PillBarChart';
 import Select from './ui/Select';
+import ExportButton from './ui/ExportButton';
+import { exportToCsv } from '../exportCsv';
 import { notify } from '../toastService';
 
 ChartJS.register(
@@ -26,6 +28,7 @@ ChartJS.register(
 
 function InvestigatorView({ lang, onViewDetails, user }) {
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ai, history
+  const [materialsList, setMaterialsList] = useState(null); // { label, materials }
   const [officer, setOfficer] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [historyTimeline, setHistoryTimeline] = useState([]);
@@ -135,7 +138,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
   }).length;
 
   const calculateDeadlines = () => {
-    const offsets = { today: 0, tomorrow: 0, indinga: 0, days3: 0, days4: 0, days5: 0, sl1: 0, sl2: 0, sl3: 0, sl4: 0, sl5: 0 };
+    const buckets = { today: [], tomorrow: [], indinga: [], days3: [], days4: [], days5: [], sl1: [], sl2: [], sl3: [], sl4: [], sl5: [] };
     const now = new Date();
     const dStr = (offset) => {
       const d = new Date(now);
@@ -146,22 +149,30 @@ function InvestigatorView({ lang, onViewDetails, user }) {
     filteredCases.forEach(m => {
       if (m.status === 'закрыт_в_срок') return;
       const dl = new Date(m.deadline).toISOString().substring(0,10);
-      if (dl === dStr(0)) offsets.today++;
-      else if (dl === dStr(1)) offsets.tomorrow++;
-      else if (dl === dStr(2)) offsets.indinga++;
-      else if (dl === dStr(3)) offsets.days3++;
-      else if (dl === dStr(4)) offsets.days4++;
-      else if (dl === dStr(5)) offsets.days5++;
-      else if (dl === dStr(6)) offsets.sl1++;
-      else if (dl === dStr(7)) offsets.sl2++;
-      else if (dl === dStr(8)) offsets.sl3++;
-      else if (dl === dStr(9)) offsets.sl4++;
-      else if (dl === dStr(10)) offsets.sl5++;
+      if (dl === dStr(0)) buckets.today.push(m);
+      else if (dl === dStr(1)) buckets.tomorrow.push(m);
+      else if (dl === dStr(2)) buckets.indinga.push(m);
+      else if (dl === dStr(3)) buckets.days3.push(m);
+      else if (dl === dStr(4)) buckets.days4.push(m);
+      else if (dl === dStr(5)) buckets.days5.push(m);
+      else if (dl === dStr(6)) buckets.sl1.push(m);
+      else if (dl === dStr(7)) buckets.sl2.push(m);
+      else if (dl === dStr(8)) buckets.sl3.push(m);
+      else if (dl === dStr(9)) buckets.sl4.push(m);
+      else if (dl === dStr(10)) buckets.sl5.push(m);
     });
-    return offsets;
+    return buckets;
   };
 
-  const dl = calculateDeadlines();
+  const dlBuckets = calculateDeadlines();
+  const dl = Object.fromEntries(Object.entries(dlBuckets).map(([k, v]) => [k, v.length]));
+
+  const openMaterialsList = (label, materials) => {
+    if (!materials || materials.length === 0) return;
+    setMaterialsList({ label, materials });
+  };
+
+  const openDeadlineBucket = (key, label) => openMaterialsList(label, dlBuckets[key]);
 
   const difficultyCounts = { simple: 0, medium: 0, hard: 0 };
   filteredCases.forEach(c => {
@@ -360,6 +371,24 @@ function InvestigatorView({ lang, onViewDetails, user }) {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
+  const handleExportMaterials = () => {
+    exportToCsv(
+      lang === 'ru' ? 'moi_materialy' : 'mening_materiallarim',
+      ['ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat', lang === 'ru' ? 'Тип' : 'Turi', lang === 'ru' ? 'Источник' : 'Manba', lang === 'ru' ? 'Сложность' : 'Murakkablik'],
+      filteredCases.map(m => [
+        m.id,
+        m.citizen_name,
+        m.citizen_phone,
+        lang === 'ru' ? m.title_ru : m.title_uz,
+        formatDate(m.deadline),
+        getStatusText(m.status),
+        m.material_type,
+        m.source_from,
+        m.difficulty,
+      ])
+    );
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-6 items-start w-full">
       {/* Sidebar navigation */}
@@ -502,7 +531,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
         {activePanel === 'dashboard' && (
           <div className="space-y-6">
             {/* Stat Row */}
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <StatCard icon={<FolderIcon />} tone="primary" value={totalCases} label={lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'} trend={trendTotal} />
               <StatCard icon={<TrendUpIcon />} tone="primary" value={newCases} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendTotal} />
               <StatCard icon={<ClockIcon />} tone="warning" value={activeCases} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} />
@@ -566,11 +595,23 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                 </thead>
                 <tbody className="text-xs">
                   <tr className="hover:bg-gov-light/30">
-                    <td className="px-3 py-3 font-bold text-gov-text text-sm">{totalCases}</td>
-                    <td className="px-3 py-3 font-semibold text-gov-text text-sm">{activeCases}</td>
-                    <td className="px-3 py-3 font-semibold text-gov-success text-sm">{closedCases}</td>
                     <td className="px-3 py-3">
-                      <span className={overdueCases > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded text-sm' : 'text-gov-muted text-sm'}>{overdueCases}</span>
+                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'Всего материалов' : 'Jami materiallar', materials)} className="font-bold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={totalCases === 0}>{totalCases}</button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'В производстве' : 'Ijroda', materials.filter(m => m.status !== 'закрыт_в_срок'))} className="font-semibold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={activeCases === 0}>{activeCases}</button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'Исполнено' : 'Bajarildi', materials.filter(m => m.status === 'закрыт_в_срок'))} className="font-semibold text-gov-success text-sm hover:opacity-70 transition-opacity disabled:opacity-40" disabled={closedCases === 0}>{closedCases}</button>
+                    </td>
+                    <td className="px-3 py-3">
+                      <button
+                        onClick={() => openMaterialsList(lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan', materials.filter(m => m.status === 'срок_нарушен'))}
+                        disabled={overdueCases === 0}
+                        className={overdueCases > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded text-sm hover:bg-rose-100 transition-colors' : 'text-gov-muted text-sm disabled:opacity-40'}
+                      >
+                        {overdueCases}
+                      </button>
                     </td>
                     <td className="px-3 py-3">
                       <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold text-sm">{officer ? officer.index : 0}%</span>
@@ -610,17 +651,39 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                   </thead>
                   <tbody className="text-xs">
                     <tr className="hover:bg-gov-light/30">
-                      <td className="px-3 py-3"><span className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded">{dl.today}</span></td>
-                      <td className="px-3 py-3"><span className="font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded">{dl.tomorrow}</span></td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.indinga}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.days3}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.days4}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.days5}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl1}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl2}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl3}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl4}</td>
-                      <td className="px-3 py-3 font-semibold text-gov-text">{dl.sl5}</td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('today', lang === 'ru' ? 'Сегодня' : 'Bugun')} className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors disabled:opacity-40" disabled={dl.today === 0}>{dl.today}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('tomorrow', lang === 'ru' ? 'Завтра' : 'Ertaga')} className="font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors disabled:opacity-40" disabled={dl.tomorrow === 0}>{dl.tomorrow}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('indinga', lang === 'ru' ? 'Послезавтра' : 'Indinga')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.indinga === 0}>{dl.indinga}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('days3', lang === 'ru' ? '3 дня' : '3 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days3 === 0}>{dl.days3}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('days4', lang === 'ru' ? '4 дня' : '4 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days4 === 0}>{dl.days4}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('days5', lang === 'ru' ? '5 дней' : '5 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days5 === 0}>{dl.days5}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl1', lang === 'ru' ? 'Неделя 1' : 'H.1')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl1 === 0}>{dl.sl1}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl2', lang === 'ru' ? 'Неделя 2' : 'H.2')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl2 === 0}>{dl.sl2}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl3', lang === 'ru' ? 'Неделя 3' : 'H.3')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl3 === 0}>{dl.sl3}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl4', lang === 'ru' ? 'Неделя 4' : 'H.4')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl4 === 0}>{dl.sl4}</button>
+                      </td>
+                      <td className="px-3 py-3">
+                        <button onClick={() => openDeadlineBucket('sl5', lang === 'ru' ? 'Неделя 5' : 'H.5')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl5 === 0}>{dl.sl5}</button>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -700,9 +763,12 @@ function InvestigatorView({ lang, onViewDetails, user }) {
         {/* Panel 2: Materials */}
         {activePanel === 'materials' && (
           <div className="bg-white rounded-2xl shadow-card p-6 ">
-            <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
-              {lang === 'ru' ? 'Мои материалы доследственной проверки' : 'Mening tekshiruv materiallarim'}
-            </h3>
+            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
+              <h3 className="font-semibold text-base text-gov-text text-left">
+                {lang === 'ru' ? 'Мои материалы доследственной проверки' : 'Mening tekshiruv materiallarim'}
+              </h3>
+              <ExportButton lang={lang} onClick={handleExportMaterials} />
+            </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
@@ -1012,6 +1078,34 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                 </button>
               </div>
             </form>
+          </div>
+        </Modal>
+      )}
+
+      {materialsList && (
+        <Modal onClose={() => setMaterialsList(null)} maxWidth="max-w-lg">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
+              <h3 className="font-semibold text-base text-gov-text">
+                {lang === 'ru' ? 'Срок:' : 'Muddat:'} {materialsList.label} · {materialsList.materials.length}
+              </h3>
+              <button onClick={() => setMaterialsList(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+              {materialsList.materials.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => { onViewDetails(m.id); setMaterialsList(null); }}
+                  className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gov-light transition-colors flex items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gov-primary">{m.id}</p>
+                    <p className="text-xs text-gov-text truncate">{m.citizen_name}</p>
+                  </div>
+                  <EyeIcon className="h-4 w-4 text-gov-muted shrink-0" />
+                </button>
+              ))}
+            </div>
           </div>
         </Modal>
       )}

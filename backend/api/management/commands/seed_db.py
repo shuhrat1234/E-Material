@@ -2,7 +2,8 @@ from django.core.management.base import BaseCommand
 from api.models import Department, Officer, Material, AppealStep, ActiveVisit, SMSTemplate, AuditLog
 from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 
 class Command(BaseCommand):
     help = 'Seeds E-Material initial mock data into database'
@@ -567,6 +568,124 @@ class Command(BaseCommand):
                 )
                 
         self.stdout.write(f'Created {len(materials_data)} materials and appeals')
+
+        # Extra materials, dated relative to "now" so dashboards (30-day trend,
+        # today/tomorrow deadline buckets) are populated regardless of seed date.
+        rng = random.Random(7)
+
+        first_names_ru = ["Алишер", "Дилноза", "Санжар", "Гулбахор", "Фаррух", "Севара", "Жасур",
+                           "Малика", "Отабек", "Нигора", "Бекзод", "Зарина", "Улугбек", "Дилором"]
+        last_names_ru = ["Юсупов", "Раджабова", "Эргашев", "Насриддинова", "Абдуллаев", "Тураева",
+                         "Холматов", "Собирова", "Мирзаев", "Каримова", "Шарипов", "Юлдашева"]
+        titles_by_type = {
+            "ariza": [
+                "Заявление о краже личных вещей",
+                "Заявление о мошенничестве через интернет-магазин",
+                "Заявление об угрозах со стороны соседа",
+                "Заявление о повреждении имущества",
+                "Заявление о пропаже документов",
+            ],
+            "bildirgi": [
+                "Рапорт о нарушении общественного порядка",
+                "Рапорт о незаконной торговле",
+                "Рапорт об обнаружении бесхозного имущества",
+            ],
+            "sud_ajrimi": [
+                "Определение суда о проведении дополнительной проверки",
+                "Определение суда по гражданскому спору",
+            ],
+            "boshqa": [
+                "Обращение по факту утери документов",
+                "Обращение по вопросу утраты имущества",
+            ],
+        }
+        titles_by_type_uz = {
+            "ariza": [
+                "Shaxsiy buyumlar o'g'irlangani haqida ariza",
+                "Internet-do'kon orqali firibgarlik haqida ariza",
+                "Qo'shni tomonidan tahdid haqida ariza",
+                "Mol-mulkka zarar yetkazish haqida ariza",
+                "Hujjatlar yo'qolgani haqida ariza",
+            ],
+            "bildirgi": [
+                "Jamoat tartibini buzish haqida bildirgi",
+                "Noqonuniy savdo haqida bildirgi",
+                "Egasiz mol-mulk topilgani haqida bildirgi",
+            ],
+            "sud_ajrimi": [
+                "Qo'shimcha tekshiruv o'tkazish haqida sud ajrimi",
+                "Fuqarolik nizosi bo'yicha sud ajrimi",
+            ],
+            "boshqa": [
+                "Hujjatlar yo'qotilgani bo'yicha murojaat",
+                "Mol-mulk yo'qotilgani bo'yicha murojaat",
+            ],
+        }
+        investigator_ids = [o["id"] for o in officers_data if o["role"] == "investigator"]
+        material_types = ["ariza", "bildirgi", "sud_ajrimi", "boshqa"]
+        source_choices = ["tashrif", "prakuratura", "prezident_aparat", "iio", "portal"]
+        now = timezone.now()
+        extra_count = 35
+
+        for i in range(extra_count):
+            case_num = 21 + i
+            case_id = f"MAT-2026-{str(case_num).zfill(4)}"
+            officer_id = rng.choice(investigator_ids)
+            department_id = officers[officer_id].department_id
+            m_type = rng.choices(material_types, weights=[55, 25, 8, 12])[0]
+            source = rng.choice(source_choices)
+            difficulty = rng.choices([1, 2, 3, 4, 5], weights=[15, 25, 30, 20, 10])[0]
+
+            days_ago = rng.randint(0, 40)
+            registered_at = now - timedelta(days=days_ago, hours=rng.randint(0, 23), minutes=rng.randint(0, 59))
+            deadline_days = rng.choice([7, 10, 10, 15, 20])
+            deadline = registered_at + timedelta(days=deadline_days)
+
+            is_overdue = deadline < now
+            is_due_soon = not is_overdue and (deadline - now).days <= 2
+            closed_at = None
+
+            if is_overdue:
+                status = rng.choices(["срок_нарушен", "закрыт_в_срок"], weights=[55, 45])[0]
+                if status == "закрыт_в_срок":
+                    closed_at = deadline - timedelta(hours=rng.randint(1, 48))
+            elif is_due_soon:
+                status = "срок_приближается"
+            else:
+                status = rng.choices(["изучаемый", "закрыт_в_срок"], weights=[85, 15])[0]
+                if status == "закрыт_в_срок":
+                    closed_at = registered_at + timedelta(days=rng.randint(1, max(1, deadline_days - 1)))
+
+            citizen_name = f"{rng.choice(last_names_ru)} {rng.choice(first_names_ru)}"
+            citizen_phone = f"+998 9{rng.randint(0,9)} {rng.randint(100,999)}-{rng.randint(10,99)}-{rng.randint(10,99)}"
+            title_ru = rng.choice(titles_by_type[m_type])
+            title_uz = rng.choice(titles_by_type_uz[m_type])
+
+            mat = Material.objects.create(
+                id=case_id,
+                citizen_name=citizen_name,
+                citizen_phone=citizen_phone,
+                title_ru=title_ru,
+                title_uz=title_uz,
+                registered_at=registered_at,
+                deadline=deadline,
+                closed_at=closed_at,
+                status=status,
+                officer=officers[officer_id],
+                department=depts[department_id] if department_id else None,
+                is_accepted=True,
+                extension_count=rng.choices([0, 1, 2], weights=[80, 15, 5])[0],
+                difficulty=difficulty,
+                material_type=m_type,
+                source_from=source,
+            )
+
+            AppealStep.objects.create(material=mat, status="Обращение гражданина", time=registered_at)
+            if status == "закрыт_в_срок" and closed_at:
+                AppealStep.objects.create(material=mat, status="Анализ и решение", time=closed_at - timedelta(minutes=30))
+                AppealStep.objects.create(material=mat, status="Оперативная отправка уведомления", time=closed_at)
+
+        self.stdout.write(f'Created {extra_count} additional generated materials')
 
         # Active Visits
         visits_data = [

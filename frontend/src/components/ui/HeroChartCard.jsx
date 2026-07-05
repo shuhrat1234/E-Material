@@ -48,7 +48,10 @@ function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
               <div key={i}>
                 <div className="flex items-center gap-2">
                   {b.icon && (
-                    <span className="w-6 h-6 rounded flex items-center justify-center shrink-0 bg-white text-gov-muted">
+                    <span
+                      className="w-6 h-6 rounded flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${b.color}1a`, color: b.color }}
+                    >
                       {b.icon}
                     </span>
                   )}
@@ -57,8 +60,8 @@ function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
                 <p className="text-xs text-gov-muted mt-1">{b.label}</p>
                 <div className="h-1.5 rounded-full bg-gov-border mt-2 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gov-primary"
-                    style={{ width: `${Math.max(6, (b.value / maxBreakdown) * 100)}%` }}
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.max(6, (b.value / maxBreakdown) * 100)}%`, backgroundColor: b.color }}
                   />
                 </div>
               </div>
