@@ -7,18 +7,18 @@ from django.utils import timezone
 import datetime
 import mimetypes
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.auth import authenticate
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
 from .models import (
-    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage
+    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage, Rating
 )
 from .serializers import (
     DepartmentSerializer, OfficerSerializer, MaterialSerializer, AppealStepSerializer,
     ApprovalRequestSerializer, AuditLogSerializer, ActiveVisitSerializer, SMSTemplateSerializer,
-    ChatMessageSerializer
+    ChatMessageSerializer, RatingSerializer
 )
 
 def parse_difficulty(value):
@@ -37,30 +37,67 @@ class OfficerViewSet(viewsets.ModelViewSet):
     queryset = Officer.objects.all()
     serializer_class = OfficerSerializer
 
+    def create(self, request, *args, **kwargs):
+        password = (request.data.get('password') or '').strip()
+        if password and len(password) < 6:
+            return Response({'error': 'Password must be at least 6 characters'}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = super().create(request, *args, **kwargs)
+
+        if password:
+            officer = Officer.objects.filter(id=response.data.get('id')).first()
+            if officer and officer.user:
+                officer.user.set_password(password)
+                officer.user.save()
+
+        return response
+
     @action(detail=True, methods=['post'])
     def rate(self, request, pk=None):
         officer = self.get_object()
         is_like = request.data.get('isLike', True)
-        
+        reason_ru = request.data.get('reasonRu', '')
+        reason_uz = request.data.get('reasonUz', '')
+        citizen_name = (request.data.get('citizenName') or '').strip()
+
+        if not citizen_name:
+            return Response({'detail': 'citizenName is required'}, status=status.HTTP_400_BAD_REQUEST)
+
         if is_like:
             officer.likes += 1
             officer.index = min(100, officer.index + 2)
         else:
             officer.dislikes += 1
             officer.index = max(0, officer.index - 1)
-            
+
         officer.save()
-        
+
+        Rating.objects.create(
+            officer=officer,
+            citizen_name=citizen_name,
+            is_like=is_like,
+            reason_ru=reason_ru,
+            reason_uz=reason_uz,
+        )
+
         # Log action
         rating_type = "Like" if is_like else "Dislike"
+        reason_suffix_ru = f" ({reason_ru})" if reason_ru else ""
+        reason_suffix_uz = f" ({reason_uz})" if reason_uz else ""
         AuditLog.objects.create(
             time=timezone.now(),
-            user_name="Планшет",
-            action_ru=f"Оценка качества работы сотрудника {officer.name_ru}: {rating_type}",
-            action_uz=f"Xodim {officer.name_uz} ishini baholash: {rating_type}"
+            user_name=citizen_name,
+            action_ru=f"Оценка качества работы сотрудника {officer.name_ru}: {rating_type}{reason_suffix_ru}",
+            action_uz=f"Xodim {officer.name_uz} ishini baholash: {rating_type}{reason_suffix_uz}"
         )
-        
+
         return Response(OfficerSerializer(officer).data)
+
+    @action(detail=True, methods=['get'])
+    def ratings(self, request, pk=None):
+        officer = self.get_object()
+        ratings = officer.ratings.all()
+        return Response(RatingSerializer(ratings, many=True).data)
 
 class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
@@ -81,11 +118,17 @@ class MaterialViewSet(viewsets.ModelViewSet):
         officer_id = request.data.get('officer')
         officer = Officer.objects.filter(id=officer_id).first()
         dept_id = officer.department_id if officer else 'so'
-        
-        # Generate custom MAT code
-        count = Material.objects.count() + 16
-        case_id = f"MAT-2026-{str(count).zfill(4)}"
-        
+
+        # Use the manually entered ID if provided, otherwise auto-generate one
+        custom_id = (request.data.get('id') or '').strip()
+        if custom_id:
+            if Material.objects.filter(id=custom_id).exists():
+                return Response({'error': f'Material with ID "{custom_id}" already exists'}, status=status.HTTP_400_BAD_REQUEST)
+            case_id = custom_id
+        else:
+            count = Material.objects.count() + 16
+            case_id = f"MAT-2026-{str(count).zfill(4)}"
+
         new_material = Material.objects.create(
             id=case_id,
             citizen_name=request.data.get('citizen_name'),
@@ -168,6 +211,25 @@ class MaterialViewSet(viewsets.ModelViewSet):
         
         return Response(AppealStepSerializer(step).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post'], url_path='send-sms')
+    def send_sms(self, request, pk=None):
+        material = self.get_object()
+        text = (request.data.get('text') or '').strip()
+        if not text:
+            return Response({'error': 'text is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        material.citizen_notification_text = text
+        material.save()
+
+        AuditLog.objects.create(
+            time=timezone.now(),
+            user_name=request.data.get('user_name', 'Сотрудник'),
+            action_ru=f"Отправлено SMS-уведомление заявителю по делу {material.id}: \"{text[:80]}\"",
+            action_uz=f"{material.id} ishi bo'yicha murojaatchiga SMS-xabarnoma yuborildi: \"{text[:80]}\""
+        )
+
+        return Response(MaterialSerializer(material).data)
+
 class ApprovalRequestViewSet(viewsets.ModelViewSet):
     queryset = ApprovalRequest.objects.all()
     serializer_class = ApprovalRequestSerializer
@@ -183,10 +245,13 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
         
         material = Material.objects.filter(id=case_id).first()
         officer = Officer.objects.filter(id=officer_id).first()
-        
+
         if not material or not officer:
             return Response({'error': 'Material or Officer not found'}, status=status.HTTP_400_BAD_REQUEST)
-            
+
+        if ApprovalRequest.objects.filter(case_id=case_id).exists():
+            return Response({'error': 'A decision for this case is already pending approval'}, status=status.HTTP_400_BAD_REQUEST)
+
         # Create approval request
         app_req = ApprovalRequest.objects.create(
             case=material,
@@ -219,41 +284,13 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
             
         material = app_req.case
         officer = material.officer
-        
-        # Approve process: Close case in db
-        material.status = 'закрыт_в_срок'
-        material.closed_at = timezone.now()
-        
-        # Generate SMS notification body
-        tpl_code = 'tpl_reject'
-        if app_req.type == 'возбуждено':
-            tpl_code = 'tpl_initiate'
-        elif app_req.type == 'перенаправлено':
-            tpl_code = 'tpl_transfer'
-            
-        sms_tpl = SMSTemplate.objects.filter(template_id=tpl_code).first()
-        notif_text_ru = ""
-        notif_text_uz = ""
-        if sms_tpl:
-            # Replaces placeholders
-            notif_text_ru = sms_tpl.content_ru.replace("{name}", material.citizen_name)\
-                                              .replace("{id}", material.id)\
-                                              .replace("{link}", f"e-material.gov.uz/docs/{material.id}")\
-                                              .replace("{case_num}", app_req.case_num or "10/26-99")\
-                                              .replace("{officer}", officer.name_ru if officer else "")\
-                                              .replace("{phone}", "+998 90 123-45-67")\
-                                              .replace("{org}", app_req.org_name or "РУВД")
-            notif_text_uz = sms_tpl.content_uz.replace("{name}", material.citizen_name)\
-                                              .replace("{id}", material.id)\
-                                              .replace("{link}", f"e-material.gov.uz/docs/{material.id}")\
-                                              .replace("{case_num}", app_req.case_num or "10/26-99")\
-                                              .replace("{officer}", officer.name_uz if officer else "")\
-                                              .replace("{phone}", "+998 90 123-45-67")\
-                                              .replace("{org}", app_req.org_name or "IIO FMB")
-                                              
-        material.citizen_notification_text = notif_text_ru # Save main language copy
+
+        # Approve process: close the case, marking it on-time or overdue based on the deadline
+        now = timezone.now()
+        material.status = 'закрыт_в_срок' if now <= material.deadline else 'срок_нарушен'
+        material.closed_at = now
         material.save()
-        
+
         # Add a timeline step for decision
         decision_label_ru = "Отказ в ВУД" if app_req.type == 'закрыт_в_срок' else "Возбуждение ВУД" if app_req.type == 'возбуждено' else "Передача по территориальности"
         decision_label_uz = "JIQni rad etish" if app_req.type == 'закрыт_в_срок' else "JIQ qo'zg'atish" if app_req.type == 'возбуждено' else "Tergovga yuborish"
@@ -268,8 +305,8 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
         AuditLog.objects.create(
             time=timezone.now(),
             user_name="Начальник отделения",
-            action_ru=f"Согласовано процессуальное решение по делу {material.id} ({decision_label_ru}). Отправлено авто-уведомление гражданину.",
-            action_uz=f"{material.id} material bo'yicha protsessual qaror tasdiqlandi ({decision_label_uz}). Fuqaroga xabarnoma yuborildi."
+            action_ru=f"Согласовано процессуальное решение по делу {material.id} ({decision_label_ru}).",
+            action_uz=f"{material.id} material bo'yicha protsessual qaror tasdiqlandi ({decision_label_uz})."
         )
         
         # Clean up request
@@ -333,6 +370,33 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({'count': 0, 'by_sender': {}})
+        qs = ChatMessage.objects.filter(recipient_id=user_id, is_read=False)
+        by_sender = {row['sender_id']: row['n'] for row in qs.values('sender_id').annotate(n=Count('id'))}
+        return Response({'count': sum(by_sender.values()), 'by_sender': by_sender})
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        user_id = request.query_params.get('user_id')
+        peer_id = request.query_params.get('peer_id')
+
+        if user_id and peer_id:
+            unread = ChatMessage.objects.filter(sender_id=peer_id, recipient_id=user_id, is_read=False)
+            if unread.exists():
+                unread.update(is_read=True)
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{peer_id}',
+                    {'type': 'chat.message', 'data': {'kind': 'read', 'reader_id': user_id}}
+                )
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def perform_create(self, serializer):
         uploaded_file = self.request.FILES.get('file')
         is_image = False
@@ -341,6 +405,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             is_image = content_type.startswith('image/')
         message = serializer.save(is_image=is_image)
         data = ChatMessageSerializer(message, context=self.get_serializer_context()).data
+        data['kind'] = 'message'
 
         channel_layer = get_channel_layer()
         if message.recipient_id:

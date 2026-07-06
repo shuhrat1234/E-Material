@@ -11,7 +11,12 @@ const ICON_TONES = {
 
 function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend, className = '' }) {
   const up = typeof delta === 'number' ? delta >= 0 : null;
-  const isCritical = tone === 'danger' && typeof value === 'number' ? value > 0 : false;
+  const numericValue = typeof value === 'number' ? value : parseFloat(value);
+  const isPositiveNumber = !isNaN(numericValue) && numericValue > 0;
+  const valueColorClass =
+    tone === 'danger' && isPositiveNumber ? 'text-gov-danger' :
+    tone === 'success' && isPositiveNumber ? 'text-gov-success' :
+    'text-gov-text';
   return (
     <div className={`bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow p-5 text-left ${className}`}>
       <div className="flex items-center justify-between mb-3 gap-2">
@@ -24,7 +29,7 @@ function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend,
       </div>
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div className="min-w-0">
-          <p className={`text-[26px] leading-none font-bold tracking-tight truncate ${isCritical ? 'text-gov-danger' : 'text-gov-text'}`}>{value}</p>
+          <p className={`text-[26px] leading-none font-bold tracking-tight truncate ${valueColorClass}`}>{value}</p>
           {(delta !== undefined && delta !== null) || caption ? (
             <div className="flex items-center gap-2 mt-3">
               {delta !== undefined && delta !== null && (

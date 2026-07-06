@@ -56,8 +56,9 @@ function LoginScreen({ onLogin, lang, setLang }) {
       }}
     >
       <div className="max-w-md w-full">
-        <div className="flex flex-col items-center mb-6">
-          <p className="text-sm text-gov-text font-semibold">
+        <div className="flex flex-col items-center text-center mb-6">
+          <img src="/emblem.png" alt="" className="h-20 w-20 object-contain mb-3" />
+          <p className="text-sm text-gov-text font-extrabold uppercase leading-snug">
             {t.subtitle}
           </p>
         </div>

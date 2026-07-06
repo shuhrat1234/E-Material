@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
-import { UsersIcon, PaperclipIcon, SendIcon, ChatIcon } from './Icons';
+import { UsersIcon, PaperclipIcon, SendIcon, ChatIcon, CheckIcon, DoubleCheckIcon, CopyIcon } from './Icons';
+import Avatar from './ui/Avatar';
 import { notify } from '../toastService';
 
 function ChatPanel({ lang, user }) {
@@ -12,12 +13,17 @@ function ChatPanel({ lang, user }) {
   const [file, setFile] = useState(null);
   const [connected, setConnected] = useState(false);
   const [sending, setSending] = useState(false);
+  const [unreadBySender, setUnreadBySender] = useState({});
   const wsRef = useRef(null);
   const bottomRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const senderId = user?.id || 'unknown';
   const senderName = user?.name || (lang === 'ru' ? 'Сотрудник' : 'Xodim');
+
+  // Kept in sync every render so the long-lived websocket handler always sees fresh values
+  const latestRef = useRef({ activeThread, lang });
+  latestRef.current = { activeThread, lang };
 
   const mergeMessages = (incoming) => {
     setMessages(prev => {
@@ -34,6 +40,26 @@ function ChatPanel({ lang, user }) {
       .catch(err => console.error('Failed to load officers', err));
   }, []);
 
+  // Per-contact unread counts, refreshed periodically and nudged live via the websocket below
+  const fetchUnreadBySender = () => {
+    axios.get(`${API_BASE}/chat/messages/unread_count/`, { params: { user_id: senderId } })
+      .then(res => setUnreadBySender(res.data.by_sender || {}))
+      .catch(err => console.error('Failed to load unread counts', err));
+  };
+
+  useEffect(() => {
+    fetchUnreadBySender();
+    const interval = setInterval(fetchUnreadBySender, 15000);
+    return () => clearInterval(interval);
+  }, [senderId]);
+
+  // Opening a DM thread marks it read server-side; clear its badge right away
+  useEffect(() => {
+    if (activeThread) {
+      setUnreadBySender(prev => (prev[activeThread] ? { ...prev, [activeThread]: 0 } : prev));
+    }
+  }, [activeThread]);
+
   // Open a single websocket connection for the lifetime of this panel
   useEffect(() => {
     const wsBase = API_BASE.replace(/^http/, 'ws').replace(/\/api$/, '') + `/ws/chat/?user_id=${encodeURIComponent(senderId)}`;
@@ -44,7 +70,27 @@ function ChatPanel({ lang, user }) {
     ws.onclose = () => setConnected(false);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+
+      if (data.kind === 'read') {
+        setMessages(prev => prev.map(m =>
+          (m.sender_id === senderId && m.recipient_id === data.reader_id) ? { ...m, is_read: true } : m
+        ));
+        return;
+      }
+
       mergeMessages([data]);
+
+      if (data.sender_id !== senderId) {
+        const { activeThread: openThread, lang: currentLang } = latestRef.current;
+        const threadKey = data.recipient_id ? data.sender_id : null;
+        if (threadKey !== openThread) {
+          const preview = data.text || (currentLang === 'ru' ? '📎 Файл' : '📎 Fayl');
+          notify(`${data.sender_name}: ${preview}`, 'info');
+        }
+        if (data.recipient_id === senderId && threadKey !== openThread) {
+          setUnreadBySender(prev => ({ ...prev, [data.sender_id]: (prev[data.sender_id] || 0) + 1 }));
+        }
+      }
     };
 
     return () => ws.close();
@@ -106,8 +152,15 @@ function ChatPanel({ lang, user }) {
 
   const activeOfficer = officers.find(o => o.id === activeThread);
 
+  const handleCopy = (m) => {
+    if (!m.text) return;
+    navigator.clipboard.writeText(m.text)
+      .then(() => notify(lang === 'ru' ? 'Скопировано' : 'Nusxalandi', 'success'))
+      .catch(() => notify(lang === 'ru' ? 'Не удалось скопировать' : 'Nusxalab bo\'lmadi', 'error'));
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-card flex h-[640px] overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-card flex h-[700px] overflow-hidden">
       {/* Contacts sidebar */}
       <div className="w-64 border-r border-gov-border shrink-0 overflow-y-auto bg-gov-light/40 p-2">
         <button
@@ -133,13 +186,16 @@ function ChatPanel({ lang, user }) {
               activeThread === o.id ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-text hover:bg-white'
             }`}
           >
-            <div className="w-9 h-9 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center text-xs font-bold shrink-0">
-              {o.photo || o.name_ru?.[0]}
-            </div>
-            <div className="overflow-hidden">
+            <Avatar src={o.avatar} initials={o.photo || o.name_ru?.[0]} size="w-9 h-9" />
+            <div className="overflow-hidden flex-1 min-w-0">
               <p className="text-xs font-semibold truncate">{lang === 'ru' ? o.name_ru : o.name_uz}</p>
               <p className="text-[10px] text-gov-muted truncate">{lang === 'ru' ? o.rank_ru : o.rank_uz}</p>
             </div>
+            {!!unreadBySender[o.id] && (
+              <span className="shrink-0 min-w-[1.25rem] h-5 px-1 rounded-full bg-gov-primary text-white text-[10px] font-bold inline-flex items-center justify-center">
+                {unreadBySender[o.id]}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -172,10 +228,20 @@ function ChatPanel({ lang, user }) {
           {threadMessages.map(m => {
             const isMine = m.sender_id === senderId;
             return (
-              <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-left shadow-sm ${
+              <div key={m.id} className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                <div className={`relative max-w-[70%] rounded-2xl px-4 py-2.5 text-left shadow-sm ${
                   isMine ? 'bg-gov-primary text-white rounded-br-md' : 'bg-white text-gov-text rounded-bl-md'
                 }`}>
+                  {m.text && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(m)}
+                      title={lang === 'ru' ? 'Копировать' : 'Nusxalash'}
+                      className={`absolute -top-2.5 ${isMine ? '-left-2.5' : '-right-2.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full shadow-sm bg-white border border-gov-border text-gov-muted hover:text-gov-primary`}
+                    >
+                      <CopyIcon className="h-3 w-3" />
+                    </button>
+                  )}
                   {!isMine && (
                     <p className="text-[10px] font-bold text-gov-primary mb-0.5">{m.sender_name}</p>
                   )}
@@ -196,7 +262,14 @@ function ChatPanel({ lang, user }) {
                       </a>
                     )
                   )}
-                  <p className={`text-[9px] font-mono mt-1.5 text-right ${isMine ? 'text-white/70' : 'text-gov-muted'}`}>{formatTime(m.time)}</p>
+                  <div className={`flex items-center justify-end gap-1 mt-1.5 ${isMine ? 'text-white/70' : 'text-gov-muted'}`}>
+                    <p className="text-[9px] font-mono">{formatTime(m.time)}</p>
+                    {isMine && activeThread && (
+                      m.is_read
+                        ? <DoubleCheckIcon className="h-3 w-3 text-sky-300" />
+                        : <CheckIcon className="h-3 w-3" />
+                    )}
+                  </div>
                 </div>
               </div>
             );

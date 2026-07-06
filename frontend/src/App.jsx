@@ -9,6 +9,7 @@ import DeadlineNotifications from './components/DeadlineNotifications';
 import ProfileModal from './components/ProfileModal';
 import ConfirmHost from './components/ConfirmHost';
 import ToastHost from './components/ToastHost';
+import Avatar from './components/ui/Avatar';
 import { confirm } from './confirmService';
 import axios from 'axios';
 
@@ -18,7 +19,7 @@ export const API_BASE = 'http://localhost:8000/api';
 export const TRANSLATIONS = {
   ru: {
     title: "АИС «Е-Материал»",
-    subtitle: "Олмазорский РУВД г. Ташкента",
+    subtitle: "РЕСПУБЛИКА УЗБЕКИСТАН ОЛМАЗОРСКИЙ РАЙОННЫЙ ОТДЕЛ ВНУТРЕННИХ ДЕЛ",
     select_role: "Выберите роль",
     password: "Пароль доступа",
     login_btn: "Войти в систему",
@@ -42,7 +43,7 @@ export const TRANSLATIONS = {
   },
   uz: {
     title: "AIS «E-Material»",
-    subtitle: "Toshkent sh. Olmazor tumani IIO FMB",
+    subtitle: "O'ZBEKISTON RESPUBLIKASI OLMAZOR TUMANI ICHKI ISHLAR BO'LIMI",
     select_role: "Rolni tanlang",
     password: "Kirish paroli",
     login_btn: "Tizimga kirish",
@@ -139,8 +140,9 @@ function App() {
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
         <header className={`bg-white text-gov-text px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'md:pl-[17rem]' : ''}`}>
-          <div className="flex flex-col items-start">
-            <p className="text-sm text-gov-text font-semibold">{t.subtitle}</p>
+          <div className="flex items-center gap-3">
+            <img src="/emblem.png" alt="" className="h-12 w-12 shrink-0 object-contain" />
+            <p className="text-sm text-gov-navy font-semibold uppercase leading-snug">{t.subtitle}</p>
           </div>
 
           <div className="flex items-center gap-4 mt-4 md:mt-0">
@@ -172,13 +174,7 @@ function App() {
                 className="flex items-center gap-2.5 hover:bg-gov-light rounded-lg px-2 py-1.5 -my-1.5 transition-colors"
                 title={lang === 'ru' ? 'Мой профиль' : 'Mening profilim'}
               >
-                {user.avatar ? (
-                  <img src={user.avatar} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-gov-border" />
-                ) : (
-                  <div className="bg-gov-primaryLight text-gov-primary w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
-                    {user.photo || user.name[0]}
-                  </div>
-                )}
+                <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8" textSize="text-[10px]" className="border border-gov-border" />
                 <div className="text-left">
                   <p className="text-xs font-semibold text-gov-text">{user.name}</p>
                   <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider">{user.roleLabel}</p>

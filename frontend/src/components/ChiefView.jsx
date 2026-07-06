@@ -3,11 +3,13 @@ import axios from 'axios';
 import { API_BASE } from '../App';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import ChatPanel from './ChatPanel';
+import SmsModal from './SmsModal';
 import { CATEGORICAL, SEQUENTIAL } from '../chartColors';
-import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, ClockIcon, TrendUpIcon, CloseIcon } from './Icons';
+import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon } from './Icons';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
+import Avatar from './ui/Avatar';
 import FilterPill from './ui/FilterPill';
 import HeroChartCard from './ui/HeroChartCard';
 import PillBarChart from './ui/PillBarChart';
@@ -18,13 +20,24 @@ import { exportToCsv } from '../exportCsv';
 import { confirm } from '../confirmService';
 import { notify } from '../toastService';
 
+const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+const MONTH_NAMES_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+const MONTH_NAMES_SHORT_UZ = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+
 function ChiefView({ lang, onViewDetails, user }) {
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ratings, approvals, users
   const [materialsList, setMaterialsList] = useState(null); // { label, materials }
   const [officers, setOfficers] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [approvalRequests, setApprovalRequests] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [ratingsModal, setRatingsModal] = useState(null); // { officer, items }
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
+  const [smsTemplates, setSmsTemplates] = useState([]);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [newTemplate, setNewTemplate] = useState({ content_ru: '', content_uz: '', trigger_ru: '' });
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   const ROLE_LABELS = {
     registrator: { ru: 'Регистратор', uz: 'Registrator' },
@@ -32,21 +45,48 @@ function ChiefView({ lang, onViewDetails, user }) {
     chief: { ru: 'Начальник', uz: 'Boshliq' }
   };
 
-  const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', department: '' };
+  const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', password: '' };
   const [newUser, setNewUser] = useState(emptyNewUser);
   const [createError, setCreateError] = useState('');
   const [createSuccess, setCreateSuccess] = useState('');
 
   // Filter States
   const [dateRange, setDateRange] = useState('all');
+  const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or ''
   const [difficulty, setDifficulty] = useState('');
   const [materialType, setMaterialType] = useState('');
   const [sourceFrom, setSourceFrom] = useState('');
   const [officerFilter, setOfficerFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState(''); // '' | 'closest'
+  const [materialsPage, setMaterialsPage] = useState(1);
+  const MATERIALS_PAGE_SIZE = 20;
+  const [smsModalCaseId, setSmsModalCaseId] = useState(null);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  const fetchUnreadChat = () => {
+    axios.get(`${API_BASE}/chat/messages/unread_count/`, { params: { user_id: user?.id } })
+      .then(res => setUnreadChat(res.data.count))
+      .catch(err => console.error('Failed to load unread chat count', err));
+  };
+
+  useEffect(() => {
+    fetchUnreadChat();
+    const interval = setInterval(fetchUnreadChat, 20000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
+  // Opening the chat panel marks messages as read server-side; refresh the badge shortly after
+  useEffect(() => {
+    if (activePanel === 'chat') {
+      const t = setTimeout(fetchUnreadChat, 1000);
+      return () => clearTimeout(t);
+    }
+  }, [activePanel]);
 
   const fetchData = () => {
     axios.get(`${API_BASE}/officers/`)
@@ -58,8 +98,52 @@ function ChiefView({ lang, onViewDetails, user }) {
     axios.get(`${API_BASE}/approvals/`)
       .then(res => setApprovalRequests(res.data));
 
-    axios.get(`${API_BASE}/departments/`)
-      .then(res => setDepartments(res.data));
+    axios.get(`${API_BASE}/templates/`)
+      .then(res => setSmsTemplates(res.data));
+  };
+
+  const handleCreateTemplate = (e) => {
+    e.preventDefault();
+    if (!newTemplate.content_ru.trim()) return;
+    setSavingTemplate(true);
+    axios.post(`${API_BASE}/templates/`, {
+      template_id: `tpl_${Date.now()}`,
+      type: 'SMS',
+      trigger_ru: newTemplate.trigger_ru,
+      trigger_uz: newTemplate.trigger_ru,
+      content_ru: newTemplate.content_ru.trim(),
+      content_uz: newTemplate.content_uz.trim(),
+      created_by: user?.name || '',
+    })
+      .then(() => {
+        setSavingTemplate(false);
+        setTemplateModalOpen(false);
+        setNewTemplate({ content_ru: '', content_uz: '', trigger_ru: '' });
+        notify(lang === 'ru' ? 'Текст отправлен на модерацию!' : 'Matn moderatsiyaga yuborildi!', 'success');
+        fetchData();
+      })
+      .catch(err => {
+        console.error(err);
+        setSavingTemplate(false);
+        notify(lang === 'ru' ? 'Ошибка при добавлении текста' : 'Matnni qo\'shishda xatolik', 'error');
+      });
+  };
+
+  const handleTemplateStatusChange = (templateId, patch) => {
+    axios.patch(`${API_BASE}/templates/${templateId}/`, patch)
+      .then(() => fetchData())
+      .catch(err => {
+        console.error(err);
+        notify(lang === 'ru' ? 'Ошибка при обновлении статуса' : 'Statusni yangilashda xatolik', 'error');
+      });
+  };
+
+  const handleDeleteTemplate = async (templateId) => {
+    const ok = await confirm(lang === 'ru' ? 'Удалить этот текст?' : 'Ushbu matnni o\'chirasizmi?', { danger: true });
+    if (!ok) return;
+    axios.delete(`${API_BASE}/templates/${templateId}/`)
+      .then(() => fetchData())
+      .catch(() => notify(lang === 'ru' ? 'Ошибка удаления.' : 'O\'chirishda xatolik.', 'error'));
   };
 
   const handleCreateUser = (e) => {
@@ -76,6 +160,11 @@ function ChiefView({ lang, onViewDetails, user }) {
       setCreateError(lang === 'ru' ? 'Логин может содержать только латинские буквы, цифры и "_"' : 'Login faqat lotin harflari, raqamlar va "_" dan iborat bo\'lishi kerak');
       return;
     }
+    const password = newUser.password.trim();
+    if (!password || password.length < 6) {
+      setCreateError(lang === 'ru' ? 'Укажите пароль (минимум 6 символов)' : 'Parolni kiriting (kamida 6 ta belgi)');
+      return;
+    }
 
     const parts = newUser.name_ru.split(' ').filter(Boolean);
     const photo = parts.length > 1 ? parts[0][0] + parts[1][0] : (parts[0] ? parts[0][0] : 'У');
@@ -87,21 +176,22 @@ function ChiefView({ lang, onViewDetails, user }) {
       rank_ru: newUser.rank_ru || '-',
       rank_uz: newUser.rank_uz || '-',
       role: newUser.role,
-      department: newUser.department || null,
+      password,
       photo
     }).then(() => {
       setCreateSuccess(
         lang === 'ru'
-          ? `Пользователь "${username}" создан! Пароль: password123`
-          : `"${username}" foydalanuvchisi yaratildi! Parol: password123`
+          ? `Пользователь "${username}" создан! Пароль: ${password}`
+          : `"${username}" foydalanuvchisi yaratildi! Parol: ${password}`
       );
       setNewUser(emptyNewUser);
       fetchData();
     }).catch(err => {
       const idErr = err.response?.data?.id?.[0];
+      const passwordErr = err.response?.data?.error;
       const msg = idErr
         ? (lang === 'ru' ? 'Такой логин уже занят.' : 'Bu login band.')
-        : (lang === 'ru' ? 'Ошибка создания пользователя.' : 'Foydalanuvchi yaratishda xatolik.');
+        : passwordErr || (lang === 'ru' ? 'Ошибка создания пользователя.' : 'Foydalanuvchi yaratishda xatolik.');
       setCreateError(msg);
     });
   };
@@ -115,8 +205,25 @@ function ChiefView({ lang, onViewDetails, user }) {
   };
 
   // Filter materials
+  const matchesNonDateFilters = (c) => {
+    if (difficulty && c.difficulty != difficulty) return false;
+    if (materialType && c.material_type !== materialType) return false;
+    if (sourceFrom && c.source_from !== sourceFrom) return false;
+    if (officerFilter && c.officer !== officerFilter) return false;
+    return true;
+  };
+
   const filteredMaterials = materials.filter(c => {
-    if (dateRange !== 'all') {
+    if (!matchesNonDateFilters(c)) return false;
+    if (statusFilter && c.status !== statusFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const haystack = `${c.id} ${c.citizen_name} ${c.citizen_phone}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (monthFilter) {
+      if (c.registered_at.substring(0, 7) !== monthFilter) return false;
+    } else if (dateRange !== 'all') {
       const regDate = new Date(c.registered_at);
       const now = new Date();
       const diffDays = (now - regDate) / (1000 * 60 * 60 * 24);
@@ -130,12 +237,32 @@ function ChiefView({ lang, onViewDetails, user }) {
         if (diffDays > 30) return false;
       }
     }
-    if (difficulty && c.difficulty != difficulty) return false;
-    if (materialType && c.material_type !== materialType) return false;
-    if (sourceFrom && c.source_from !== sourceFrom) return false;
-    if (officerFilter && c.officer !== officerFilter) return false;
     return true;
   });
+
+  if (sortOrder === 'closest') {
+    filteredMaterials.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+  }
+
+  const materialsPageCount = Math.max(1, Math.ceil(filteredMaterials.length / MATERIALS_PAGE_SIZE));
+  const pagedMaterials = filteredMaterials.slice((materialsPage - 1) * MATERIALS_PAGE_SIZE, materialsPage * MATERIALS_PAGE_SIZE);
+
+  useEffect(() => {
+    setMaterialsPage(1);
+  }, [searchQuery, dateRange, monthFilter, difficulty, materialType, sourceFrom, officerFilter, statusFilter, sortOrder]);
+
+  useEffect(() => {
+    if (materialsPage > materialsPageCount) setMaterialsPage(materialsPageCount);
+  }, [materialsPageCount]);
+
+  // Months present in the data, newest first, for the specific-month filter
+  const monthOptions = Array.from(new Set(materials.map(m => m.registered_at.substring(0, 7))))
+    .sort((a, b) => b.localeCompare(a))
+    .map(key => {
+      const [y, mo] = key.split('-').map(Number);
+      const name = lang === 'ru' ? MONTH_NAMES_RU[mo - 1] : MONTH_NAMES_UZ[mo - 1];
+      return { value: key, label: `${name} ${y}` };
+    });
 
   const total = filteredMaterials.length;
   const newCount = filteredMaterials.filter(m => {
@@ -241,6 +368,35 @@ function ChiefView({ lang, onViewDetails, user }) {
     }],
   };
 
+  // Monthly analytics (last 6 calendar months, respects officer/difficulty/type/source filters but not the date filters)
+  const monthlyBaseMaterials = materials.filter(matchesNonDateFilters);
+  const monthlyStats = (() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ year: d.getFullYear(), monthIdx: d.getMonth(), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` });
+    }
+    return months.map(m => {
+      const items = monthlyBaseMaterials.filter(c => c.registered_at.substring(0, 7) === m.key);
+      return {
+        key: m.key,
+        label: `${lang === 'ru' ? MONTH_NAMES_SHORT_RU[m.monthIdx] : MONTH_NAMES_SHORT_UZ[m.monthIdx]} ${m.year}`,
+        total: items.length,
+        closed: items.filter(c => c.status === 'закрыт_в_срок').length,
+        overdue: items.filter(c => c.status === 'срок_нарушен').length,
+      };
+    });
+  })();
+  const monthlyChartData = {
+    labels: monthlyStats.map(m => m.label),
+    datasets: [
+      { label: lang === 'ru' ? 'Всего' : 'Jami', data: monthlyStats.map(m => m.total), backgroundColor: CATEGORICAL[0], borderRadius: 4 },
+      { label: lang === 'ru' ? 'Исполнено' : 'Bajarildi', data: monthlyStats.map(m => m.closed), backgroundColor: CATEGORICAL[1], borderRadius: 4 },
+      { label: lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan', data: monthlyStats.map(m => m.overdue), backgroundColor: CATEGORICAL[4], borderRadius: 4 },
+    ],
+  };
+
   const handleReassign = (caseId, newOfficerId) => {
     if (!newOfficerId) return;
     axios.post(`${API_BASE}/materials/${caseId}/reassign/`, { new_officer_id: newOfficerId })
@@ -267,6 +423,15 @@ function ChiefView({ lang, onViewDetails, user }) {
         fetchData();
       })
       .catch(err => console.error(err));
+  };
+
+  const openOfficerRatings = (officer) => {
+    setRatingsModal({ officer, items: [] });
+    setRatingsLoading(true);
+    axios.get(`${API_BASE}/officers/${officer.id}/ratings/`)
+      .then(res => setRatingsModal({ officer, items: res.data }))
+      .catch(err => console.error(err))
+      .finally(() => setRatingsLoading(false));
   };
 
   const handleInlineStatusChange = (caseId, newStatus) => {
@@ -342,6 +507,29 @@ function ChiefView({ lang, onViewDetails, user }) {
     return map[status] || status;
   };
 
+  const getTemplateStatusBadge = (status) => {
+    switch (status) {
+      case 'одобрено':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'отказан':
+        return 'bg-rose-50 text-rose-700 border-rose-100';
+      case 'в_процессе':
+        return 'bg-amber-50 text-amber-700 border-amber-100';
+      default:
+        return 'bg-blue-50 text-blue-700 border-blue-100';
+    }
+  };
+
+  const getTemplateStatusText = (status) => {
+    const map = {
+      'на_модерации': lang === 'ru' ? 'На модерации' : 'Moderatsiyada',
+      'в_процессе': lang === 'ru' ? 'В процессе' : 'Jarayonda',
+      'одобрено': lang === 'ru' ? 'Одобрено' : 'Tasdiqlangan',
+      'отказан': lang === 'ru' ? 'Отказан' : 'Rad etilgan',
+    };
+    return map[status] || status;
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
@@ -409,12 +597,10 @@ function ChiefView({ lang, onViewDetails, user }) {
         <div className="space-y-1">
           <div className="p-3 border-b border-gov-border mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gov-primary text-white rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                {user?.photo || (user?.name ? user.name[0] : 'М')}
-              </div>
-              <div className="overflow-hidden">
-                <h4 className="font-semibold text-xs text-gov-text truncate">{user?.name || ''}</h4>
-                <p className="text-[10px] text-gov-muted mt-0.5 truncate uppercase tracking-wider font-bold">
+              <Avatar src={user?.avatar} initials={user?.photo || (user?.name ? user.name[0] : 'М')} />
+              <div className="min-w-0">
+                <h4 className="font-semibold text-xs text-gov-text leading-snug">{user?.name || ''}</h4>
+                <p className="text-[10px] text-gov-muted mt-0.5 uppercase tracking-wider font-bold">
                   {user?.roleLabel || (lang === 'ru' ? 'Начальник' : 'Boshliq')}
                 </p>
               </div>
@@ -447,7 +633,6 @@ function ChiefView({ lang, onViewDetails, user }) {
             active={activePanel === 'approvals'}
             onClick={() => setActivePanel('approvals')}
             count={approvalRequests.length}
-            countTone="danger"
           />
           <SidebarLink
             icon={<KeyIcon />}
@@ -460,6 +645,14 @@ function ChiefView({ lang, onViewDetails, user }) {
             label={lang === 'ru' ? 'Чат' : 'Chat'}
             active={activePanel === 'chat'}
             onClick={() => setActivePanel('chat')}
+            count={unreadChat}
+          />
+          <SidebarLink
+            icon={<SendIcon />}
+            label={lang === 'ru' ? 'SMS шаблоны' : 'SMS shablonlar'}
+            active={activePanel === 'sms'}
+            onClick={() => setActivePanel('sms')}
+            count={smsTemplates.filter(t => t.status === 'на_модерации').length}
           />
         </div>
 
@@ -479,6 +672,19 @@ function ChiefView({ lang, onViewDetails, user }) {
       {/* Content Area */}
       <div className="flex-1 w-full min-w-0 space-y-6 md:ml-64">
         
+        {activePanel === 'materials' && (
+          <div className="relative max-w-sm">
+            <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gov-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
+              className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-white focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+            />
+          </div>
+        )}
+
         {(activePanel === 'dashboard' || activePanel === 'materials') && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1.5 text-gov-muted text-xs font-semibold pr-1">
@@ -488,13 +694,23 @@ function ChiefView({ lang, onViewDetails, user }) {
               icon={<ClockIcon className="h-3.5 w-3.5" />}
               value={dateRange}
               defaultValue="all"
-              onChange={e => setDateRange(e.target.value)}
+              onChange={e => { setDateRange(e.target.value); setMonthFilter(''); }}
               options={[
                 { value: 'all', label: lang === 'ru' ? 'Все время' : 'Barcha vaqt' },
                 { value: 'today', label: lang === 'ru' ? 'Сегодня' : 'Bugun' },
                 { value: 'days3', label: lang === 'ru' ? 'Посл. 3 дня' : 'Oxirgi 3 kun' },
                 { value: 'week', label: lang === 'ru' ? 'За неделю' : 'Shu hafta' },
-                { value: 'month', label: lang === 'ru' ? 'За месяц' : 'Shu oy' },
+                { value: 'month', label: lang === 'ru' ? 'Последние 30 дней' : 'Oxirgi 30 kun' },
+              ]}
+            />
+            <FilterPill
+              icon={<DashboardIcon className="h-3.5 w-3.5" />}
+              value={monthFilter}
+              defaultValue=""
+              onChange={e => { setMonthFilter(e.target.value); if (e.target.value) setDateRange('all'); }}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Конкретный месяц' : 'Aniq oy' },
+                ...monthOptions,
               ]}
             />
             <FilterPill
@@ -545,9 +761,31 @@ function ChiefView({ lang, onViewDetails, user }) {
                 { value: 'portal', label: lang === 'ru' ? 'Портал' : 'Portal' },
               ]}
             />
-            {(dateRange !== 'all' || difficulty || materialType || sourceFrom || officerFilter) && (
+            <FilterPill
+              value={statusFilter}
+              defaultValue=""
+              onChange={e => setStatusFilter(e.target.value)}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Статус: все' : 'Holat: barchasi' },
+                { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
+                { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
+                { value: 'срок_нарушен', label: lang === 'ru' ? 'Срок нарушен' : 'Muddati buzilgan' },
+                { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
+              ]}
+            />
+            <FilterPill
+              icon={<TrendUpIcon className="h-3.5 w-3.5" />}
+              value={sortOrder}
+              defaultValue=""
+              onChange={e => setSortOrder(e.target.value)}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Сортировка: по умолчанию' : 'Saralash: standart' },
+                { value: 'closest', label: lang === 'ru' ? 'Ближайший срок' : 'Yaqin muddat' },
+              ]}
+            />
+            {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || officerFilter || statusFilter || sortOrder || searchQuery) && (
               <button
-                onClick={() => { setDateRange('all'); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setOfficerFilter(''); }}
+                onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setOfficerFilter(''); setStatusFilter(''); setSortOrder(''); setSearchQuery(''); }}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-gov-danger hover:bg-rose-50 rounded-full px-3 py-2 transition-colors"
               >
                 <CloseIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Сбросить' : 'Tozalash'}
@@ -569,9 +807,8 @@ function ChiefView({ lang, onViewDetails, user }) {
             </div>
 
             {/* Secondary stat row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <StatCard icon={<UsersIcon />} tone="neutral" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} />
-              <StatCard icon={<FolderIcon />} tone="neutral" value={departments.length} label={lang === 'ru' ? 'Подразделений' : 'Bo\'limlar'} />
               <StatCard icon={<ApprovalIcon />} tone="primary" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} />
               <StatCard icon={<TrendUpIcon />} tone="neutral" value={`${total > 0 ? Math.round((closedCount / total) * 100) : 0}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} />
             </div>
@@ -587,8 +824,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                   data={heroChartData}
                   breakdown={[
                     { icon: <UsersIcon className="h-3.5 w-3.5" />, value: investigatorsList.length, label: lang === 'ru' ? 'Следователей' : 'Tergovchilar', color: CATEGORICAL[0] },
-                    { icon: <FolderIcon className="h-3.5 w-3.5" />, value: departments.length, label: lang === 'ru' ? 'Подразделений' : 'Bo\'limlar', color: CATEGORICAL[1] },
-                    { icon: <ApprovalIcon className="h-3.5 w-3.5" />, value: approvalRequests.length, label: lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda', color: CATEGORICAL[2] },
+                    { icon: <ApprovalIcon className="h-3.5 w-3.5" />, value: approvalRequests.length, label: lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda', color: CATEGORICAL[1] },
                   ]}
                 />
               </div>
@@ -611,6 +847,22 @@ function ChiefView({ lang, onViewDetails, user }) {
                 <div className="h-64 flex justify-center">
                   <Doughnut data={getDifficultyData()} options={{ responsive: true, maintainAspectRatio: false }} />
                 </div>
+              </div>
+            </div>
+
+            {/* Monthly analytics */}
+            <div className="bg-white rounded-2xl shadow-card p-5">
+              <h5 className="font-semibold text-sm text-gov-text mb-4 text-left">{lang === 'ru' ? 'Аналитика по месяцам' : 'Oylar bo\'yicha tahlil'}</h5>
+              <div className="h-72">
+                <Bar
+                  data={monthlyChartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+                  }}
+                />
               </div>
             </div>
 
@@ -726,7 +978,7 @@ function ChiefView({ lang, onViewDetails, user }) {
               </div>
             </div>
 
-            {/* Department-wide rating stats */}
+            {/* Overall rating stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <StatCard icon={<ApprovalIcon />} tone="success" value={totalLikes} label={lang === 'ru' ? 'Положительных отзывов' : 'Ijobiy baholar'} />
               <StatCard icon={<ClockIcon />} tone="danger" value={totalDislikes} label={lang === 'ru' ? 'Отрицательных отзывов' : 'Salbiy baholar'} />
@@ -912,55 +1164,6 @@ function ChiefView({ lang, onViewDetails, user }) {
               </div>
             </div>
 
-            {/* Department breakdown table */}
-            <div className="bg-white rounded-2xl shadow-card p-5 text-left">
-              <h4 className="font-semibold text-sm text-gov-text mb-4 flex items-center gap-2">
-                <FolderIcon /> {lang === 'ru' ? 'Материалы по подразделениям' : 'Bo\'limlar bo\'yicha materiallar'}
-              </h4>
-              <table className="min-w-full divide-y divide-gov-border text-left">
-                <thead>
-                  <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
-                    <th className="px-4 py-2">{lang === 'ru' ? 'Подразделение' : 'Bo\'lim'}</th>
-                    <th className="px-4 py-2">{lang === 'ru' ? 'Всего' : 'Jami'}</th>
-                    <th className="px-4 py-2">{lang === 'ru' ? 'В работе' : 'Ijroda'}</th>
-                    <th className="px-4 py-2">{lang === 'ru' ? 'Исполнено' : 'Bajarildi'}</th>
-                    <th className="px-4 py-2">{lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'}</th>
-                  </tr>
-                </thead>
-                <tbody className="text-xs divide-y divide-gov-border">
-                  {departments.map(d => {
-                    const deptMaterials = filteredMaterials.filter(m => m.department === d.id);
-                    const deptName = lang === 'ru' ? d.name_ru : d.name_uz;
-                    const deptActive = deptMaterials.filter(m => m.status !== 'закрыт_в_срок');
-                    const deptClosed = deptMaterials.filter(m => m.status === 'закрыт_в_срок');
-                    const deptOverdue = deptMaterials.filter(m => m.status === 'срок_нарушен');
-                    return (
-                      <tr key={d.id} className="hover:bg-gov-light/30">
-                        <td className="px-4 py-3 font-semibold text-gov-text">{deptName}</td>
-                        <td className="px-4 py-3">
-                          <button onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'Всего' : 'Jami'}`, deptMaterials)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={deptMaterials.length === 0}>{deptMaterials.length}</button>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'В работе' : 'Ijroda'}`, deptActive)} className="text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={deptActive.length === 0}>{deptActive.length}</button>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'Исполнено' : 'Bajarildi'}`, deptClosed)} className="text-gov-success hover:opacity-70 transition-opacity disabled:opacity-40" disabled={deptClosed.length === 0}>{deptClosed.length}</button>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => openMaterialsList(`${deptName} — ${lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'}`, deptOverdue)}
-                            disabled={deptOverdue.length === 0}
-                            className={deptOverdue.length > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors' : 'text-gov-muted disabled:opacity-40'}
-                          >
-                            {deptOverdue.length}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
           </div>
         )}
 
@@ -984,14 +1187,15 @@ function ChiefView({ lang, onViewDetails, user }) {
                     <th className="px-4 py-3">{lang === 'ru' ? 'Содержание' : 'Mazmuni'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Статус' : 'Holat'}</th>
-                    <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Просмотр' : 'Ko\'rish'}</th>
+                    <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Действия' : 'Amallar'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gov-border text-xs">
-                  {filteredMaterials.map(c => {
+                  {pagedMaterials.map(c => {
                     const activeOff = officers.find(o => o.id === c.officer);
                     const activeName = activeOff ? activeOff.name_ru.split(' ')[0] : '';
-                    
+                    const isPending = approvalRequests.some(r => r.case === c.id);
+
                     return (
                       <tr key={c.id} className="hover:bg-gov-light/30">
                         <td className="px-4 py-3 font-semibold text-gov-text">{c.id}</td>
@@ -1001,7 +1205,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                             <Select
                               value=""
                               onChange={(val) => handleReassign(c.id, val)}
-                              className="text-[10px] p-1 border border-gov-border rounded-lg bg-gov-light w-32"
+                              className="text-[10px] p-1 border border-gov-border rounded bg-gov-light w-32"
                               placeholder={lang === 'ru' ? '-- Переназначить --' : '-- Qayta biriktirish --'}
                               options={officers.filter(o => o.role === 'investigator' && o.id !== c.officer).map(o => ({
                                 value: o.id, label: o.name_ru.split(' ')[0]
@@ -1018,7 +1222,8 @@ function ChiefView({ lang, onViewDetails, user }) {
                           <Select
                             value={c.status}
                             onChange={val => handleInlineStatusChange(c.id, val)}
-                            className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold leading-none w-auto ${getStatusBadge(c.status)}`}
+                            disabled={isPending}
+                            className={`px-2 py-1.5 border rounded text-[10px] font-semibold leading-none w-auto ${getStatusBadge(c.status)}`}
                             options={[
                               { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
                               { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
@@ -1026,14 +1231,34 @@ function ChiefView({ lang, onViewDetails, user }) {
                               { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
                             ]}
                           />
+                          {isPending && (
+                            <p className="text-[9px] font-semibold text-gov-warning mt-1">
+                              {lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'}
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => onViewDetails(c.id)}
-                            className="p-1.5 bg-gov-light border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
-                          >
-                            <EyeIcon />
-                          </button>
+                          <div className="flex gap-1 justify-center">
+                            <button
+                              onClick={() => onViewDetails(c.id)}
+                              className="p-1.5 bg-gov-light border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                              title={lang === 'ru' ? 'Просмотр' : 'Ko\'rish'}
+                            >
+                              <EyeIcon />
+                            </button>
+                            <button
+                              onClick={() => setSmsModalCaseId(c.id)}
+                              className="p-1.5 bg-gov-primaryLight border border-gov-primary/20 text-gov-primary rounded hover:bg-blue-100 transition-colors inline-flex"
+                              title={lang === 'ru' ? 'SMS-уведомление' : 'SMS-xabarnoma'}
+                            >
+                              <SendIcon />
+                            </button>
+                          </div>
+                          <p className={`text-center text-[9px] font-semibold mt-1 ${c.citizen_notification_text ? 'text-gov-success' : 'text-gov-muted'}`}>
+                            {c.citizen_notification_text
+                              ? (lang === 'ru' ? '✓ SMS отправлено' : '✓ SMS yuborildi')
+                              : (lang === 'ru' ? 'SMS не отправлено' : 'SMS yuborilmagan')}
+                          </p>
                         </td>
                       </tr>
                     );
@@ -1041,6 +1266,35 @@ function ChiefView({ lang, onViewDetails, user }) {
                 </tbody>
               </table>
             </div>
+
+            {filteredMaterials.length > 0 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gov-border">
+                <p className="text-[11px] text-gov-muted">
+                  {lang === 'ru'
+                    ? `Показано ${(materialsPage - 1) * MATERIALS_PAGE_SIZE + 1}–${Math.min(materialsPage * MATERIALS_PAGE_SIZE, filteredMaterials.length)} из ${filteredMaterials.length}`
+                    : `${(materialsPage - 1) * MATERIALS_PAGE_SIZE + 1}–${Math.min(materialsPage * MATERIALS_PAGE_SIZE, filteredMaterials.length)} / ${filteredMaterials.length} ta ko'rsatilmoqda`}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setMaterialsPage(p => Math.max(1, p - 1))}
+                    disabled={materialsPage === 1}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gov-border rounded text-gov-text hover:bg-gov-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {lang === 'ru' ? 'Назад' : 'Oldingi'}
+                  </button>
+                  <span className="px-2 text-xs font-semibold text-gov-muted">
+                    {materialsPage} / {materialsPageCount}
+                  </span>
+                  <button
+                    onClick={() => setMaterialsPage(p => Math.min(materialsPageCount, p + 1))}
+                    disabled={materialsPage === materialsPageCount}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gov-border rounded text-gov-text hover:bg-gov-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {lang === 'ru' ? 'Вперёд' : 'Keyingi'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1055,13 +1309,11 @@ function ChiefView({ lang, onViewDetails, user }) {
                 lang={lang}
                 onClick={() => exportToCsv(
                   lang === 'ru' ? 'reyting_sotrudnikov' : 'xodimlar_reytingi',
-                  [lang === 'ru' ? 'Следователь' : 'Tergovchi', lang === 'ru' ? 'Подразделение' : 'Bo\'lim', 'Likes', 'Dislikes', lang === 'ru' ? 'Всего дел' : 'Jami ishlar', lang === 'ru' ? 'В производстве' : 'Ijroda', lang === 'ru' ? 'Индекс %' : 'Indeks %'],
+                  [lang === 'ru' ? 'Следователь' : 'Tergovchi', 'Likes', 'Dislikes', lang === 'ru' ? 'Всего дел' : 'Jami ishlar', lang === 'ru' ? 'В производстве' : 'Ijroda', lang === 'ru' ? 'Индекс %' : 'Indeks %'],
                   officers.filter(o => o.role === 'investigator').map(o => {
                     const cases = materials.filter(m => m.officer === o.id);
-                    const dept = departments.find(d => d.id === o.department);
                     return [
                       lang === 'ru' ? o.name_ru : o.name_uz,
-                      dept ? (lang === 'ru' ? dept.name_ru : dept.name_uz) : '',
                       o.likes, o.dislikes, cases.length,
                       cases.filter(m => m.status !== 'закрыт_в_срок').length,
                       o.index,
@@ -1075,12 +1327,12 @@ function ChiefView({ lang, onViewDetails, user }) {
                 <thead>
                   <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                     <th className="px-4 py-3">{lang === 'ru' ? 'Следователь' : 'Tergovchi'}</th>
-                    <th className="px-4 py-3">{lang === 'ru' ? 'Подразделение' : 'Bo\'lim'}</th>
                     <th className="px-4 py-3">Likes</th>
                     <th className="px-4 py-3">Dislikes</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Всего дел' : 'Jami ishlar'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'В производстве' : 'Ijroda'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Индекс удовлетворенности' : 'Mamnunlik indeksi'}</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Отзывы' : 'Fikrlar'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gov-border text-xs">
@@ -1088,7 +1340,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                     const cases = materials.filter(m => m.officer === o.id);
                     const totalCases = cases.length;
                     const inWork = cases.filter(m => m.status !== 'закрыт_в_срок').length;
-                    
+
                     let ratingColor = 'bg-gov-success';
                     let ratingText = 'text-gov-success';
                     if (o.index < 71) {
@@ -1098,21 +1350,19 @@ function ChiefView({ lang, onViewDetails, user }) {
                       ratingColor = 'bg-gov-warning';
                       ratingText = 'text-gov-warning';
                     }
-                    
+
                     return (
                       <tr key={o.id} className="hover:bg-gov-light/30">
                         <td className="px-4 py-3">
                           <p className="font-semibold text-gov-text">{lang === 'ru' ? o.name_ru : o.name_uz}</p>
                           <p className="text-[10px] text-gov-muted mt-0.5 uppercase font-medium">{lang === 'ru' ? o.rank_ru : o.rank_uz}</p>
                         </td>
-                        <td className="px-4 py-3 text-gov-muted uppercase tracking-wider font-bold text-[10px]">
-                          {(() => {
-                            const dept = departments.find(d => d.id === o.department);
-                            return dept ? (lang === 'ru' ? dept.name_ru : dept.name_uz) : '—';
-                          })()}
+                        <td className="px-4 py-3">
+                          <button onClick={() => openOfficerRatings(o)} className="font-bold text-gov-success hover:underline">{o.likes}</button>
                         </td>
-                        <td className="px-4 py-3 font-bold text-gov-success">{o.likes}</td>
-                        <td className="px-4 py-3 font-bold text-gov-danger">{o.dislikes}</td>
+                        <td className="px-4 py-3">
+                          <button onClick={() => openOfficerRatings(o)} className="font-bold text-gov-danger hover:underline">{o.dislikes}</button>
+                        </td>
                         <td className="px-4 py-3 font-medium text-gov-text">{totalCases}</td>
                         <td className="px-4 py-3 font-medium text-gov-text">{inWork}</td>
                         <td className="px-4 py-3">
@@ -1122,6 +1372,15 @@ function ChiefView({ lang, onViewDetails, user }) {
                               <div className={`${ratingColor} h-full`} style={{ width: `${o.index}%` }} />
                             </div>
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => openOfficerRatings(o)}
+                            className="p-1.5 bg-gov-light border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                            title={lang === 'ru' ? 'Показать отзывы' : 'Fikrlarni ko\'rsatish'}
+                          >
+                            <EyeIcon />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -1159,7 +1418,13 @@ function ChiefView({ lang, onViewDetails, user }) {
                     <div key={req.id} className="border border-gov-border rounded-lg p-4 bg-gov-light/30 flex justify-between items-start gap-4 text-left">
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gov-primary">{req.case}</span>
+                          <button
+                            onClick={() => onViewDetails(req.case)}
+                            className="text-xs font-bold text-gov-primary hover:underline transition-colors"
+                            title={lang === 'ru' ? 'Открыть материал' : 'Materialni ochish'}
+                          >
+                            {req.case}
+                          </button>
                           <span className="text-[10px] font-semibold text-gov-muted bg-white border border-gov-border px-1.5 py-0.5 rounded uppercase">
                             {typeLabel}
                           </span>
@@ -1238,7 +1503,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                   <Select
                     value={newUser.role}
                     onChange={val => setNewUser({ ...newUser, role: val })}
-                    className="w-full text-xs p-2 border border-gov-border rounded-xl bg-gov-light"
+                    className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light"
                     options={[
                       { value: 'investigator', label: ROLE_LABELS.investigator[lang] },
                       { value: 'registrator', label: ROLE_LABELS.registrator[lang] },
@@ -1246,21 +1511,6 @@ function ChiefView({ lang, onViewDetails, user }) {
                     ]}
                   />
                 </div>
-                <div>
-                  <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
-                    {lang === 'ru' ? 'Отдел' : 'Bo\'lim'}
-                  </label>
-                  <Select
-                    value={newUser.department}
-                    onChange={val => setNewUser({ ...newUser, department: val })}
-                    className="w-full text-xs p-2 border border-gov-border rounded-xl bg-gov-light"
-                    options={[
-                      { value: '', label: lang === 'ru' ? '-- Без отдела --' : '-- Bo\'limsiz --' },
-                      ...departments.map(d => ({ value: d.id, label: lang === 'ru' ? d.name_ru : d.name_uz })),
-                    ]}
-                  />
-                </div>
-
                 <div>
                   <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
                     {lang === 'ru' ? 'ФИО (рус)' : 'F.I.Sh. (rus)'}
@@ -1287,7 +1537,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                 </div>
                 <div>
                   <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
-                    {lang === 'ru' ? 'Звание' : 'Unvon'}
+                    {lang === 'ru' ? 'Звание (необязательно)' : 'Unvon (ixtiyoriy)'}
                   </label>
                   <input
                     type="text"
@@ -1297,18 +1547,30 @@ function ChiefView({ lang, onViewDetails, user }) {
                     className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
                   />
                 </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
+                    {lang === 'ru' ? 'Пароль' : 'Parol'}
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.password}
+                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                    placeholder="password123"
+                    className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                  />
+                </div>
 
                 <div className="md:col-span-3">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-gov-primary text-white text-xs font-semibold rounded-xl hover:bg-blue-700 transition-colors"
+                    className="px-5 py-2.5 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
                   >
                     {lang === 'ru' ? 'Создать пользователя' : 'Foydalanuvchi yaratish'}
                   </button>
                   <p className="mt-2 text-[10px] text-gov-muted">
                     {lang === 'ru'
-                      ? 'Пароль по умолчанию для новых пользователей: password123'
-                      : 'Yangi foydalanuvchilar uchun standart parol: password123'}
+                      ? 'Пароль обязателен, минимум 6 символов'
+                      : 'Parol majburiy, kamida 6 ta belgi'}
                   </p>
                 </div>
               </form>
@@ -1325,13 +1587,11 @@ function ChiefView({ lang, onViewDetails, user }) {
                       <th className="px-4 py-3">{lang === 'ru' ? 'Логин' : 'Login'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'ФИО' : 'F.I.Sh.'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'Роль' : 'Rol'}</th>
-                      <th className="px-4 py-3">{lang === 'ru' ? 'Отдел' : 'Bo\'lim'}</th>
                       <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Действие' : 'Amal'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gov-border text-xs">
                     {officers.map(o => {
-                      const dept = departments.find(d => d.id === o.department);
                       const login = o.id.startsWith('off_') ? o.id.slice(4) : o.id;
                       return (
                         <tr key={o.id} className="hover:bg-gov-light/30">
@@ -1341,9 +1601,6 @@ function ChiefView({ lang, onViewDetails, user }) {
                             <span className="px-2 py-0.5 border border-gov-border rounded-full text-[10px] font-semibold bg-gov-light">
                               {ROLE_LABELS[o.role] ? ROLE_LABELS[o.role][lang] : o.role}
                             </span>
-                          </td>
-                          <td className="px-4 py-3 text-gov-muted text-[10px] uppercase font-bold tracking-wider">
-                            {dept ? (lang === 'ru' ? dept.name_ru : dept.name_uz) : '—'}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
@@ -1366,6 +1623,88 @@ function ChiefView({ lang, onViewDetails, user }) {
         {/* Panel 6: Chat */}
         {activePanel === 'chat' && (
           <ChatPanel lang={lang} user={user} />
+        )}
+
+        {activePanel === 'sms' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <StatCard icon={<SendIcon />} tone="neutral" value={smsTemplates.length} label={lang === 'ru' ? 'Всего текстов' : 'Jami matnlar'} />
+              <StatCard icon={<ClockIcon />} tone="primary" value={smsTemplates.filter(t => t.status === 'на_модерации').length} label={lang === 'ru' ? 'На модерации' : 'Moderatsiyada'} />
+              <StatCard icon={<ClockIcon />} tone="warning" value={smsTemplates.filter(t => t.status === 'в_процессе').length} label={lang === 'ru' ? 'В процессе' : 'Jarayonda'} />
+              <StatCard icon={<ApprovalIcon />} tone="success" value={smsTemplates.filter(t => t.status === 'одобрено').length} label={lang === 'ru' ? 'Одобрено' : 'Tasdiqlangan'} />
+              <StatCard icon={<CloseIcon />} tone="danger" value={smsTemplates.filter(t => t.status === 'отказан').length} label={lang === 'ru' ? 'Отказано' : 'Rad etilgan'} />
+            </div>
+
+          <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
+              <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Тексты SMS-сообщений' : 'SMS xabar matnlari'}</h3>
+              <button
+                onClick={() => setTemplateModalOpen(true)}
+                className="px-3 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
+              >
+                + {lang === 'ru' ? 'Добавить текст' : 'Matn qo\'shish'}
+              </button>
+            </div>
+
+            {smsTemplates.length === 0 ? (
+              <div className="text-center py-12 text-gov-muted text-xs font-semibold">
+                {lang === 'ru' ? 'Текстов пока нет' : 'Hozircha matnlar yo\'q'}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {smsTemplates.map(t => (
+                  <div key={t.template_id} className="border border-gov-border rounded-xl p-4 space-y-2 text-left">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        {t.trigger_ru && <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider mb-1">{t.trigger_ru}</p>}
+                        <p className="text-xs text-gov-text leading-relaxed whitespace-pre-line">{t.content_ru}</p>
+                      </div>
+                      <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none shrink-0 ${getTemplateStatusBadge(t.status)}`}>
+                        {getTemplateStatusText(t.status)}
+                      </span>
+                    </div>
+
+                    {t.status === 'отказан' && t.rejection_reason && (
+                      <p className="text-[11px] text-gov-danger bg-rose-50 border border-rose-100 rounded p-2">
+                        {lang === 'ru' ? 'Причина отказа' : 'Rad etish sababi'}: {t.rejection_reason}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Select
+                        value={t.status}
+                        onChange={val => handleTemplateStatusChange(t.template_id, { status: val, ...(val !== 'отказан' ? { rejection_reason: '' } : {}) })}
+                        className="text-[11px] p-1.5 border border-gov-border rounded bg-gov-light"
+                        options={[
+                          { value: 'на_модерации', label: getTemplateStatusText('на_модерации') },
+                          { value: 'в_процессе', label: getTemplateStatusText('в_процессе') },
+                          { value: 'одобрено', label: getTemplateStatusText('одобрено') },
+                          { value: 'отказан', label: getTemplateStatusText('отказан') },
+                        ]}
+                      />
+                      {t.status === 'отказан' && (
+                        <input
+                          type="text"
+                          defaultValue={t.rejection_reason}
+                          placeholder={lang === 'ru' ? 'Причина отказа...' : 'Rad etish sababi...'}
+                          onBlur={e => handleTemplateStatusChange(t.template_id, { rejection_reason: e.target.value })}
+                          className="flex-1 text-[11px] p-1.5 border border-gov-border rounded bg-gov-light"
+                        />
+                      )}
+                      <button
+                        onClick={() => handleDeleteTemplate(t.template_id)}
+                        className="ml-auto p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors"
+                        title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                      >
+                        <CloseIcon className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          </div>
         )}
       </div>
 
@@ -1399,6 +1738,117 @@ function ChiefView({ lang, onViewDetails, user }) {
             </div>
           </div>
         </Modal>
+      )}
+
+      {ratingsModal && (
+        <Modal onClose={() => setRatingsModal(null)} maxWidth="max-w-lg">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
+              <h3 className="font-semibold text-base text-gov-text">
+                {lang === 'ru' ? ratingsModal.officer.name_ru : ratingsModal.officer.name_uz} — {lang === 'ru' ? 'Отзывы' : 'Fikrlar'} · {ratingsModal.items.length}
+              </h3>
+              <button onClick={() => setRatingsModal(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+            </div>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {ratingsLoading && (
+                <p className="text-center py-8 text-gov-muted text-xs font-semibold">{lang === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}</p>
+              )}
+              {!ratingsLoading && ratingsModal.items.length === 0 && (
+                <p className="text-center py-8 text-gov-muted text-xs font-semibold">
+                  {lang === 'ru' ? 'Отзывов пока нет' : 'Hozircha fikrlar yo\'q'}
+                </p>
+              )}
+              {!ratingsLoading && ratingsModal.items.map(r => (
+                <div key={r.id} className={`rounded-xl p-3 flex items-start gap-3 ${r.is_like ? 'bg-teal-50/60' : 'bg-rose-50/60'}`}>
+                  <div className={`shrink-0 mt-0.5 ${r.is_like ? 'text-gov-success' : 'text-gov-danger'}`}>
+                    {r.is_like ? <ThumbUpIcon className="h-4 w-4" /> : <ThumbDownIcon className="h-4 w-4" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gov-text">{r.citizen_name}</p>
+                    <p className={`text-xs mt-0.5 ${r.is_like ? 'text-gov-success' : 'text-gov-danger'}`}>
+                      {lang === 'ru' ? r.reason_ru : r.reason_uz}
+                    </p>
+                    <p className="text-[10px] text-gov-muted mt-1">{formatDate(r.created_at)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {templateModalOpen && (
+        <Modal onClose={() => setTemplateModalOpen(false)} maxWidth="max-w-lg">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
+              <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Добавить текст на модерацию' : 'Moderatsiyaga matn qo\'shish'}</h3>
+              <button onClick={() => setTemplateModalOpen(false)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+            </div>
+
+            <div className="bg-gov-light/60 border border-gov-border rounded-xl p-3 mb-4 space-y-2 text-[11px] text-gov-muted leading-relaxed max-h-40 overflow-y-auto">
+              <p>{lang === 'ru'
+                ? 'Вводите текст в точности так, как он будет отправлен получателю — без переменных и масок (их подставит модератор).'
+                : 'Matnni aynan qabul qiluvchiga yuboriladigan holatda kiriting — o\'zgaruvchilarsiz (ularni moderator joylashtiradi).'}</p>
+              <p className="text-gov-success">✓ {lang === 'ru' ? 'Уважаемый Турсунов Анвар! На вашем счету осталось 32 456.74 сум.' : 'Hurmatli Tursunov Anvar! Hisobingizda 32 456.74 so\'m qoldi.'}</p>
+              <p className="text-gov-danger">✗ {lang === 'ru' ? 'Уважаемый #NAME#! На вашем счету осталось #CASH# #CASHNAME#.' : 'Hurmatli #NAME#! Hisobingizda #CASH# #CASHNAME# qoldi.'}</p>
+              <p>{lang === 'ru'
+                ? 'В текстах с кодами подтверждения обязательно указывайте название ресурса и цель использования кода.'
+                : 'Tasdiqlash kodli matnlarda albatta resurs nomi va koddan foydalanish maqsadini ko\'rsating.'}</p>
+              <p className="text-gov-success">✓ {lang === 'ru' ? 'Код подтверждения для регистрации на сайте E-Material: 0000' : 'E-Material saytida ro\'yxatdan o\'tish uchun tasdiqlash kodi: 0000'}</p>
+              <p>{lang === 'ru' ? 'Модерация занимает от 1 часа до 1 дня (кроме выходных и праздников).' : 'Moderatsiya 1 soatdan 1 kungacha davom etadi (dam olish va bayram kunlaridan tashqari).'}</p>
+            </div>
+
+            <form onSubmit={handleCreateTemplate} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1">{lang === 'ru' ? 'Название / повод' : 'Nomi / sababi'}</label>
+                <input
+                  type="text"
+                  value={newTemplate.trigger_ru}
+                  onChange={e => setNewTemplate({ ...newTemplate, trigger_ru: e.target.value })}
+                  placeholder={lang === 'ru' ? 'Например: Уведомление об отказе в ВУД' : 'Masalan: JIQni rad etish haqida xabarnoma'}
+                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1">{lang === 'ru' ? 'Текст (рус)' : 'Matn (rus)'}</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={newTemplate.content_ru}
+                  onChange={e => setNewTemplate({ ...newTemplate, content_ru: e.target.value })}
+                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1">{lang === 'ru' ? 'Текст (узб)' : 'Matn (o\'zb)'}</label>
+                <textarea
+                  rows={3}
+                  value={newTemplate.content_uz}
+                  onChange={e => setNewTemplate({ ...newTemplate, content_uz: e.target.value })}
+                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setTemplateModalOpen(false)} className="px-4 py-2 text-gov-muted hover:text-gov-text text-xs font-semibold rounded transition-colors">
+                  {lang === 'ru' ? 'Отмена' : 'Bekor qilish'}
+                </button>
+                <button type="submit" disabled={savingTemplate} className="px-4 py-2 bg-gov-primary hover:bg-blue-700 text-white text-xs font-semibold rounded transition-colors disabled:opacity-50">
+                  {savingTemplate ? '...' : (lang === 'ru' ? 'Отправить на модерацию' : 'Moderatsiyaga yuborish')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+      )}
+
+      {smsModalCaseId && (
+        <SmsModal
+          caseId={smsModalCaseId}
+          lang={lang}
+          user={user}
+          onClose={() => setSmsModalCaseId(null)}
+          onSent={fetchData}
+        />
       )}
     </div>
   );

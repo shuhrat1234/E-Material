@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import (
-    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage
+    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage, Rating
 )
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -34,6 +34,11 @@ class ApprovalRequestSerializer(serializers.ModelSerializer):
         model = ApprovalRequest
         fields = '__all__'
 
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
+        fields = '__all__'
+
 class AuditLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuditLog
@@ -54,7 +59,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'sender_id', 'sender_name', 'recipient_id', 'text', 'file', 'file_url', 'is_image', 'time']
+        fields = ['id', 'sender_id', 'sender_name', 'recipient_id', 'text', 'file', 'file_url', 'is_image', 'is_read', 'time']
         extra_kwargs = {
             'file': {'write_only': True}
         }

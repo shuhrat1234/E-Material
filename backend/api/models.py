@@ -76,6 +76,17 @@ class ApprovalRequest(models.Model):
     def __str__(self):
         return f"{self.case_id} - {self.type}"
 
+class Rating(models.Model):
+    officer = models.ForeignKey(Officer, on_delete=models.CASCADE, related_name='ratings')
+    citizen_name = models.CharField(max_length=255)
+    is_like = models.BooleanField()
+    reason_ru = models.CharField(max_length=255, blank=True)
+    reason_uz = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
 class AuditLog(models.Model):
     time = models.DateTimeField()
     user_name = models.CharField(max_length=255)
@@ -98,12 +109,26 @@ class ActiveVisit(models.Model):
         return self.citizen_name
 
 class SMSTemplate(models.Model):
+    STATUS_CHOICES = [
+        ('на_модерации', 'На модерации'),
+        ('в_процессе', 'В процессе'),
+        ('одобрено', 'Одобрено'),
+        ('отказан', 'Отказан'),
+    ]
+
     template_id = models.CharField(max_length=50, primary_key=True)
-    type = models.CharField(max_length=50)
-    trigger_ru = models.CharField(max_length=255)
-    trigger_uz = models.CharField(max_length=255)
+    type = models.CharField(max_length=50, blank=True)
+    trigger_ru = models.CharField(max_length=255, blank=True)
+    trigger_uz = models.CharField(max_length=255, blank=True)
     content_ru = models.TextField()
-    content_uz = models.TextField()
+    content_uz = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='на_модерации')
+    rejection_reason = models.TextField(blank=True)
+    created_by = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.template_id
@@ -115,6 +140,7 @@ class ChatMessage(models.Model):
     text = models.TextField(blank=True)
     file = models.FileField(upload_to='chat/', null=True, blank=True)
     is_image = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
     time = models.DateTimeField(auto_now_add=True)
 
     class Meta:

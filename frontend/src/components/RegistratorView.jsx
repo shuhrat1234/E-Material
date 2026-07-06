@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE, TRANSLATIONS } from '../App';
 import ChatPanel from './ChatPanel';
-import { ChatIcon, EyeIcon } from './Icons';
+import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon } from './Icons';
 import Select from './ui/Select';
+import FilterPill from './ui/FilterPill';
 import ExportButton from './ui/ExportButton';
 import { exportToCsv } from '../exportCsv';
 import { notify } from '../toastService';
+
+const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 
 function RegistratorView({ lang, onViewDetails, user }) {
   const [activeTab, setActiveTab] = useState('register'); // register, approvals
@@ -14,7 +18,17 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [materials, setMaterials] = useState([]);
   const [approvalRequests, setApprovalRequests] = useState([]);
 
+  // Registry filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateRange, setDateRange] = useState('all');
+  const [monthFilter, setMonthFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [officerFilter, setOfficerFilter] = useState('');
+  const [registryPage, setRegistryPage] = useState(1);
+  const REGISTRY_PAGE_SIZE = 20;
+
   // Form State
+  const [materialId, setMaterialId] = useState('');
   const [citizenName, setCitizenName] = useState('');
   const [citizenPhone, setCitizenPhone] = useState('');
   const [titleRu, setTitleRu] = useState('');
@@ -31,6 +45,9 @@ function RegistratorView({ lang, onViewDetails, user }) {
 
   const validate = () => {
     const next = {};
+    if (!materialId.trim()) {
+      next.materialId = lang === 'ru' ? 'Укажите ID материала' : 'Material ID sini kiriting';
+    }
     if (citizenName.trim().length < 3) {
       next.citizenName = lang === 'ru' ? 'Укажите ФИО заявителя (минимум 3 символа)' : 'Murojaatchi F.I.Sh.ni kiriting (kamida 3 belgi)';
     }
@@ -85,6 +102,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
     if (Object.keys(validationErrors).length > 0) return;
 
     const payload = {
+      id: materialId.trim(),
       citizen_name: citizenName.trim(),
       citizen_phone: citizenPhone.trim(),
       title_ru: titleRu.trim(),
@@ -101,6 +119,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       .then(() => {
         notify(lang === 'ru' ? 'Материал успешно зарегистрирован!' : 'Material muvaffaqiyatli ro\'yxatdan o\'tkazildi!', 'success');
         // Reset form
+        setMaterialId('');
         setCitizenName('');
         setCitizenPhone('');
         setTitleRu('');
@@ -115,7 +134,10 @@ function RegistratorView({ lang, onViewDetails, user }) {
       })
       .catch(err => {
         console.error("Error creating material", err);
-        notify(lang === 'ru' ? 'Ошибка при создании материала' : 'Materialni yaratishda xatolik yuz berdi', 'error');
+        notify(
+          err.response?.data?.error || (lang === 'ru' ? 'Ошибка при создании материала' : 'Materialni yaratishda xatolik yuz berdi'),
+          'error'
+        );
         setSubmitting(false);
       });
   };
@@ -170,11 +192,59 @@ function RegistratorView({ lang, onViewDetails, user }) {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
+  // Filtered registry
+  const filteredMaterials = materials.filter(m => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const haystack = `${m.id} ${m.citizen_name} ${m.citizen_phone}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (officerFilter && m.officer !== officerFilter) return false;
+    if (statusFilter && m.status !== statusFilter) return false;
+    if (monthFilter) {
+      if (m.registered_at.substring(0, 7) !== monthFilter) return false;
+    } else if (dateRange !== 'all') {
+      const regDate = new Date(m.registered_at);
+      const now = new Date();
+      const diffDays = (now - regDate) / (1000 * 60 * 60 * 24);
+      if (dateRange === 'today') {
+        if (regDate.toDateString() !== now.toDateString()) return false;
+      } else if (dateRange === 'days3') {
+        if (diffDays > 3) return false;
+      } else if (dateRange === 'week') {
+        if (diffDays > 7) return false;
+      } else if (dateRange === 'month') {
+        if (diffDays > 30) return false;
+      }
+    }
+    return true;
+  });
+
+  // Months present in the data, newest first, for the specific-month filter
+  const monthOptions = Array.from(new Set(materials.map(m => m.registered_at.substring(0, 7))))
+    .sort((a, b) => b.localeCompare(a))
+    .map(key => {
+      const [y, mo] = key.split('-').map(Number);
+      const name = lang === 'ru' ? MONTH_NAMES_RU[mo - 1] : MONTH_NAMES_UZ[mo - 1];
+      return { value: key, label: `${name} ${y}` };
+    });
+
+  const registryPageCount = Math.max(1, Math.ceil(filteredMaterials.length / REGISTRY_PAGE_SIZE));
+  const pagedMaterials = filteredMaterials.slice((registryPage - 1) * REGISTRY_PAGE_SIZE, registryPage * REGISTRY_PAGE_SIZE);
+
+  useEffect(() => {
+    setRegistryPage(1);
+  }, [searchQuery, dateRange, monthFilter, statusFilter, officerFilter]);
+
+  useEffect(() => {
+    if (registryPage > registryPageCount) setRegistryPage(registryPageCount);
+  }, [registryPageCount]);
+
   const handleExportRegistry = () => {
     exportToCsv(
       lang === 'ru' ? 'reestr_materialov' : 'materiallar_reyestri',
       ['ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
-      materials.map(m => {
+      filteredMaterials.map(m => {
         const off = officers.find(o => o.id === m.officer);
         return [
           m.id,
@@ -209,7 +279,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
         >
           {lang === 'ru' ? 'Тасдиклаш сурови' : 'Tasdiqlash so\'rovlari'}
           {approvalRequests.length > 0 && (
-            <span className="w-5 h-5 bg-gov-danger text-white rounded-full flex items-center justify-center text-[10px] font-bold">
+            <span className="w-5 h-5 bg-gov-primary text-white rounded-full flex items-center justify-center text-[10px] font-bold">
               {approvalRequests.length}
             </span>
           )}
@@ -236,6 +306,20 @@ function RegistratorView({ lang, onViewDetails, user }) {
             <form onSubmit={handleRegisterSubmit} noValidate className="space-y-4 text-left">
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
+                  {lang === 'ru' ? 'ID материала' : 'Material ID'}
+                </label>
+                <input
+                  type="text"
+                  value={materialId}
+                  onChange={(e) => setMaterialId(e.target.value)}
+                  placeholder="MAT-2026-0099"
+                  className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.materialId ? 'ring-2 ring-gov-danger/40' : ''}`}
+                />
+                {errors.materialId && <p className="text-[11px] text-gov-danger mt-1">{errors.materialId}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
                   {lang === 'ru' ? 'Ф.И.О. Заявителя' : 'Murojaatchining F.I.Sh.'}
                 </label>
                 <input
@@ -243,7 +327,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   value={citizenName}
                   onChange={(e) => setCitizenName(e.target.value)}
                   placeholder="Иванов Иван Иванович"
-                  className={`block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.citizenName ? 'ring-2 ring-gov-danger/40' : ''}`}
+                  className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.citizenName ? 'ring-2 ring-gov-danger/40' : ''}`}
                 />
                 {errors.citizenName && <p className="text-[11px] text-gov-danger mt-1">{errors.citizenName}</p>}
               </div>
@@ -257,7 +341,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   value={citizenPhone}
                   onChange={(e) => setCitizenPhone(e.target.value)}
                   placeholder="+998 90 123-45-67"
-                  className={`block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.citizenPhone ? 'ring-2 ring-gov-danger/40' : ''}`}
+                  className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.citizenPhone ? 'ring-2 ring-gov-danger/40' : ''}`}
                 />
                 {errors.citizenPhone && <p className="text-[11px] text-gov-danger mt-1">{errors.citizenPhone}</p>}
               </div>
@@ -271,7 +355,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   value={titleRu}
                   onChange={(e) => setTitleRu(e.target.value)}
                   placeholder="Заявление о краже..."
-                  className={`block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all resize-none ${errors.titleRu ? 'ring-2 ring-gov-danger/40' : ''}`}
+                  className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all resize-none ${errors.titleRu ? 'ring-2 ring-gov-danger/40' : ''}`}
                 />
                 {errors.titleRu && <p className="text-[11px] text-gov-danger mt-1">{errors.titleRu}</p>}
               </div>
@@ -285,7 +369,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   value={titleUz}
                   onChange={(e) => setTitleUz(e.target.value)}
                   placeholder="Ariza..."
-                  className={`block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all resize-none ${errors.titleUz ? 'ring-2 ring-gov-danger/40' : ''}`}
+                  className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all resize-none ${errors.titleUz ? 'ring-2 ring-gov-danger/40' : ''}`}
                 />
                 {errors.titleUz && <p className="text-[11px] text-gov-danger mt-1">{errors.titleUz}</p>}
               </div>
@@ -299,7 +383,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   onChange={setOfficerId}
                   disabled={investigators.length === 0}
                   placeholder={lang === 'ru' ? 'Выберите следователя' : 'Tergovchini tanlang'}
-                  className={`block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm ${errors.officerId ? 'ring-2 ring-gov-danger/40' : ''}`}
+                  className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm ${errors.officerId ? 'ring-2 ring-gov-danger/40' : ''}`}
                   options={investigators.map(o => ({
                     value: o.id,
                     label: `${lang === 'ru' ? o.rank_ru : o.rank_uz} ${lang === 'ru' ? o.name_ru : o.name_uz}`
@@ -324,7 +408,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                     max={90}
                     value={deadlineDays}
                     onChange={(e) => setDeadlineDays(e.target.value)}
-                    className={`block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.deadlineDays ? 'ring-2 ring-gov-danger/40' : ''}`}
+                    className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.deadlineDays ? 'ring-2 ring-gov-danger/40' : ''}`}
                   />
                   {errors.deadlineDays && <p className="text-[11px] text-gov-danger mt-1">{errors.deadlineDays}</p>}
                 </div>
@@ -335,7 +419,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   <Select
                     value={difficulty}
                     onChange={setDifficulty}
-                    className="block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm"
+                    className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm"
                     options={[
                       { value: '1', label: '1 — Низкая' },
                       { value: '2', label: '2' },
@@ -355,7 +439,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   <Select
                     value={materialType}
                     onChange={setMaterialType}
-                    className="block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm"
+                    className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm"
                     options={[
                       { value: 'ariza', label: lang === 'ru' ? 'Заявление (Ариза)' : 'Ariza' },
                       { value: 'bildirgi', label: lang === 'ru' ? 'Рапорт (Билдирги)' : 'Bildirgi' },
@@ -371,7 +455,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   <Select
                     value={sourceFrom}
                     onChange={setSourceFrom}
-                    className="block w-full px-3 py-2.5 rounded-xl bg-gov-light text-sm"
+                    className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm"
                     options={[
                       { value: 'tashrif', label: lang === 'ru' ? 'При посещении (Тамбур)' : 'Tashrif orqali' },
                       { value: 'prakuratura', label: lang === 'ru' ? 'Прокуратура' : 'Prokuratura' },
@@ -386,7 +470,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
               <button
                 type="submit"
                 disabled={submitting || investigators.length === 0}
-                className="w-full py-3 bg-gov-primary text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm mt-2 disabled:opacity-50"
+                className="w-full py-3 bg-gov-primary text-white text-sm font-semibold rounded hover:bg-blue-700 transition-colors shadow-sm mt-2 disabled:opacity-50"
               >
                 {submitting ? (lang === 'ru' ? 'Регистрация...' : 'Ro\'yxatga olinmoqda...') : (lang === 'ru' ? 'Зарегистрировать' : 'Ro\'yxatga olish')}
               </button>
@@ -401,6 +485,74 @@ function RegistratorView({ lang, onViewDetails, user }) {
               </h3>
               <ExportButton lang={lang} onClick={handleExportRegistry} />
             </div>
+
+            <div className="relative max-w-sm mb-3">
+              <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gov-muted" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
+                className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-white focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <FilterPill
+                icon={<ClockIcon className="h-3.5 w-3.5" />}
+                value={dateRange}
+                defaultValue="all"
+                onChange={e => { setDateRange(e.target.value); setMonthFilter(''); }}
+                options={[
+                  { value: 'all', label: lang === 'ru' ? 'Все время' : 'Barcha vaqt' },
+                  { value: 'today', label: lang === 'ru' ? 'Сегодня' : 'Bugun' },
+                  { value: 'days3', label: lang === 'ru' ? 'Посл. 3 дня' : 'Oxirgi 3 kun' },
+                  { value: 'week', label: lang === 'ru' ? 'За неделю' : 'Shu hafta' },
+                  { value: 'month', label: lang === 'ru' ? 'Последние 30 дней' : 'Oxirgi 30 kun' },
+                ]}
+              />
+              <FilterPill
+                icon={<DashboardIcon className="h-3.5 w-3.5" />}
+                value={monthFilter}
+                defaultValue=""
+                onChange={e => { setMonthFilter(e.target.value); if (e.target.value) setDateRange('all'); }}
+                options={[
+                  { value: '', label: lang === 'ru' ? 'Конкретный месяц' : 'Aniq oy' },
+                  ...monthOptions,
+                ]}
+              />
+              <FilterPill
+                icon={<UsersIcon className="h-3.5 w-3.5" />}
+                value={officerFilter}
+                defaultValue=""
+                onChange={e => setOfficerFilter(e.target.value)}
+                options={[
+                  { value: '', label: lang === 'ru' ? 'Все следователи' : 'Barcha tergovchilar' },
+                  ...investigators.map(o => ({ value: o.id, label: lang === 'ru' ? o.name_ru : o.name_uz })),
+                ]}
+              />
+              <FilterPill
+                value={statusFilter}
+                defaultValue=""
+                onChange={e => setStatusFilter(e.target.value)}
+                options={[
+                  { value: '', label: lang === 'ru' ? 'Статус: все' : 'Holat: barchasi' },
+                  { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
+                  { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
+                  { value: 'срок_нарушен', label: lang === 'ru' ? 'Срок нарушен' : 'Muddati buzilgan' },
+                  { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
+                ]}
+              />
+              {(dateRange !== 'all' || monthFilter || statusFilter || officerFilter || searchQuery) && (
+                <button
+                  onClick={() => { setDateRange('all'); setMonthFilter(''); setStatusFilter(''); setOfficerFilter(''); setSearchQuery(''); }}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-gov-danger hover:bg-rose-50 rounded-full px-3 py-2 transition-colors"
+                >
+                  <CloseIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Сбросить' : 'Tozalash'}
+                </button>
+              )}
+            </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
@@ -415,7 +567,12 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gov-border text-xs">
-                  {materials.map(m => {
+                  {pagedMaterials.length === 0 && (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-12 text-center text-gov-muted font-medium">{lang === 'ru' ? 'Материалов нет' : 'Materiallar yo\'q'}</td>
+                    </tr>
+                  )}
+                  {pagedMaterials.map(m => {
                     const officer = officers.find(o => o.id === m.officer);
                     const officerName = officer ? (lang === 'ru' ? officer.name_ru.split(' ')[0] + ' ' + officer.name_ru.split(' ')[1][0] + '.' : officer.name_uz.split(' ')[0]) : '';
                     return (
@@ -450,6 +607,35 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 </tbody>
               </table>
             </div>
+
+            {filteredMaterials.length > 0 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gov-border">
+                <p className="text-[11px] text-gov-muted">
+                  {lang === 'ru'
+                    ? `Показано ${(registryPage - 1) * REGISTRY_PAGE_SIZE + 1}–${Math.min(registryPage * REGISTRY_PAGE_SIZE, filteredMaterials.length)} из ${filteredMaterials.length}`
+                    : `${(registryPage - 1) * REGISTRY_PAGE_SIZE + 1}–${Math.min(registryPage * REGISTRY_PAGE_SIZE, filteredMaterials.length)} / ${filteredMaterials.length} ta ko'rsatilmoqda`}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setRegistryPage(p => Math.max(1, p - 1))}
+                    disabled={registryPage === 1}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gov-border rounded text-gov-text hover:bg-gov-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {lang === 'ru' ? 'Назад' : 'Oldingi'}
+                  </button>
+                  <span className="px-2 text-xs font-semibold text-gov-muted">
+                    {registryPage} / {registryPageCount}
+                  </span>
+                  <button
+                    onClick={() => setRegistryPage(p => Math.min(registryPageCount, p + 1))}
+                    disabled={registryPage === registryPageCount}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gov-border rounded text-gov-text hover:bg-gov-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {lang === 'ru' ? 'Вперёд' : 'Keyingi'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -479,7 +665,13 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   <div key={req.id} className="rounded-xl p-4 bg-gov-light/60 flex justify-between items-start gap-4 text-left">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gov-primary">{req.case}</span>
+                        <button
+                          onClick={() => onViewDetails(req.case)}
+                          className="text-xs font-bold text-gov-primary hover:underline transition-colors"
+                          title={lang === 'ru' ? 'Открыть материал' : 'Materialni ochish'}
+                        >
+                          {req.case}
+                        </button>
                         <span className="text-[10px] font-semibold text-gov-muted bg-white border border-gov-border px-1.5 py-0.5 rounded uppercase">
                           {typeLabel}
                         </span>

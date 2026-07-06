@@ -170,19 +170,6 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-gov-primary">{caseItem.id}</span>
-              <Select
-                value={caseItem.status}
-                onChange={val => handleStatusChange(val)}
-                disabled={changingStatus}
-                className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold leading-none w-auto ${getStatusBadge(caseItem.status)}`}
-                options={[
-                  { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
-                  { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
-                  { value: 'срок_нарушен', label: lang === 'ru' ? 'Срок нарушен' : 'Muddati buzilgan' },
-                  { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
-                ]}
-              />
-              {changingStatus && <span className="text-[10px] text-gov-muted animate-pulse">...</span>}
             </div>
             <p className="text-xs text-gov-text font-semibold">{caseItem.citizen_name}</p>
             <p className="text-[10px] text-gov-muted font-medium">{caseItem.citizen_phone}</p>
@@ -217,43 +204,42 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
             <div className="space-y-4 text-xs">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Содержание обращения' : 'Murojaat mazmuni'}</p>
-                <p className="text-gov-text leading-relaxed font-medium bg-gov-light/45 p-3 border border-gov-border rounded">
-                  {lang === 'ru' ? caseItem.title_ru : caseItem.title_uz}
-                </p>
+                <div className="flex items-start justify-between gap-3 bg-gov-light/45 p-3 border border-gov-border rounded">
+                  <p className="text-gov-text leading-relaxed font-medium min-w-0 flex-1 break-words">
+                    {lang === 'ru' ? caseItem.title_ru : caseItem.title_uz}
+                  </p>
+                  <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none shrink-0 ${getStatusBadge(caseItem.status)}`}>
+                    {getStatusText(caseItem.status)}
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</p>
                   <p className="text-gov-text font-semibold">{officer ? (lang === 'ru' ? officer.name_ru : officer.name_uz) : (lang === 'ru' ? 'Не назначен' : 'Tayinlanmagan')}</p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Дата регистрации' : 'Ro\'yxatga olingan sana'}</p>
                   <p className="text-gov-text font-semibold font-mono">{formatDate(caseItem.registered_at)}</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Срок исполнения' : 'Bajarish muddati'}</p>
                   <p className="text-gov-text font-semibold font-mono">{formatDate(caseItem.deadline)}</p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Продления' : 'Uzaytirishlar'}</p>
                   <p className="text-gov-text font-semibold">{caseItem.extension_count}</p>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-1">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Сложность' : 'Murakkablik'}</p>
                   <p className="text-gov-text font-semibold">{caseItem.difficulty}</p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Тип материала' : 'Material turi'}</p>
                   <p className="text-gov-text font-semibold">{getMaterialTypeLabel(caseItem.material_type)}</p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Источник' : 'Manba'}</p>
                   <p className="text-gov-text font-semibold">{getSourceLabel(caseItem.source_from)}</p>
                 </div>
@@ -261,8 +247,8 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
 
               {caseItem.citizen_notification_text && (
                 <div className="space-y-1 pt-2 border-t border-gov-border">
-                  <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Уведомление заявителю' : 'Murojaatchiga xabarnoma'}</p>
-                  <p className="text-gov-text leading-relaxed bg-gov-light/45 p-3 rounded-xl whitespace-pre-line">
+                  <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Отправленное SMS-уведомление' : 'Yuborilgan SMS-xabarnoma'}</p>
+                  <p className="text-gov-muted leading-relaxed bg-gov-light/45 p-3 border border-gov-border rounded whitespace-pre-line">
                     {caseItem.citizen_notification_text}
                   </p>
                 </div>
@@ -275,7 +261,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                   <Select
                     value={statusDraft ?? caseItem.status}
                     onChange={setStatusDraft}
-                    className="flex-1 text-xs p-2 border border-gov-border rounded-xl bg-gov-light"
+                    className="flex-1 text-xs p-2 border border-gov-border rounded bg-gov-light"
                     options={[
                       { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
                       { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
@@ -286,7 +272,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                   <button
                     disabled={changingStatus}
                     onClick={() => handleStatusChange(statusDraft)}
-                    className="px-4 py-2 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded-xl transition-colors disabled:opacity-50 shrink-0"
+                    className="px-4 py-2 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded transition-colors disabled:opacity-50 shrink-0"
                   >
                     {changingStatus ? '...' : (lang === 'ru' ? 'Сохранить' : 'Saqlash')}
                   </button>
@@ -337,7 +323,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                 <button
                   type="submit"
                   disabled={addingStep}
-                  className="px-4 py-1.5 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded-xl transition-colors disabled:opacity-50"
+                  className="px-4 py-1.5 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded transition-colors disabled:opacity-50"
                 >
                   {addingStep ? '...' : (lang === 'ru' ? "Добавить" : "Qo'shish")}
                 </button>
@@ -351,7 +337,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
         <div className="border-t border-gov-border pt-4 shrink-0 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gov-primary text-white text-xs font-semibold rounded-xl hover:bg-blue-700 border border-transparent"
+            className="px-4 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 border border-transparent"
           >
             {t.common_close}
           </button>

@@ -19,20 +19,3 @@ export const crosshairPlugin = {
     ctx.restore();
   },
 };
-
-export const heroTooltipOptions = {
-  enabled: true,
-  mode: 'index',
-  intersect: false,
-  backgroundColor: '#ffffff',
-  titleColor: '#0f172a',
-  bodyColor: '#334155',
-  borderColor: '#e2e8f0',
-  borderWidth: 1,
-  padding: 10,
-  cornerRadius: 10,
-  displayColors: true,
-  boxPadding: 3,
-  titleFont: { weight: '600', size: 12 },
-  bodyFont: { size: 12 },
-};

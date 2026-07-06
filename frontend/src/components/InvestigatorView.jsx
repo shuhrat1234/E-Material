@@ -5,16 +5,17 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, Title, Tooltip, Legend, ArcElement, Filler
 } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import ChatPanel from './ChatPanel';
-import { CATEGORICAL, SEQUENTIAL } from '../chartColors';
-import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon } from './Icons';
+import SmsModal from './SmsModal';
+import { SEQUENTIAL } from '../chartColors';
+import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon } from './Icons';
 import Modal from './Modal';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
+import Avatar from './ui/Avatar';
 import FilterPill from './ui/FilterPill';
-import HeroChartCard from './ui/HeroChartCard';
 import PillBarChart from './ui/PillBarChart';
 import Select from './ui/Select';
 import ExportButton from './ui/ExportButton';
@@ -26,18 +27,30 @@ ChartJS.register(
   BarElement, ArcElement, Title, Tooltip, Legend, Filler
 );
 
+const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
+
 function InvestigatorView({ lang, onViewDetails, user }) {
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ai, history
   const [materialsList, setMaterialsList] = useState(null); // { label, materials }
   const [officer, setOfficer] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [historyTimeline, setHistoryTimeline] = useState([]);
-  
+  const [unreadChat, setUnreadChat] = useState(0);
+  const [smsModalCaseId, setSmsModalCaseId] = useState(null);
+  const [approvalRequests, setApprovalRequests] = useState([]);
+
   // Filter States
   const [dateRange, setDateRange] = useState('all');
+  const [monthFilter, setMonthFilter] = useState(''); // 'YYYY-MM' or ''
   const [difficulty, setDifficulty] = useState('');
   const [materialType, setMaterialType] = useState('');
   const [sourceFrom, setSourceFrom] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState(''); // '' | 'closest'
+  const [materialsPage, setMaterialsPage] = useState(1);
+  const MATERIALS_PAGE_SIZE = 20;
 
   // AI Chat States
   const [aiChat, setAiChat] = useState([
@@ -66,6 +79,26 @@ function InvestigatorView({ lang, onViewDetails, user }) {
     fetchData();
   }, []);
 
+  const fetchUnreadChat = () => {
+    axios.get(`${API_BASE}/chat/messages/unread_count/`, { params: { user_id: CURRENT_OFFICER_ID } })
+      .then(res => setUnreadChat(res.data.count))
+      .catch(err => console.error('Failed to load unread chat count', err));
+  };
+
+  useEffect(() => {
+    fetchUnreadChat();
+    const interval = setInterval(fetchUnreadChat, 20000);
+    return () => clearInterval(interval);
+  }, [CURRENT_OFFICER_ID]);
+
+  // Opening the chat panel marks messages as read server-side; refresh the badge shortly after
+  useEffect(() => {
+    if (activePanel === 'chat') {
+      const t = setTimeout(fetchUnreadChat, 1000);
+      return () => clearTimeout(t);
+    }
+  }, [activePanel]);
+
   const fetchData = () => {
     axios.get(`${API_BASE}/officers/${CURRENT_OFFICER_ID}/`)
       .then(res => setOfficer(res.data));
@@ -77,6 +110,9 @@ function InvestigatorView({ lang, onViewDetails, user }) {
         setMaterials(myCases);
         buildHistoryTimeline(myCases);
       });
+
+    axios.get(`${API_BASE}/approvals/`)
+      .then(res => setApprovalRequests(res.data));
   };
 
   const handleInlineStatusChange = (caseId, newStatus) => {
@@ -106,7 +142,14 @@ function InvestigatorView({ lang, onViewDetails, user }) {
 
   // Filtered cases
   const filteredCases = materials.filter(c => {
-    if (dateRange !== 'all') {
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const haystack = `${c.id} ${c.citizen_name} ${c.citizen_phone}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (monthFilter) {
+      if (c.registered_at.substring(0, 7) !== monthFilter) return false;
+    } else if (dateRange !== 'all') {
       const regDate = new Date(c.registered_at);
       const now = new Date();
       const diffDays = (now - regDate) / (1000 * 60 * 60 * 24);
@@ -123,8 +166,33 @@ function InvestigatorView({ lang, onViewDetails, user }) {
     if (difficulty && c.difficulty != difficulty) return false;
     if (materialType && c.material_type !== materialType) return false;
     if (sourceFrom && c.source_from !== sourceFrom) return false;
+    if (statusFilter && c.status !== statusFilter) return false;
     return true;
   });
+
+  if (sortOrder === 'closest') {
+    filteredCases.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+  }
+
+  const materialsPageCount = Math.max(1, Math.ceil(filteredCases.length / MATERIALS_PAGE_SIZE));
+  const pagedCases = filteredCases.slice((materialsPage - 1) * MATERIALS_PAGE_SIZE, materialsPage * MATERIALS_PAGE_SIZE);
+
+  useEffect(() => {
+    setMaterialsPage(1);
+  }, [searchQuery, dateRange, monthFilter, difficulty, materialType, sourceFrom, statusFilter, sortOrder]);
+
+  useEffect(() => {
+    if (materialsPage > materialsPageCount) setMaterialsPage(materialsPageCount);
+  }, [materialsPageCount]);
+
+  // Months present in the data, newest first, for the specific-month filter
+  const monthOptions = Array.from(new Set(materials.map(m => m.registered_at.substring(0, 7))))
+    .sort((a, b) => b.localeCompare(a))
+    .map(key => {
+      const [y, mo] = key.split('-').map(Number);
+      const name = lang === 'ru' ? MONTH_NAMES_RU[mo - 1] : MONTH_NAMES_UZ[mo - 1];
+      return { value: key, label: `${name} ${y}` };
+    });
 
   // Calculate stats
   const totalCases = materials.length;
@@ -197,32 +265,6 @@ function InvestigatorView({ lang, onViewDetails, user }) {
   const trendClosed = getTrend(m => m.status === 'закрыт_в_срок');
   const trendOverdue = getTrend(m => m.status === 'срок_нарушен');
 
-  const heroTrend = getTrend(() => true, 30);
-  const heroFirstHalf = heroTrend.slice(0, 15).reduce((a, b) => a + b, 0);
-  const heroSecondHalf = heroTrend.slice(15).reduce((a, b) => a + b, 0);
-  const heroDelta = heroFirstHalf > 0 ? Math.round(((heroSecondHalf - heroFirstHalf) / heroFirstHalf) * 100) : (heroSecondHalf > 0 ? 100 : 0);
-  const heroLabels = (() => {
-    const days = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      days.push(`${d.getDate()}.${d.getMonth() + 1}`);
-    }
-    return days;
-  })();
-  const heroChartData = {
-    labels: heroLabels,
-    datasets: [{
-      label: lang === 'ru' ? 'Регистраций' : 'Ro\'yxatga olishlar',
-      data: heroTrend,
-      borderColor: CATEGORICAL[0],
-      backgroundColor: 'rgba(42, 120, 214, 0.08)',
-      tension: 0.35,
-      fill: true,
-      borderWidth: 2,
-    }],
-  };
-
   const handleAiSend = (textInput) => {
     const query = textInput || aiInput;
     if (!query.trim()) return;
@@ -292,7 +334,13 @@ function InvestigatorView({ lang, onViewDetails, user }) {
         setCloseOrgName('');
         fetchData();
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+        notify(
+          err.response?.data?.error || (lang === 'ru' ? 'Ошибка при отправке решения' : 'Qarorni yuborishda xatolik'),
+          'error'
+        );
+      });
   };
 
   // Setup Charts Data
@@ -320,23 +368,6 @@ function InvestigatorView({ lang, onViewDetails, user }) {
     });
     const labels = lang === 'ru' ? ['Заявл.', 'Рапорт', 'Суд.', 'Друг.'] : ['Ariza', 'Bildirgi', 'Sud', 'Boshqa'];
     return [counts.ariza, counts.bildirgi, counts.sud_ajrimi, counts.boshqa].map((value, i) => ({ label: labels[i], value }));
-  };
-
-  const getSourcesData = () => {
-    const counts = { tashrif: 0, prakuratura: 0, prezident_aparat: 0, iio: 0, portal: 0 };
-    filteredCases.forEach(c => {
-      const s = c.source_from || 'tashrif';
-      if (counts[s] !== undefined) counts[s]++;
-    });
-    return {
-      labels: lang === 'ru' ? ["Лично", "Прокуратура", "Аппарат През.", "ИИО", "Портал"] : ["Qabulxona", "Prokuratura", "Prezident ap.", "IIO", "Portal"],
-      datasets: [{
-        label: lang === 'ru' ? 'Материалов' : 'Hujjatlar',
-        data: [counts.tashrif, counts.prakuratura, counts.prezident_aparat, counts.iio, counts.portal],
-        backgroundColor: CATEGORICAL[0],
-        borderRadius: 4
-      }]
-    };
   };
 
   const getStatusBadge = (status) => {
@@ -396,14 +427,12 @@ function InvestigatorView({ lang, onViewDetails, user }) {
         <div className="space-y-1">
           <div className="p-3 border-b border-gov-border mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gov-primary text-white rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
-                {officer ? officer.photo : 'КС'}
-              </div>
-              <div className="overflow-hidden">
-                <h4 className="font-semibold text-xs text-gov-text truncate">
+              <Avatar src={officer?.avatar} initials={officer ? officer.photo : 'КС'} />
+              <div className="min-w-0">
+                <h4 className="font-semibold text-xs text-gov-text leading-snug">
                   {officer ? (lang === 'ru' ? officer.name_ru : officer.name_uz) : ''}
                 </h4>
-                <p className="text-[10px] text-gov-muted mt-0.5 truncate uppercase tracking-wider font-bold">
+                <p className="text-[10px] text-gov-muted mt-0.5 uppercase tracking-wider font-bold">
                   {officer ? (lang === 'ru' ? officer.rank_ru : officer.rank_uz) : ''}
                 </p>
               </div>
@@ -441,6 +470,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
             label={lang === 'ru' ? 'Чат' : 'Chat'}
             active={activePanel === 'chat'}
             onClick={() => setActivePanel('chat')}
+            count={unreadChat}
           />
         </div>
 
@@ -460,6 +490,19 @@ function InvestigatorView({ lang, onViewDetails, user }) {
       {/* Main Panel Content */}
       <div className="flex-1 w-full min-w-0 space-y-6 md:ml-64">
         
+        {activePanel === 'materials' && (
+          <div className="relative max-w-sm">
+            <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gov-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
+              className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-white focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+            />
+          </div>
+        )}
+
         {(activePanel === 'dashboard' || activePanel === 'materials') && (
           <div className="flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1.5 text-gov-muted text-xs font-semibold pr-1">
@@ -469,13 +512,23 @@ function InvestigatorView({ lang, onViewDetails, user }) {
               icon={<ClockIcon className="h-3.5 w-3.5" />}
               value={dateRange}
               defaultValue="all"
-              onChange={e => setDateRange(e.target.value)}
+              onChange={e => { setDateRange(e.target.value); setMonthFilter(''); }}
               options={[
                 { value: 'all', label: lang === 'ru' ? 'Все время' : 'Barcha vaqt' },
                 { value: 'today', label: lang === 'ru' ? 'Сегодня' : 'Bugun' },
                 { value: 'days3', label: lang === 'ru' ? 'Посл. 3 дня' : 'Oxirgi 3 kun' },
                 { value: 'week', label: lang === 'ru' ? 'За неделю' : 'Shu hafta' },
-                { value: 'month', label: lang === 'ru' ? 'За месяц' : 'Shu oy' },
+                { value: 'month', label: lang === 'ru' ? 'Последние 30 дней' : 'Oxirgi 30 kun' },
+              ]}
+            />
+            <FilterPill
+              icon={<DashboardIcon className="h-3.5 w-3.5" />}
+              value={monthFilter}
+              defaultValue=""
+              onChange={e => { setMonthFilter(e.target.value); if (e.target.value) setDateRange('all'); }}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Конкретный месяц' : 'Aniq oy' },
+                ...monthOptions,
               ]}
             />
             <FilterPill
@@ -516,9 +569,31 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                 { value: 'portal', label: 'Portal' },
               ]}
             />
-            {(dateRange !== 'all' || difficulty || materialType || sourceFrom) && (
+            <FilterPill
+              value={statusFilter}
+              defaultValue=""
+              onChange={e => setStatusFilter(e.target.value)}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Статус: все' : 'Holat: barchasi' },
+                { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
+                { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
+                { value: 'срок_нарушен', label: lang === 'ru' ? 'Срок нарушен' : 'Muddati buzilgan' },
+                { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
+              ]}
+            />
+            <FilterPill
+              icon={<TrendUpIcon className="h-3.5 w-3.5" />}
+              value={sortOrder}
+              defaultValue=""
+              onChange={e => setSortOrder(e.target.value)}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Сортировка: по умолчанию' : 'Saralash: standart' },
+                { value: 'closest', label: lang === 'ru' ? 'Ближайший срок' : 'Yaqin muddat' },
+              ]}
+            />
+            {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || statusFilter || sortOrder || searchQuery) && (
               <button
-                onClick={() => { setDateRange('all'); setDifficulty(''); setMaterialType(''); setSourceFrom(''); }}
+                onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setStatusFilter(''); setSortOrder(''); setSearchQuery(''); }}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-gov-danger hover:bg-rose-50 rounded-full px-3 py-2 transition-colors"
               >
                 <CloseIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Сбросить' : 'Tozalash'}
@@ -540,40 +615,14 @@ function InvestigatorView({ lang, onViewDetails, user }) {
               <StatCard icon={<ScaleIcon />} tone="neutral" value={`${officer ? officer.index : 0}%`} label={lang === 'ru' ? 'Индекс граждан' : 'Fuqarolar indeksi'} className="col-span-2 md:col-span-1" />
             </div>
 
-            {/* Hero chart + type breakdown, one row */}
-            <div className="flex flex-col lg:flex-row gap-6 items-stretch">
-              <div className="flex-1 min-w-0">
-                <HeroChartCard
-                  title={lang === 'ru' ? 'Динамика регистрации' : 'Ro\'yxatga olish dinamikasi'}
-                  value={totalCases}
-                  delta={heroDelta}
-                  caption={lang === 'ru' ? 'за 30 дней' : '30 kunda'}
-                  data={heroChartData}
-                  breakdown={[
-                    { icon: <DashboardIcon className="h-3.5 w-3.5" />, value: officer ? officer.likes : 0, label: lang === 'ru' ? 'Likes' : 'Likes', color: CATEGORICAL[1] },
-                    { icon: <ClockIcon className="h-3.5 w-3.5" />, value: officer ? officer.dislikes : 0, label: lang === 'ru' ? 'Dislikes' : 'Dislikes', color: CATEGORICAL[4] },
-                    { icon: <TrendUpIcon className="h-3.5 w-3.5" />, value: newCases, label: lang === 'ru' ? 'Новых за 3 дня' : 'So\'nggi 3 kunda', color: CATEGORICAL[0] },
-                  ]}
-                />
-              </div>
-              <div className="w-full lg:w-[30%] shrink-0">
-                <PillBarChart title={lang === 'ru' ? 'Типы материалов' : 'Material turlari'} data={getTypesBarData()} />
-              </div>
-            </div>
-
             {/* Charts Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <PillBarChart title={lang === 'ru' ? 'Типы материалов' : 'Material turlari'} data={getTypesBarData()} />
+
               <div className="bg-white rounded-2xl shadow-card p-5">
                 <h5 className="font-semibold text-sm text-gov-text mb-4 text-left">{lang === 'ru' ? 'Распределение по сложности' : 'Murakkablik bo\'yicha taqsimot'}</h5>
                 <div className="h-64 flex justify-center">
                   <Doughnut data={getDifficultyData()} options={{ responsive: true, maintainAspectRatio: false }} />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-card p-5">
-                <h5 className="font-semibold text-sm text-gov-text mb-4 text-left">{lang === 'ru' ? 'Источники поступления' : 'Kelib tushish manbalari'}</h5>
-                <div className="h-64">
-                  <Bar data={getSourcesData()} options={{ indexAxis: 'y', responsive: true, maintainAspectRatio: false }} />
                 </div>
               </div>
             </div>
@@ -783,12 +832,14 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gov-border text-xs">
-                  {filteredCases.length === 0 ? (
+                  {pagedCases.length === 0 ? (
                     <tr>
                       <td colSpan="6" className="px-4 py-12 text-center text-gov-muted font-medium">{lang === 'ru' ? 'Материалов нет' : 'Materiallar yo\'q'}</td>
                     </tr>
                   ) : (
-                    filteredCases.map(c => (
+                    pagedCases.map(c => {
+                      const isPending = approvalRequests.some(r => r.case === c.id);
+                      return (
                       <tr key={c.id} className="hover:bg-gov-light/30">
                         <td className="px-4 py-3 font-semibold text-gov-text">{c.id}</td>
                         <td className="px-4 py-3">
@@ -803,7 +854,8 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                           <Select
                             value={c.status}
                             onChange={val => handleInlineStatusChange(c.id, val)}
-                            className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold leading-none w-auto ${getStatusBadge(c.status)}`}
+                            disabled={isPending}
+                            className={`px-2 py-1.5 border rounded text-[10px] font-semibold leading-none w-auto ${getStatusBadge(c.status)}`}
                             options={[
                               { value: 'изучаемый', label: lang === 'ru' ? 'Изучаемый' : 'O\'rganilmoqda' },
                               { value: 'срок_приближается', label: lang === 'ru' ? 'Срок приближается' : 'Yaqinlashmoqda' },
@@ -811,6 +863,11 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                               { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
                             ]}
                           />
+                          {isPending && (
+                            <p className="text-[9px] font-semibold text-gov-warning mt-1">
+                              {lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'}
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1 justify-center">
@@ -820,6 +877,13 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                               title="Details"
                             >
                               <EyeIcon />
+                            </button>
+                            <button
+                              onClick={() => setSmsModalCaseId(c.id)}
+                              className="p-1.5 bg-gov-primaryLight border border-gov-primary/20 text-gov-primary rounded hover:bg-blue-100 transition-colors inline-flex"
+                              title={lang === 'ru' ? 'SMS-уведомление' : 'SMS-xabarnoma'}
+                            >
+                              <SendIcon />
                             </button>
                             {c.status !== 'закрыт_в_срок' && (
                               <>
@@ -832,21 +896,57 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                                 </button>
                                 <button
                                   onClick={() => setCloseCaseId(c.id)}
-                                  className="p-1.5 bg-gov-success/15 border border-gov-success/20 text-gov-success rounded hover:bg-gov-success/25 transition-colors inline-flex"
-                                  title="Procesual Decision"
+                                  disabled={isPending}
+                                  className="p-1.5 bg-gov-success/15 border border-gov-success/20 text-gov-success rounded hover:bg-gov-success/25 transition-colors inline-flex disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gov-success/15"
+                                  title={isPending ? (lang === 'ru' ? 'Решение уже на согласовании' : 'Qaror allaqachon tasdiqlashda') : 'Procesual Decision'}
                                 >
                                   <ScaleIcon />
                                 </button>
                               </>
                             )}
                           </div>
+                          <p className={`text-center text-[9px] font-semibold mt-1 ${c.citizen_notification_text ? 'text-gov-success' : 'text-gov-muted'}`}>
+                            {c.citizen_notification_text
+                              ? (lang === 'ru' ? '✓ SMS отправлено' : '✓ SMS yuborildi')
+                              : (lang === 'ru' ? 'SMS не отправлено' : 'SMS yuborilmagan')}
+                          </p>
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
+
+            {filteredCases.length > 0 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gov-border">
+                <p className="text-[11px] text-gov-muted">
+                  {lang === 'ru'
+                    ? `Показано ${(materialsPage - 1) * MATERIALS_PAGE_SIZE + 1}–${Math.min(materialsPage * MATERIALS_PAGE_SIZE, filteredCases.length)} из ${filteredCases.length}`
+                    : `${(materialsPage - 1) * MATERIALS_PAGE_SIZE + 1}–${Math.min(materialsPage * MATERIALS_PAGE_SIZE, filteredCases.length)} / ${filteredCases.length} ta ko'rsatilmoqda`}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setMaterialsPage(p => Math.max(1, p - 1))}
+                    disabled={materialsPage === 1}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gov-border rounded text-gov-text hover:bg-gov-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {lang === 'ru' ? 'Назад' : 'Oldingi'}
+                  </button>
+                  <span className="px-2 text-xs font-semibold text-gov-muted">
+                    {materialsPage} / {materialsPageCount}
+                  </span>
+                  <button
+                    onClick={() => setMaterialsPage(p => Math.min(materialsPageCount, p + 1))}
+                    disabled={materialsPage === materialsPageCount}
+                    className="px-3 py-1.5 text-xs font-semibold border border-gov-border rounded text-gov-text hover:bg-gov-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {lang === 'ru' ? 'Вперёд' : 'Keyingi'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -854,7 +954,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
         {activePanel === 'ai' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Chat Column */}
-            <div className="lg:col-span-2 bg-white rounded-2xl shadow-card p-5 flex flex-col h-[550px]">
+            <div className="lg:col-span-2 bg-white rounded-2xl shadow-card p-5 flex flex-col h-[700px]">
               <div className="border-b border-gov-border pb-3 mb-4 flex justify-between items-center">
                 <h3 className="font-semibold text-sm text-gov-text">
                   {lang === 'ru' ? 'AI Правовой Ассистент' : 'AI Huquqiy Yordamchi'}
@@ -913,7 +1013,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
             </div>
 
             {/* Results Column Right */}
-            <div className="lg:col-span-1 bg-white rounded-2xl shadow-card p-5 space-y-4 text-left h-[550px] overflow-y-auto">
+            <div className="lg:col-span-1 bg-white rounded-2xl shadow-card p-5 space-y-4 text-left h-[700px] overflow-y-auto">
               <h4 className="font-semibold text-sm text-gov-text border-b border-gov-border pb-3">
                 {lang === 'ru' ? 'Аналитика и черновик документа' : 'Tahlil va hujjat loyihasi'}
               </h4>
@@ -1007,7 +1107,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                 <Select
                   value={decisionType}
                   onChange={setDecisionType}
-                  className="w-full text-xs p-2 border border-gov-border rounded-xl bg-gov-light"
+                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light"
                   options={[
                     { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Отказ в возбуждении уголовного дела' : 'JIQni qo\'zg\'atishni rad etish' },
                     { value: 'возбуждено', label: lang === 'ru' ? 'Возбуждение уголовного дела (ВУД)' : 'JIQ qo\'zg\'atish' },
@@ -1072,7 +1172,7 @@ function InvestigatorView({ lang, onViewDetails, user }) {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-gov-primary text-white text-xs font-semibold rounded-xl hover:bg-blue-700 border border-transparent"
+                  className="px-4 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 border border-transparent"
                 >
                   {lang === 'ru' ? 'Отправить' : 'Yuborish'}
                 </button>
@@ -1108,6 +1208,16 @@ function InvestigatorView({ lang, onViewDetails, user }) {
             </div>
           </div>
         </Modal>
+      )}
+
+      {smsModalCaseId && (
+        <SmsModal
+          caseId={smsModalCaseId}
+          lang={lang}
+          user={user}
+          onClose={() => setSmsModalCaseId(null)}
+          onSent={fetchData}
+        />
       )}
     </div>
   );

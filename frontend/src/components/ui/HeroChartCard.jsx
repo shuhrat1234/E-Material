@@ -1,6 +1,6 @@
 import React from 'react';
 import { Line } from 'react-chartjs-2';
-import { crosshairPlugin, heroTooltipOptions } from '../../chartCrosshair';
+import { crosshairPlugin } from '../../chartCrosshair';
 
 function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
   const up = typeof delta === 'number' ? delta >= 0 : null;
@@ -12,7 +12,7 @@ function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: false },
-      tooltip: heroTooltipOptions,
+      tooltip: { enabled: false },
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },

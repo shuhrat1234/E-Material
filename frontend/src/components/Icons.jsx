@@ -105,6 +105,18 @@ export const CheckIcon = ({ className = 'h-4 w-4' }) => (
   </svg>
 );
 
+export const DoubleCheckIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.5 12.75l4.5 4.5 3-3M8.5 14.25l6-9M12.5 17.25l9-13.5" />
+  </svg>
+);
+
+export const CopyIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 8V5.5A1.5 1.5 0 019.5 4h9A1.5 1.5 0 0120 5.5v9a1.5 1.5 0 01-1.5 1.5H16M4 20h9a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0013 8H4a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 004 20z" />
+  </svg>
+);
+
 export const ScaleIcon = ({ className = 'h-4 w-4' }) => (
   <svg {...base} className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m0-18L6 6m6-3l6 3M6 6L3 12h6L6 6zm12 0l-3 6h6l-3-6zM6 12a3 3 0 006 0M18 12a3 3 0 01-6 0" />
@@ -114,6 +126,12 @@ export const ScaleIcon = ({ className = 'h-4 w-4' }) => (
 export const AlarmIcon = ({ className = 'h-4 w-4' }) => (
   <svg {...base} className={className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+  </svg>
+);
+
+export const SearchIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
   </svg>
 );
 

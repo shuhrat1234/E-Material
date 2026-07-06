@@ -12,7 +12,11 @@ function Modal({ onClose, children, maxWidth = 'max-w-xl', zIndex = 'z-[110]' })
   }, [onClose]);
 
   const handleBackdropClick = (e) => {
-    if (panelRef.current && !panelRef.current.contains(e.target)) {
+    if (
+      panelRef.current &&
+      !panelRef.current.contains(e.target) &&
+      !e.target.closest('[data-select-panel]')
+    ) {
       onClose();
     }
   };
