@@ -6,6 +6,67 @@
 
 :root {
   font-family: 'Inter', sans-serif;
+
+  --gov-navy: 11 19 43;
+  --gov-slate: 28 37 65;
+  --gov-blue: 58 80 107;
+  --gov-light: 244 246 249;
+  --gov-surface: 255 255 255;
+  --gov-border: 226 232 240;
+  --gov-text: 30 41 59;
+  --gov-muted: 100 116 139;
+  --gov-success: 13 148 136;
+  --gov-danger: 225 29 72;
+  --gov-warning: 217 119 6;
+  --gov-successLight: 240 253 250;
+  --gov-dangerLight: 255 241 242;
+  --gov-warningLight: 255 251 235;
+  --gov-primary: 37 99 235;
+  --gov-primaryLight: 239 246 255;
+  --gov-primarySoft: 219 234 254;
+  --gov-info: 124 58 237;
+  --gov-infoLight: 245 243 255;
+  --gov-cyan: 8 145 178;
+  --gov-cyanLight: 236 254 255;
+  --gov-pink: 219 39 119;
+  --gov-pinkLight: 253 242 248;
+
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -8px rgba(15, 23, 42, 0.08);
+  --shadow-card-hover: 0 4px 10px rgba(15, 23, 42, 0.07), 0 12px 32px -8px rgba(15, 23, 42, 0.12);
+  --shadow-pop: 0 12px 32px -6px rgba(15, 23, 42, 0.14);
+}
+
+.dark {
+  --gov-navy: 241 245 249;
+  --gov-slate: 203 213 225;
+  --gov-blue: 148 163 184;
+  --gov-light: 15 23 42;
+  --gov-surface: 30 41 59;
+  --gov-border: 51 65 85;
+  --gov-text: 241 245 249;
+  --gov-muted: 148 163 184;
+  --gov-success: 45 212 191;
+  --gov-danger: 251 113 133;
+  --gov-warning: 251 191 36;
+  --gov-successLight: 15 46 43;
+  --gov-dangerLight: 46 20 26;
+  --gov-warningLight: 46 34 12;
+  --gov-primary: 37 99 235;
+  --gov-primaryLight: 15 27 46;
+  --gov-primarySoft: 22 40 66;
+  --gov-info: 167 139 250;
+  --gov-infoLight: 30 27 46;
+  --gov-cyan: 34 211 238;
+  --gov-cyanLight: 12 35 42;
+  --gov-pink: 244 114 182;
+  --gov-pinkLight: 45 20 34;
+
+  /* a dark navy shadow is invisible against an equally dark page, so
+     dark mode fakes card separation with a subtle light hairline ring
+     plus a stronger (near-black) blur for actual depth */
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 6px 16px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
 * {
@@ -16,15 +77,16 @@
 html, body {
   margin: 0;
   padding: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: rgb(var(--gov-light));
+  color: rgb(var(--gov-text));
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: rgb(var(--gov-border)) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -35,11 +97,11 @@ html, body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
+  background-color: rgb(var(--gov-border));
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #94a3b8;
+  background-color: rgb(var(--gov-muted));
 }
 
 @keyframes fadeIn {
@@ -50,4 +112,10 @@ html, body {
 @keyframes modalIn {
   from { opacity: 0; transform: scale(0.97) translateY(4px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes badgePop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
 }

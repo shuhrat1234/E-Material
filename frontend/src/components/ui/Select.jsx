@@ -58,7 +58,7 @@ function Select({ value, onChange, options, placeholder, className = '', panelCl
       {open && !disabled && rect && createPortal(
         <div
           data-select-panel
-          className={`fixed z-[500] max-h-64 overflow-y-auto bg-white rounded-xl shadow-pop p-1.5 text-left ${panelClassName}`}
+          className={`fixed z-[500] max-h-64 overflow-y-auto bg-gov-surface rounded-xl shadow-pop p-1.5 text-left ${panelClassName}`}
           style={{ top: rect.bottom + 6, left: rect.left, minWidth: rect.width, maxWidth: 260 }}
         >
           {options.map(o => (

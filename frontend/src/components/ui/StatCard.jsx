@@ -2,14 +2,38 @@ import React from 'react';
 import Sparkline from './Sparkline';
 
 const ICON_TONES = {
-  primary: 'bg-blue-50 text-gov-primary',
-  success: 'bg-emerald-50 text-emerald-600',
-  danger: 'bg-rose-50 text-gov-danger',
-  warning: 'bg-amber-50 text-gov-warning',
+  primary: 'bg-gov-primaryLight text-gov-primary',
+  success: 'bg-gov-successLight text-gov-success',
+  danger: 'bg-gov-dangerLight text-gov-danger',
+  warning: 'bg-gov-warningLight text-gov-warning',
+  info: 'bg-gov-infoLight text-gov-info',
+  cyan: 'bg-gov-cyanLight text-gov-cyan',
+  pink: 'bg-gov-pinkLight text-gov-pink',
   neutral: 'bg-gov-light text-gov-muted',
 };
 
-function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend, className = '' }) {
+const PULSE_TONES = {
+  primary: 'bg-gov-primary',
+  success: 'bg-gov-success',
+  danger: 'bg-gov-danger',
+  warning: 'bg-gov-warning',
+  info: 'bg-gov-info',
+  cyan: 'bg-gov-cyan',
+  pink: 'bg-gov-pink',
+};
+
+const TONE_VAR = {
+  primary: '--gov-primary',
+  success: '--gov-success',
+  danger: '--gov-danger',
+  warning: '--gov-warning',
+  info: '--gov-info',
+  cyan: '--gov-cyan',
+  pink: '--gov-pink',
+  neutral: '--gov-muted',
+};
+
+function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend, className = '', onClick }) {
   const up = typeof delta === 'number' ? delta >= 0 : null;
   const numericValue = typeof value === 'number' ? value : parseFloat(value);
   const isPositiveNumber = !isNaN(numericValue) && numericValue > 0;
@@ -17,13 +41,30 @@ function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend,
     tone === 'danger' && isPositiveNumber ? 'text-gov-danger' :
     tone === 'success' && isPositiveNumber ? 'text-gov-success' :
     'text-gov-text';
+  const shouldPulse = tone === 'danger' && isPositiveNumber;
+  const toneVarValue = `rgb(var(${TONE_VAR[tone] || TONE_VAR.primary}))`;
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div className={`bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow p-5 text-left ${className}`}>
+    <Tag
+      onClick={onClick}
+      className={`group relative bg-gov-surface rounded-2xl shadow-card hover:shadow-card-hover transition-shadow p-5 pt-[1.15rem] text-left overflow-hidden w-full ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''} ${className}`}
+    >
+      <span
+        className="absolute top-0 left-0 right-0 h-[3px] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500"
+        style={{ backgroundColor: toneVarValue }}
+      />
       <div className="flex items-center justify-between mb-3 gap-2">
         <p className="text-sm font-medium text-gov-muted min-w-0">{label}</p>
         {icon && (
-          <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${ICON_TONES[tone] || ICON_TONES.primary}`}>
-            {icon}
+          <span className="relative w-9 h-9 shrink-0" style={{ animation: 'badgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
+            {shouldPulse && (
+              <span className={`absolute inset-0 rounded-full animate-ping opacity-40 ${PULSE_TONES[tone] || PULSE_TONES.primary}`} />
+            )}
+            <span
+              className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${ICON_TONES[tone] || ICON_TONES.primary}`}
+            >
+              {icon}
+            </span>
           </span>
         )}
       </div>
@@ -43,11 +84,11 @@ function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend,
         </div>
         {trend && trend.length > 1 && (
           <span className="shrink-0">
-            <Sparkline data={trend} />
+            <Sparkline data={trend} color={toneVarValue} />
           </span>
         )}
       </div>
-    </div>
+    </Tag>
   );
 }
 

@@ -29,7 +29,7 @@ function Modal({ onClose, children, maxWidth = 'max-w-xl', zIndex = 'z-[110]' })
     >
       <div
         ref={panelRef}
-        className={`bg-white border border-gov-border rounded-2xl ${maxWidth} w-full shadow-xl text-left flex flex-col max-h-[90vh]`}
+        className={`bg-gov-surface border border-gov-border rounded-2xl ${maxWidth} w-full shadow-xl text-left flex flex-col max-h-[90vh]`}
         style={{ animation: 'modalIn 0.18s ease-out' }}
       >
         {children}

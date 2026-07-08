@@ -160,16 +160,16 @@ function ChatPanel({ lang, user }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-card flex h-[700px] overflow-hidden">
+    <div className="bg-gov-surface rounded-2xl shadow-card flex h-[700px] overflow-hidden">
       {/* Contacts sidebar */}
       <div className="w-64 border-r border-gov-border shrink-0 overflow-y-auto bg-gov-light/40 p-2">
         <button
           onClick={() => setActiveThread(null)}
           className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-2.5 transition-colors mb-1 ${
-            !activeThread ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-text hover:bg-white'
+            !activeThread ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-text hover:bg-gov-surface'
           }`}
         >
-          <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${!activeThread ? 'bg-gov-primary text-white' : 'bg-white text-gov-muted'}`}>
+          <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${!activeThread ? 'bg-gov-primary text-white' : 'bg-gov-surface text-gov-muted'}`}>
             <UsersIcon className="h-4 w-4" />
           </span>
           <span className="text-xs font-semibold">{lang === 'ru' ? 'Общий чат' : 'Umumiy chat'}</span>
@@ -183,7 +183,7 @@ function ChatPanel({ lang, user }) {
             key={o.id}
             onClick={() => setActiveThread(o.id)}
             className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-2.5 transition-colors ${
-              activeThread === o.id ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-text hover:bg-white'
+              activeThread === o.id ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-text hover:bg-gov-surface'
             }`}
           >
             <Avatar src={o.avatar} initials={o.photo || o.name_ru?.[0]} size="w-9 h-9" />
@@ -230,14 +230,14 @@ function ChatPanel({ lang, user }) {
             return (
               <div key={m.id} className={`group flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div className={`relative max-w-[70%] rounded-2xl px-4 py-2.5 text-left shadow-sm ${
-                  isMine ? 'bg-gov-primary text-white rounded-br-md' : 'bg-white text-gov-text rounded-bl-md'
+                  isMine ? 'bg-gov-primary text-white rounded-br-md' : 'bg-gov-surface text-gov-text rounded-bl-md'
                 }`}>
                   {m.text && (
                     <button
                       type="button"
                       onClick={() => handleCopy(m)}
                       title={lang === 'ru' ? 'Копировать' : 'Nusxalash'}
-                      className={`absolute -top-2.5 ${isMine ? '-left-2.5' : '-right-2.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full shadow-sm bg-white border border-gov-border text-gov-muted hover:text-gov-primary`}
+                      className={`absolute -top-2.5 ${isMine ? '-left-2.5' : '-right-2.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full shadow-sm bg-gov-surface border border-gov-border text-gov-muted hover:text-gov-primary`}
                     >
                       <CopyIcon className="h-3 w-3" />
                     </button>

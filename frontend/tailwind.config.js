@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -8,22 +9,29 @@ export default {
     extend: {
       colors: {
         gov: {
-          navy: '#0b132b',
-          slate: '#1c2541',
-          blue: '#3a506b',
-          light: '#f4f6f9',
-          border: '#e2e8f0',
-          text: '#1e293b',
-          muted: '#64748b',
-          success: '#0d9488',
-          danger: '#e11d48',
-          warning: '#d97706',
-          successLight: '#f0fdfa',
-          dangerLight: '#fff1f2',
-          warningLight: '#fffbeb',
-          primary: '#2563eb',
-          primaryLight: '#eff6ff',
-          primarySoft: '#dbeafe',
+          navy: 'rgb(var(--gov-navy) / <alpha-value>)',
+          slate: 'rgb(var(--gov-slate) / <alpha-value>)',
+          blue: 'rgb(var(--gov-blue) / <alpha-value>)',
+          light: 'rgb(var(--gov-light) / <alpha-value>)',
+          surface: 'rgb(var(--gov-surface) / <alpha-value>)',
+          border: 'rgb(var(--gov-border) / <alpha-value>)',
+          text: 'rgb(var(--gov-text) / <alpha-value>)',
+          muted: 'rgb(var(--gov-muted) / <alpha-value>)',
+          success: 'rgb(var(--gov-success) / <alpha-value>)',
+          danger: 'rgb(var(--gov-danger) / <alpha-value>)',
+          warning: 'rgb(var(--gov-warning) / <alpha-value>)',
+          successLight: 'rgb(var(--gov-successLight) / <alpha-value>)',
+          dangerLight: 'rgb(var(--gov-dangerLight) / <alpha-value>)',
+          warningLight: 'rgb(var(--gov-warningLight) / <alpha-value>)',
+          primary: 'rgb(var(--gov-primary) / <alpha-value>)',
+          primaryLight: 'rgb(var(--gov-primaryLight) / <alpha-value>)',
+          primarySoft: 'rgb(var(--gov-primarySoft) / <alpha-value>)',
+          info: 'rgb(var(--gov-info) / <alpha-value>)',
+          infoLight: 'rgb(var(--gov-infoLight) / <alpha-value>)',
+          cyan: 'rgb(var(--gov-cyan) / <alpha-value>)',
+          cyanLight: 'rgb(var(--gov-cyanLight) / <alpha-value>)',
+          pink: 'rgb(var(--gov-pink) / <alpha-value>)',
+          pinkLight: 'rgb(var(--gov-pinkLight) / <alpha-value>)',
         }
       },
       fontFamily: {
@@ -31,9 +39,9 @@ export default {
         display: ['Outfit', 'sans-serif']
       },
       boxShadow: {
-        card: '0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -8px rgba(15, 23, 42, 0.08)',
-        'card-hover': '0 4px 10px rgba(15, 23, 42, 0.07), 0 12px 32px -8px rgba(15, 23, 42, 0.12)',
-        pop: '0 12px 32px -6px rgba(15, 23, 42, 0.14)',
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        pop: 'var(--shadow-pop)',
       },
       borderRadius: {
         xl2: '1.25rem',

@@ -3,7 +3,7 @@ import React from 'react';
 export function Card({ children, className = '', padded = true, hover = false }) {
   return (
     <div
-      className={`bg-white rounded-2xl shadow-card ${hover ? 'transition-shadow hover:shadow-card-hover' : ''} ${padded ? 'p-5' : ''} text-left ${className}`}
+      className={`bg-gov-surface rounded-2xl shadow-card ${hover ? 'transition-shadow hover:shadow-card-hover' : ''} ${padded ? 'p-5' : ''} text-left ${className}`}
     >
       {children}
     </div>

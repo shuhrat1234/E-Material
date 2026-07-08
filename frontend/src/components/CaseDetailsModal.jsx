@@ -290,7 +290,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                       ? 'bg-gov-success text-white border-transparent' 
                       : step.isCurrent 
                         ? 'bg-gov-blue/15 text-gov-blue border-gov-blue' 
-                        : 'bg-white text-gov-muted border-gov-border'
+                        : 'bg-gov-surface text-gov-muted border-gov-border'
                   }`}>
                     {step.isCompleted ? <CheckIcon className="h-3 w-3" /> : idx + 1}
                   </div>

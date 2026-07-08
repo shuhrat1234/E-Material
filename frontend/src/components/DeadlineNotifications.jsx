@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
-import { BellIcon, AlarmIcon } from './Icons';
+import { BellIcon, AlarmIcon, CloseIcon } from './Icons';
 
 const REMINDER_INTERVAL_MS = 2 * 60 * 60 * 1000; // re-alert every 2 hours
 
@@ -21,10 +21,10 @@ function DeadlineNotifications({ lang, user, onViewDetails }) {
     return parts.join(lang === 'ru' ? ' и ' : ' va ');
   };
 
-  const fireAlert = (message) => {
+  const fireAlert = (message, toastItems = []) => {
     // In-app banner (visible while the tab is open and focused)
-    setToast(message);
-    setTimeout(() => setToast(null), 8000);
+    setToast({ message, items: toastItems });
+    setTimeout(() => setToast(null), 12000);
 
     // OS-level notification, reaches the user even if this tab isn't focused/visible
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
@@ -47,7 +47,7 @@ function DeadlineNotifications({ lang, user, onViewDetails }) {
     if (Date.now() - lastAlert < REMINDER_INTERVAL_MS) return;
 
     localStorage.setItem(lastAlertKey, String(Date.now()));
-    fireAlert(buildMessage(next));
+    fireAlert(buildMessage(next), next);
   };
 
   const handleTestNotification = () => {
@@ -59,7 +59,7 @@ function DeadlineNotifications({ lang, user, onViewDetails }) {
     // otherwise be hidden underneath the still-open panel.
     setOpen(false);
 
-    const send = () => fireAlert(message);
+    const send = () => fireAlert(message, items);
 
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission().then(send).catch(send);
@@ -137,16 +137,53 @@ function DeadlineNotifications({ lang, user, onViewDetails }) {
       </button>
 
       {toast && (
-        <div className="absolute right-0 top-12 w-80 bg-white border border-gov-border rounded-lg shadow-lg p-4 text-left z-50 flex items-start gap-2 animate-[fadeIn_0.2s]">
-          <AlarmIcon className="h-4 w-4 text-gov-warning shrink-0 mt-0.5" />
-          <p className="text-xs font-semibold text-gov-text leading-relaxed">
-            {lang === 'ru' ? 'Внимание' : 'Diqqat'}: {toast}
-          </p>
+        <div className="absolute right-0 top-14 w-[46rem] bg-gov-surface border border-gov-border rounded-2xl shadow-2xl text-left z-50 animate-[fadeIn_0.2s]">
+          <div className="flex items-start gap-5 p-8 pb-5">
+            <span className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+              <AlarmIcon className="h-11 w-11 text-gov-warning" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xl font-bold text-gov-text uppercase tracking-wide">
+                {lang === 'ru' ? 'Внимание' : 'Diqqat'}
+              </p>
+              <p className="text-base font-medium text-gov-text leading-relaxed mt-2">
+                {toast.message}
+              </p>
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
+              title={lang === 'ru' ? 'Закрыть' : 'Yopish'}
+            >
+              <CloseIcon className="h-6 w-6" />
+            </button>
+          </div>
+
+          {toast.items.length > 0 && (
+            <div className="border-t border-gov-border divide-y divide-gov-border max-h-80 overflow-y-auto">
+              {toast.items.map(({ material, bucket }) => (
+                <button
+                  key={material.id}
+                  onClick={() => { onViewDetails(material.id); setToast(null); }}
+                  className="w-full text-left px-8 py-4 hover:bg-gov-light/40 transition-colors flex items-center justify-between gap-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-base font-semibold text-gov-primary truncate">{material.id} — {material.citizen_name}</span>
+                  </span>
+                  <span className={`text-xs font-bold uppercase tracking-wider shrink-0 ${bucket === 'today' ? 'text-gov-danger' : 'text-gov-warning'}`}>
+                    {bucket === 'today'
+                      ? (lang === 'ru' ? 'Сегодня' : 'Bugun')
+                      : (lang === 'ru' ? 'Завтра' : 'Ertaga')}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {open && (
-        <div className="absolute right-0 top-12 w-80 bg-white border border-gov-border rounded-lg shadow-lg text-left z-50 max-h-96 overflow-y-auto">
+        <div className="absolute right-0 top-12 w-80 bg-gov-surface border border-gov-border rounded-lg shadow-lg text-left z-50 max-h-96 overflow-y-auto">
           <div className="px-4 py-2.5 border-b border-gov-border flex items-center justify-between gap-2">
             <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">
               {lang === 'ru' ? 'Сроки исполнения' : 'Bajarish muddatlari'}

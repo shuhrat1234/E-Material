@@ -52,6 +52,8 @@ class Material(models.Model):
     material_type = models.CharField(max_length=50, default='ariza') # ariza, bildirgi, sud_ajrimi, boshqa
     source_from = models.CharField(max_length=50, default='tashrif') # tashrif, prakuratura, prezident_aparat, iio, portal
     citizen_notification_text = models.TextField(null=True, blank=True)
+    iib = models.CharField(max_length=50, blank=True, default='')
+    preliminary_article = models.CharField(max_length=255, blank=True, default='')
 
     def __str__(self):
         return self.id

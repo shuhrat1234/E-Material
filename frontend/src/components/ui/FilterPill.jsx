@@ -36,7 +36,7 @@ function FilterPill({ icon, value, onChange, options, defaultValue = '' }) {
       </button>
 
       {open && (
-        <div className="absolute z-40 mt-1.5 min-w-full w-max max-w-[16rem] max-h-64 overflow-y-auto bg-white rounded-xl shadow-pop p-1.5 text-left">
+        <div className="absolute z-40 mt-1.5 min-w-full w-max max-w-[16rem] max-h-64 overflow-y-auto bg-gov-surface rounded-xl shadow-pop p-1.5 text-left">
           {options.map(o => (
             <button
               key={o.value}

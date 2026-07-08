@@ -63,7 +63,7 @@ function LoginScreen({ onLogin, lang, setLang }) {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-pop p-8 space-y-6">
+        <div className="bg-gov-surface rounded-2xl shadow-pop p-8 space-y-6">
           {errorMsg && (
             <div className="p-3 bg-rose-50 text-gov-danger text-xs rounded-xl text-left font-medium">
               {errorMsg}
@@ -110,8 +110,7 @@ function LoginScreen({ onLogin, lang, setLang }) {
             <button
               type="submit"
               disabled={loading}
-              style={{ backgroundColor: '#2563eb', color: '#ffffff' }}
-              className="w-full flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm disabled:opacity-60"
+              className="w-full flex justify-center items-center gap-2 py-3 px-4 text-sm font-semibold rounded-xl bg-gov-primary text-white hover:opacity-90 transition-opacity shadow-sm disabled:opacity-60"
             >
               {loading ? (lang === 'ru' ? 'Вход...' : 'Kirilmoqda...') : t.login_btn}
             </button>
@@ -121,7 +120,7 @@ function LoginScreen({ onLogin, lang, setLang }) {
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gov-border"></div>
             </div>
-            <span className="relative bg-white px-3 text-[10px] uppercase font-bold text-gov-muted tracking-wider">
+            <span className="relative bg-gov-surface px-3 text-[10px] uppercase font-bold text-gov-muted tracking-wider">
               {lang === 'ru' ? 'Или' : 'Yoki'}
             </span>
           </div>
@@ -148,7 +147,7 @@ function LoginScreen({ onLogin, lang, setLang }) {
         </div>
 
         <div className="flex justify-center mt-6">
-          <div className="flex bg-white shadow-card p-1 rounded-full text-xs font-semibold">
+          <div className="flex bg-gov-surface shadow-card p-1 rounded-full text-xs font-semibold">
             <button
               onClick={() => setLang('ru')}
               className={`px-4 py-1.5 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-muted hover:text-gov-text'}`}

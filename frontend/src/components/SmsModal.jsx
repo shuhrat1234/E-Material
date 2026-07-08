@@ -106,7 +106,7 @@ function SmsModal({ caseId, lang, user, onClose, onSent }) {
               onChange={e => setSmsText(e.target.value)}
               rows={5}
               placeholder={lang === 'ru' ? 'Введите текст SMS для отправки заявителю...' : 'Murojaatchiga yuboriladigan SMS matnini kiriting...'}
-              className="w-full text-xs p-3 border border-gov-border rounded bg-white focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
+              className="w-full text-xs p-3 border border-gov-border rounded bg-gov-surface focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
             />
             <div className="flex justify-end">
               <button

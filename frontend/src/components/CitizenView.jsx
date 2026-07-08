@@ -122,7 +122,7 @@ function CitizenView({ lang }) {
 
   if (success) {
     return (
-      <div className="max-w-xl mx-auto my-12 bg-white rounded-2xl shadow-card p-10 text-center ">
+      <div className="max-w-xl mx-auto my-12 bg-gov-surface rounded-2xl shadow-card p-10 text-center ">
         <div className="w-16 h-16 bg-teal-50 border border-teal-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gov-success">
           <CheckIcon className="h-8 w-8" />
         </div>
@@ -157,7 +157,7 @@ function CitizenView({ lang }) {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-card p-5 max-w-5xl mx-auto">
+      <div className="bg-gov-surface rounded-lg shadow-card p-5 max-w-5xl mx-auto">
         <label className="block text-xs font-semibold text-gov-muted uppercase tracking-wider mb-2">
           {lang === 'ru' ? 'Ваше Ф.И.О.' : 'F.I.Sh.ingiz'}
         </label>
@@ -186,7 +186,7 @@ function CitizenView({ lang }) {
                 className={`p-4 border rounded-lg cursor-pointer transition-all flex items-center gap-4 ${
                   isSelected
                     ? 'border-gov-blue bg-gov-light shadow-sm ring-1 ring-gov-blue/20'
-                    : 'border-gov-border bg-white hover:border-gov-muted/40 hover:bg-gov-light/30'
+                    : 'border-gov-border bg-gov-surface hover:border-gov-muted/40 hover:bg-gov-light/30'
                 }`}
               >
                 <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
@@ -205,7 +205,7 @@ function CitizenView({ lang }) {
       )}
 
       {selectedOfficerId && (
-        <div className="bg-white rounded-2xl shadow-card p-8 transition-all max-w-2xl mx-auto mt-8">
+        <div className="bg-gov-surface rounded-2xl shadow-card p-8 transition-all max-w-2xl mx-auto mt-8">
           <div className="flex items-center justify-center gap-3 mb-6">
             <h3 className="text-center font-display font-semibold text-sm text-gov-text uppercase tracking-wider">
               {lang === 'ru' ? 'Оцените работу сотрудника' : 'Xodim ishini baholang'}
@@ -281,7 +281,7 @@ function CitizenView({ lang }) {
                       <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
                         isChecked
                           ? (selectedRating ? 'bg-gov-success border-gov-success' : 'bg-gov-danger border-gov-danger')
-                          : 'border-current bg-white'
+                          : 'border-current bg-gov-surface'
                       }`}>
                         {isChecked && <CheckIcon className="h-3 w-3 text-white" />}
                       </span>

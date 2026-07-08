@@ -7,6 +7,8 @@ import ChiefView from './components/ChiefView';
 import CaseDetailsModal from './components/CaseDetailsModal';
 import DeadlineNotifications from './components/DeadlineNotifications';
 import ProfileModal from './components/ProfileModal';
+import SettingsModal from './components/SettingsModal';
+import { GearIcon } from './components/Icons';
 import ConfirmHost from './components/ConfirmHost';
 import ToastHost from './components/ToastHost';
 import Avatar from './components/ui/Avatar';
@@ -19,7 +21,7 @@ export const API_BASE = 'http://localhost:8000/api';
 export const TRANSLATIONS = {
   ru: {
     title: "АИС «Е-Материал»",
-    subtitle: "РЕСПУБЛИКА УЗБЕКИСТАН ОЛМАЗОРСКИЙ РАЙОННЫЙ ОТДЕЛ ВНУТРЕННИХ ДЕЛ",
+    subtitle: "Olmazor tumani bo'yicha IIO FMB huzuridagi Tergov bo'limi Tergovga qadar tekshiruv bo'linmasi",
     select_role: "Выберите роль",
     password: "Пароль доступа",
     login_btn: "Войти в систему",
@@ -43,7 +45,7 @@ export const TRANSLATIONS = {
   },
   uz: {
     title: "AIS «E-Material»",
-    subtitle: "O'ZBEKISTON RESPUBLIKASI OLMAZOR TUMANI ICHKI ISHLAR BO'LIMI",
+    subtitle: "Olmazor tumani bo'yicha IIO FMB huzuridagi Tergov bo'limi Tergovga qadar tekshiruv bo'linmasi",
     select_role: "Rolni tanlang",
     password: "Kirish paroli",
     login_btn: "Tizimga kirish",
@@ -79,6 +81,7 @@ function App() {
   }); // { role, name, id, avatar, roleLabel }
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     if (user) localStorage.setItem('em_user', JSON.stringify(user));
@@ -125,9 +128,9 @@ function App() {
         return <RegistratorView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
       case 'investigator':
       case 'inquiry_officer':
-        return <InvestigatorView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
+        return <InvestigatorView lang={lang} onViewDetails={setSelectedCaseId} user={user} onOpenSettings={() => setShowSettings(true)} />;
       case 'chief':
-        return <ChiefView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
+        return <ChiefView lang={lang} onViewDetails={setSelectedCaseId} user={user} onOpenSettings={() => setShowSettings(true)} />;
       default:
         return <div className="p-8 text-center text-red-500">Неизвестная роль</div>;
     }
@@ -139,7 +142,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
-        <header className={`bg-white text-gov-text px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'md:pl-[17rem]' : ''}`}>
+        <header className={`bg-gov-surface text-gov-text px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'md:pl-[17rem]' : ''}`}>
           <div className="flex items-center gap-3">
             <img src="/emblem.png" alt="" className="h-12 w-12 shrink-0 object-contain" />
             <p className="text-sm text-gov-navy font-semibold uppercase leading-snug">{t.subtitle}</p>
@@ -150,13 +153,13 @@ function App() {
             <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold">
               <button
                 onClick={() => setLang('ru')}
-                className={`px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-white text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 RU
               </button>
               <button
                 onClick={() => setLang('uz')}
-                className={`px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-white text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 UZ
               </button>
@@ -165,6 +168,17 @@ function App() {
             {/* Deadline notifications */}
             {(user.role === 'investigator' || user.role === 'chief') && (
               <DeadlineNotifications lang={lang} user={user} onViewDetails={setSelectedCaseId} />
+            )}
+
+            {/* Settings — moved into the sidebar for roles that have one */}
+            {!hasSidebar && (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="p-2 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all"
+                title={lang === 'ru' ? 'Настройки интерфейса' : 'Interfeys sozlamalari'}
+              >
+                <GearIcon className="h-5 w-5" />
+              </button>
             )}
 
             {/* User display */}
@@ -214,6 +228,10 @@ function App() {
           onClose={() => setShowProfile(false)}
           onSaved={(updatedUser) => setUser(updatedUser)}
         />
+      )}
+
+      {showSettings && (
+        <SettingsModal lang={lang} onClose={() => setShowSettings(false)} />
       )}
 
       <ConfirmHost />

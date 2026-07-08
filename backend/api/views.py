@@ -145,6 +145,8 @@ class MaterialViewSet(viewsets.ModelViewSet):
             difficulty=parse_difficulty(request.data.get('difficulty')),
             material_type=request.data.get('material_type', 'ariza'),
             source_from=request.data.get('source_from', 'tashrif'),
+            iib=request.data.get('iib', ''),
+            preliminary_article=request.data.get('preliminary_article', ''),
         )
         
         # Create initial appeal step

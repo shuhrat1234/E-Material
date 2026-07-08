@@ -1,8 +1,12 @@
 import React from 'react';
 import { Line } from 'react-chartjs-2';
 import { crosshairPlugin } from '../../chartCrosshair';
+import { chartTheme } from '../../chartColors';
+import { useSettings } from '../../settingsContext';
 
 function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
+  const { isDark } = useSettings();
+  const { textColor, gridColor } = chartTheme(isDark);
   const up = typeof delta === 'number' ? delta >= 0 : null;
   const maxBreakdown = Math.max(...breakdown.map(b => b.value), 1);
 
@@ -15,14 +19,14 @@ function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
       tooltip: { enabled: false },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-      y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+      x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 } } },
+      y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 } } },
     },
     elements: { point: { radius: 0, hoverRadius: 5 } },
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-card p-6 text-left">
+    <div className="bg-gov-surface rounded-2xl shadow-card p-6 text-left">
       <div className="grid grid-cols-1 md:grid-cols-[13rem_1fr] gap-6 items-start">
         <div>
           <h4 className="font-semibold text-sm text-gov-text mb-4">{title}</h4>

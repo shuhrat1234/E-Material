@@ -2,10 +2,10 @@ import React from 'react';
 
 const SPARKLINE_COLOR = '#475569';
 
-function Sparkline({ data = [], width = 64, height = 28 }) {
+function Sparkline({ data = [], width = 64, height = 28, color: colorProp }) {
   if (!data || data.length < 2) return <div style={{ height }} />;
 
-  const color = SPARKLINE_COLOR;
+  const color = colorProp || SPARKLINE_COLOR;
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
   const range = max - min || 1;

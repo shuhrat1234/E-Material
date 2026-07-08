@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
+  BarElement, Title, Tooltip, Legend, ArcElement, Filler
+} from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
-import { CATEGORICAL, SEQUENTIAL } from '../chartColors';
-import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon } from './Icons';
+import RatingsModal from './RatingsModal';
+import { CATEGORICAL, SEQUENTIAL, chartTheme } from '../chartColors';
+import { useSettings } from '../settingsContext';
+import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon } from './Icons';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
@@ -16,16 +22,23 @@ import PillBarChart from './ui/PillBarChart';
 import Select from './ui/Select';
 import Modal from './Modal';
 import ExportButton from './ui/ExportButton';
-import { exportToCsv } from '../exportCsv';
+import { exportToExcel } from '../exportExcel';
 import { confirm } from '../confirmService';
 import { notify } from '../toastService';
+
+ChartJS.register(
+  CategoryScale, LinearScale, PointElement, LineElement,
+  BarElement, ArcElement, Title, Tooltip, Legend, Filler
+);
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 const MONTH_NAMES_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 const MONTH_NAMES_SHORT_UZ = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
-function ChiefView({ lang, onViewDetails, user }) {
+function ChiefView({ lang, onViewDetails, user, onOpenSettings }) {
+  const { isDark } = useSettings();
+  const { textColor, gridColor } = chartTheme(isDark);
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ratings, approvals, users
   const [materialsList, setMaterialsList] = useState(null); // { label, materials }
   const [officers, setOfficers] = useState([]);
@@ -58,11 +71,13 @@ function ChiefView({ lang, onViewDetails, user }) {
   const [sourceFrom, setSourceFrom] = useState('');
   const [officerFilter, setOfficerFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [quickStatusGroup, setQuickStatusGroup] = useState(''); // '', 'new', 'active', 'closed', 'overdue' — set by dashboard stat-card clicks
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState(''); // '' | 'closest'
   const [materialsPage, setMaterialsPage] = useState(1);
   const MATERIALS_PAGE_SIZE = 20;
   const [smsModalCaseId, setSmsModalCaseId] = useState(null);
+  const [ratingsModalIsLike, setRatingsModalIsLike] = useState(null); // null closed, true/false open filtered to that kind
 
   useEffect(() => {
     fetchData();
@@ -216,6 +231,12 @@ function ChiefView({ lang, onViewDetails, user }) {
   const filteredMaterials = materials.filter(c => {
     if (!matchesNonDateFilters(c)) return false;
     if (statusFilter && c.status !== statusFilter) return false;
+    if (quickStatusGroup === 'new') {
+      const d = new Date(c.registered_at);
+      if ((new Date() - d) >= 86400000 * 3) return false;
+    } else if (quickStatusGroup === 'active' && c.status === 'закрыт_в_срок') return false;
+    else if (quickStatusGroup === 'closed' && c.status !== 'закрыт_в_срок') return false;
+    else if (quickStatusGroup === 'overdue' && c.status !== 'срок_нарушен') return false;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const haystack = `${c.id} ${c.citizen_name} ${c.citizen_phone}`.toLowerCase();
@@ -249,7 +270,7 @@ function ChiefView({ lang, onViewDetails, user }) {
 
   useEffect(() => {
     setMaterialsPage(1);
-  }, [searchQuery, dateRange, monthFilter, difficulty, materialType, sourceFrom, officerFilter, statusFilter, sortOrder]);
+  }, [searchQuery, dateRange, monthFilter, difficulty, materialType, sourceFrom, officerFilter, statusFilter, quickStatusGroup, sortOrder]);
 
   useEffect(() => {
     if (materialsPage > materialsPageCount) setMaterialsPage(materialsPageCount);
@@ -273,6 +294,13 @@ function ChiefView({ lang, onViewDetails, user }) {
   const activeCount = filteredMaterials.filter(m => m.status !== 'закрыт_в_срок').length;
   const closedCount = filteredMaterials.filter(m => m.status === 'закрыт_в_срок').length;
   const overdueCount = filteredMaterials.filter(m => m.status === 'срок_нарушен').length;
+
+  const goToMaterials = (group = '') => {
+    setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType('');
+    setSourceFrom(''); setOfficerFilter(''); setStatusFilter(''); setSortOrder(''); setSearchQuery('');
+    setQuickStatusGroup(group);
+    setActivePanel('materials');
+  };
 
   const investigatorsList = officers.filter(o => o.role === 'investigator');
   const avgIndex = investigatorsList.length > 0
@@ -538,9 +566,9 @@ function ChiefView({ lang, onViewDetails, user }) {
   };
 
   const handleExportMaterials = () => {
-    exportToCsv(
+    exportToExcel(
       lang === 'ru' ? 'materialy' : 'materiallar',
-      ['ID', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Дата регистрации' : 'Ro\'yxatga olingan sana', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat', lang === 'ru' ? 'Тип' : 'Turi', lang === 'ru' ? 'Источник' : 'Manba', lang === 'ru' ? 'Сложность' : 'Murakkablik'],
+      ['ID', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Содержание' : 'Mazmuni', 'ИИБ', lang === 'ru' ? 'Ст. УК' : 'Modda', lang === 'ru' ? 'Дата регистрации' : 'Ro\'yxatga olingan sana', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat', lang === 'ru' ? 'Тип' : 'Turi', lang === 'ru' ? 'Источник' : 'Manba', lang === 'ru' ? 'Сложность' : 'Murakkablik'],
       filteredMaterials.map(m => {
         const off = officers.find(o => o.id === m.officer);
         return [
@@ -549,6 +577,8 @@ function ChiefView({ lang, onViewDetails, user }) {
           m.citizen_name,
           m.citizen_phone,
           lang === 'ru' ? m.title_ru : m.title_uz,
+          m.iib || '',
+          m.preliminary_article || '',
           formatDate(m.registered_at),
           formatDate(m.deadline),
           getStatusText(m.status),
@@ -561,7 +591,7 @@ function ChiefView({ lang, onViewDetails, user }) {
   };
 
   const handleExportInvestigators = () => {
-    exportToCsv(
+    exportToExcel(
       lang === 'ru' ? 'pokazateli_sledovateley' : 'tergovchilar_korsatkichlari',
       [
         lang === 'ru' ? 'Следователь' : 'Tergovchi', lang === 'ru' ? 'Всего' : 'Jami', lang === 'ru' ? 'В работе' : 'Ijroda',
@@ -593,7 +623,7 @@ function ChiefView({ lang, onViewDetails, user }) {
   return (
     <div className="flex flex-col md:flex-row gap-6 items-start w-full">
       {/* Sidebar Nav */}
-      <nav className="w-full md:w-64 bg-white rounded-2xl shadow-card md:rounded-none md:shadow-none md:border-r md:border-gov-border p-4 shrink-0 text-left md:fixed md:left-0 md:top-0 md:h-screen md:z-40 md:overflow-y-auto md:flex md:flex-col">
+      <nav className="w-full md:w-64 bg-gov-surface rounded-2xl shadow-card md:rounded-none md:shadow-none md:border-r md:border-gov-border p-4 shrink-0 text-left md:fixed md:left-0 md:top-0 md:h-screen md:z-40 md:overflow-y-auto md:flex md:flex-col">
         <div className="space-y-1">
           <div className="p-3 border-b border-gov-border mb-4">
             <div className="flex items-center gap-3">
@@ -657,7 +687,13 @@ function ChiefView({ lang, onViewDetails, user }) {
         </div>
 
         <div className="md:mt-auto md:pt-6">
-          <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5">{lang === 'ru' ? 'Сводка' : 'Xulosa'}</div>
+          <SidebarLink
+            icon={<GearIcon />}
+            label={lang === 'ru' ? 'Настройки' : 'Sozlamalar'}
+            active={false}
+            onClick={onOpenSettings}
+          />
+          <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5 mt-2">{lang === 'ru' ? 'Сводка' : 'Xulosa'}</div>
           <div className="px-3 py-2 text-xs flex items-center justify-between text-gov-muted">
             <span>{lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'}:</span>
             <span className="font-bold text-gov-danger">{materials.filter(m => m.status === 'срок_нарушен').length}</span>
@@ -680,7 +716,7 @@ function ChiefView({ lang, onViewDetails, user }) {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-white focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+              className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-gov-surface focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
             />
           </div>
         )}
@@ -783,9 +819,9 @@ function ChiefView({ lang, onViewDetails, user }) {
                 { value: 'closest', label: lang === 'ru' ? 'Ближайший срок' : 'Yaqin muddat' },
               ]}
             />
-            {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || officerFilter || statusFilter || sortOrder || searchQuery) && (
+            {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || officerFilter || statusFilter || quickStatusGroup || sortOrder || searchQuery) && (
               <button
-                onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setOfficerFilter(''); setStatusFilter(''); setSortOrder(''); setSearchQuery(''); }}
+                onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setOfficerFilter(''); setStatusFilter(''); setQuickStatusGroup(''); setSortOrder(''); setSearchQuery(''); }}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-gov-danger hover:bg-rose-50 rounded-full px-3 py-2 transition-colors"
               >
                 <CloseIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Сбросить' : 'Tozalash'}
@@ -799,18 +835,18 @@ function ChiefView({ lang, onViewDetails, user }) {
           <div className="space-y-6">
             {/* Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <StatCard icon={<FolderIcon />} tone="primary" value={total} label={lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'} trend={trendTotal} />
-              <StatCard icon={<TrendUpIcon />} tone="primary" value={newCount} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendNew} />
-              <StatCard icon={<ClockIcon />} tone="warning" value={activeCount} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} />
-              <StatCard icon={<ApprovalIcon />} tone="success" value={closedCount} label={lang === 'ru' ? 'Исполнено' : 'Bajarildi'} trend={trendClosed} />
-              <StatCard icon={<ClockIcon />} tone="danger" value={overdueCount} label={lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'} trend={trendOverdue} className="col-span-2 md:col-span-1" />
+              <StatCard icon={<FolderIcon />} tone="primary" value={total} label={lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'} trend={trendTotal} onClick={() => goToMaterials('')} />
+              <StatCard icon={<TrendUpIcon />} tone="info" value={newCount} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendNew} onClick={() => goToMaterials('new')} />
+              <StatCard icon={<ClockIcon />} tone="warning" value={activeCount} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} onClick={() => goToMaterials('active')} />
+              <StatCard icon={<ApprovalIcon />} tone="success" value={closedCount} label={lang === 'ru' ? 'Исполнено' : 'Bajarildi'} trend={trendClosed} onClick={() => goToMaterials('closed')} />
+              <StatCard icon={<ClockIcon />} tone="danger" value={overdueCount} label={lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'} trend={trendOverdue} className="col-span-2 md:col-span-1" onClick={() => goToMaterials('overdue')} />
             </div>
 
             {/* Secondary stat row */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <StatCard icon={<UsersIcon />} tone="neutral" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} />
-              <StatCard icon={<ApprovalIcon />} tone="primary" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} />
-              <StatCard icon={<TrendUpIcon />} tone="neutral" value={`${total > 0 ? Math.round((closedCount / total) * 100) : 0}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} />
+              <StatCard icon={<UsersIcon />} tone="cyan" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} onClick={() => setActivePanel('ratings')} />
+              <StatCard icon={<ApprovalIcon />} tone="warning" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} onClick={() => setActivePanel('approvals')} />
+              <StatCard icon={<TrendUpIcon />} tone="info" value={`${total > 0 ? Math.round((closedCount / total) * 100) : 0}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} onClick={() => goToMaterials('closed')} />
             </div>
 
             {/* Hero chart + type breakdown, one row */}
@@ -835,23 +871,37 @@ function ChiefView({ lang, onViewDetails, user }) {
 
             {/* Charts */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl shadow-card p-5">
+              <div className="bg-gov-surface rounded-2xl shadow-card p-5">
                 <h5 className="font-semibold text-sm text-gov-text mb-4 text-left">{lang === 'ru' ? 'Рейтинг следователей, %' : 'Tergovchilar reytingi, %'}</h5>
                 <div className="h-64">
-                  <Bar data={getOfficersRatingData()} options={{ responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }} />
+                  <Bar
+                    data={getOfficersRatingData()}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: { min: 0, max: 100, ticks: { color: textColor }, grid: { color: gridColor } },
+                        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                      },
+                      plugins: { legend: { labels: { color: textColor } } },
+                    }}
+                  />
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-card p-5">
+              <div className="bg-gov-surface rounded-2xl shadow-card p-5">
                 <h5 className="font-semibold text-sm text-gov-text mb-4 text-left">{lang === 'ru' ? 'Распределение по сложности' : 'Murakkablik bo\'yicha taqsimot'}</h5>
                 <div className="h-64 flex justify-center">
-                  <Doughnut data={getDifficultyData()} options={{ responsive: true, maintainAspectRatio: false }} />
+                  <Doughnut
+                    data={getDifficultyData()}
+                    options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: textColor } } } }}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Monthly analytics */}
-            <div className="bg-white rounded-2xl shadow-card p-5">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-5">
               <h5 className="font-semibold text-sm text-gov-text mb-4 text-left">{lang === 'ru' ? 'Аналитика по месяцам' : 'Oylar bo\'yicha tahlil'}</h5>
               <div className="h-72">
                 <Bar
@@ -859,21 +909,24 @@ function ChiefView({ lang, onViewDetails, user }) {
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+                    scales: {
+                      y: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },
+                      x: { ticks: { color: textColor }, grid: { color: gridColor } },
+                    },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, color: textColor } } },
                   }}
                 />
               </div>
             </div>
 
             {/* Table 1: overall status counters */}
-            <div className="bg-white rounded-2xl shadow-card p-5 text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-5 text-left">
               <h4 className="font-semibold text-sm text-gov-text mb-4 flex items-center gap-2">
                 <DashboardIcon /> {lang === 'ru' ? 'Статус материалов' : 'Materiallar holati'}
               </h4>
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
-                  <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                  <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                     <th className="px-3 py-2">{lang === 'ru' ? 'ВСЕГО' : 'JAMI'}</th>
                     <th className="px-3 py-2">{lang === 'ru' ? 'В РАБОТЕ' : 'IJRODA'}</th>
                     <th className="px-3 py-2">{lang === 'ru' ? 'ИСПОЛНЕНО' : 'BAJARILDI'}</th>
@@ -916,14 +969,14 @@ function ChiefView({ lang, onViewDetails, user }) {
             </div>
 
             {/* Table 2: deadline breakdown by day */}
-            <div className="bg-white rounded-2xl shadow-card p-5 text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-5 text-left">
               <h4 className="font-semibold text-sm text-gov-text mb-4 flex items-center gap-2">
                 <ClockIcon /> {lang === 'ru' ? 'Сроки по дням' : 'Kunlar bo\'yicha muddatlar'}
               </h4>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gov-border text-left">
                   <thead>
-                    <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                    <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                       <th className="px-3 py-2">{lang === 'ru' ? 'СЕГОДНЯ' : 'BUGUN'}</th>
                       <th className="px-3 py-2">{lang === 'ru' ? 'ЗАВТРА' : 'ERTAGA'}</th>
                       <th className="px-3 py-2">{lang === 'ru' ? 'ПОСЛЕЗАВТРА' : 'INDINGA'}</th>
@@ -980,19 +1033,23 @@ function ChiefView({ lang, onViewDetails, user }) {
 
             {/* Overall rating stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <StatCard icon={<ApprovalIcon />} tone="success" value={totalLikes} label={lang === 'ru' ? 'Положительных отзывов' : 'Ijobiy baholar'} />
-              <StatCard icon={<ClockIcon />} tone="danger" value={totalDislikes} label={lang === 'ru' ? 'Отрицательных отзывов' : 'Salbiy baholar'} />
-              <StatCard icon={<TrendUpIcon />} tone="neutral" value={newCount} label={lang === 'ru' ? 'Новых за 3 дня' : 'So\'nggi 3 kunda yangi'} />
+              <StatCard icon={<ApprovalIcon />} tone="success" value={totalLikes} label={lang === 'ru' ? 'Положительных отзывов' : 'Ijobiy baholar'} onClick={() => setRatingsModalIsLike(true)} />
+              <StatCard icon={<ClockIcon />} tone="danger" value={totalDislikes} label={lang === 'ru' ? 'Отрицательных отзывов' : 'Salbiy baholar'} onClick={() => setRatingsModalIsLike(false)} />
+              <StatCard icon={<TrendUpIcon />} tone="cyan" value={newCount} label={lang === 'ru' ? 'Новых за 3 дня' : 'So\'nggi 3 kunda yangi'} onClick={() => goToMaterials('new')} />
             </div>
 
             {/* Approvals queue */}
             <Card>
               <CardHeader icon={<ApprovalIcon />} title={lang === 'ru' ? 'Очередь согласования решений' : 'Qarorlarni tasdiqlash navbati'} />
               <div className="grid grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-rose-50 border border-rose-100 rounded-lg flex justify-between items-center text-gov-danger">
+                <button
+                  onClick={() => setActivePanel('approvals')}
+                  disabled={approvalRequests.length === 0}
+                  className="p-3 bg-rose-50 border border-rose-100 rounded-lg flex justify-between items-center text-gov-danger hover:bg-rose-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-50"
+                >
                   <span>{lang === 'ru' ? 'Ожидают решения' : 'Qaror kutilmoqda'}</span>
                   <strong className="text-sm font-bold">{approvalRequests.length}</strong>
-                </div>
+                </button>
                 <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex justify-between items-center text-gov-warning">
                   <span>{lang === 'ru' ? 'Продление сроков' : 'Muddat uzaytirish'}</span>
                   <strong className="text-sm font-bold">0</strong>
@@ -1001,7 +1058,7 @@ function ChiefView({ lang, onViewDetails, user }) {
             </Card>
 
             {/* Per-investigator stats table */}
-            <div className="bg-white rounded-2xl shadow-card p-5 text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-5 text-left">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-semibold text-sm text-gov-text flex items-center gap-2">
                   <UsersIcon /> {lang === 'ru' ? 'Показатели следователей' : 'Tergovchilar ko\'rsatkichlari'}
@@ -1011,7 +1068,7 @@ function ChiefView({ lang, onViewDetails, user }) {
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gov-border text-left">
                   <thead>
-                    <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                    <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                       <th className="px-4 py-2">{lang === 'ru' ? 'Следователь' : 'Tergovchi'}</th>
                       <th className="px-4 py-2">{lang === 'ru' ? 'Всего' : 'Jami'}</th>
                       <th className="px-4 py-2">{lang === 'ru' ? 'В работе' : 'Ijroda'}</th>
@@ -1110,7 +1167,7 @@ function ChiefView({ lang, onViewDetails, user }) {
 
             {/* Materials by type and source */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl shadow-card p-5 text-left">
+              <div className="bg-gov-surface rounded-2xl shadow-card p-5 text-left">
                 <h4 className="font-semibold text-sm text-gov-text mb-4 flex items-center gap-2">
                   <FolderIcon /> {lang === 'ru' ? 'По типу материала' : 'Material turi bo\'yicha'}
                 </h4>
@@ -1136,7 +1193,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                 </table>
               </div>
 
-              <div className="bg-white rounded-2xl shadow-card p-5 text-left">
+              <div className="bg-gov-surface rounded-2xl shadow-card p-5 text-left">
                 <h4 className="font-semibold text-sm text-gov-text mb-4 flex items-center gap-2">
                   <TrendUpIcon /> {lang === 'ru' ? 'По источнику поступления' : 'Kelib tushish manbasi bo\'yicha'}
                 </h4>
@@ -1169,18 +1226,33 @@ function ChiefView({ lang, onViewDetails, user }) {
 
         {/* Panel 2: All Materials with Reassignments */}
         {activePanel === 'materials' && (
-          <div className="bg-white rounded-2xl shadow-card p-6">
-            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
-              <h3 className="font-semibold text-base text-gov-text text-left">
-                {lang === 'ru' ? 'Мониторинг всех материалов доследственной проверки' : 'Barcha tekshiruv materiallari monitoringi'}
-              </h3>
+          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
+            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6 gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="font-semibold text-base text-gov-text text-left">
+                  {lang === 'ru' ? 'Мониторинг всех материалов доследственной проверки' : 'Barcha tekshiruv materiallari monitoringi'}
+                </h3>
+                {quickStatusGroup && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-gov-primary bg-gov-primaryLight px-2.5 py-1 rounded-full">
+                    {{
+                      new: lang === 'ru' ? 'Новые' : 'Yangi',
+                      active: lang === 'ru' ? 'В производстве' : 'Ijroda',
+                      closed: lang === 'ru' ? 'Исполнено' : 'Bajarildi',
+                      overdue: lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan',
+                    }[quickStatusGroup]}
+                    <button onClick={() => setQuickStatusGroup('')} className="hover:text-gov-danger">
+                      <CloseIcon className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+              </div>
               <ExportButton lang={lang} onClick={handleExportMaterials} />
             </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
-                  <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                  <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Исполнитель / Переназначить' : 'Ijrochi / Qayta biriktirish'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Заявитель' : 'Murojaatchi'}</th>
@@ -1241,7 +1313,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                           <div className="flex gap-1 justify-center">
                             <button
                               onClick={() => onViewDetails(c.id)}
-                              className="p-1.5 bg-gov-light border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                              className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
                               title={lang === 'ru' ? 'Просмотр' : 'Ko\'rish'}
                             >
                               <EyeIcon />
@@ -1300,14 +1372,14 @@ function ChiefView({ lang, onViewDetails, user }) {
 
         {/* Panel 3: Staff Rating */}
         {activePanel === 'ratings' && (
-          <div className="bg-white rounded-2xl shadow-card p-6">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
               <h3 className="font-semibold text-base text-gov-text text-left">
                 {lang === 'ru' ? 'Рейтинг и показатели сотрудников отделения' : 'Bo\'lim xodimlari reytingi va ko\'rsatkichlari'}
               </h3>
               <ExportButton
                 lang={lang}
-                onClick={() => exportToCsv(
+                onClick={() => exportToExcel(
                   lang === 'ru' ? 'reyting_sotrudnikov' : 'xodimlar_reytingi',
                   [lang === 'ru' ? 'Следователь' : 'Tergovchi', 'Likes', 'Dislikes', lang === 'ru' ? 'Всего дел' : 'Jami ishlar', lang === 'ru' ? 'В производстве' : 'Ijroda', lang === 'ru' ? 'Индекс %' : 'Indeks %'],
                   officers.filter(o => o.role === 'investigator').map(o => {
@@ -1325,7 +1397,7 @@ function ChiefView({ lang, onViewDetails, user }) {
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
-                  <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                  <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                     <th className="px-4 py-3">{lang === 'ru' ? 'Следователь' : 'Tergovchi'}</th>
                     <th className="px-4 py-3">Likes</th>
                     <th className="px-4 py-3">Dislikes</th>
@@ -1376,7 +1448,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => openOfficerRatings(o)}
-                            className="p-1.5 bg-gov-light border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                            className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
                             title={lang === 'ru' ? 'Показать отзывы' : 'Fikrlarni ko\'rsatish'}
                           >
                             <EyeIcon />
@@ -1393,7 +1465,7 @@ function ChiefView({ lang, onViewDetails, user }) {
 
         {/* Panel 4: Approvals */}
         {activePanel === 'approvals' && (
-          <div className="bg-white rounded-2xl shadow-card p-6 ">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-6 ">
             <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
               Согласование процессуальных решений следователей
             </h3>
@@ -1425,7 +1497,7 @@ function ChiefView({ lang, onViewDetails, user }) {
                           >
                             {req.case}
                           </button>
-                          <span className="text-[10px] font-semibold text-gov-muted bg-white border border-gov-border px-1.5 py-0.5 rounded uppercase">
+                          <span className="text-[10px] font-semibold text-gov-muted bg-gov-surface border border-gov-border px-1.5 py-0.5 rounded uppercase">
                             {typeLabel}
                           </span>
                         </div>
@@ -1467,7 +1539,7 @@ function ChiefView({ lang, onViewDetails, user }) {
         {/* Panel 5: Users (create/manage staff accounts) */}
         {activePanel === 'users' && (
           <div className="space-y-6">
-            <div className="bg-white rounded-2xl shadow-card p-6  text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-6  text-left">
               <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6">
                 {lang === 'ru' ? 'Создать нового пользователя' : 'Yangi foydalanuvchi yaratish'}
               </h3>
@@ -1576,14 +1648,14 @@ function ChiefView({ lang, onViewDetails, user }) {
               </form>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-card p-6  text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-6  text-left">
               <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6">
                 {lang === 'ru' ? 'Существующие пользователи' : 'Mavjud foydalanuvchilar'}
               </h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gov-border text-left">
                   <thead>
-                    <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                    <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                       <th className="px-4 py-3">{lang === 'ru' ? 'Логин' : 'Login'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'ФИО' : 'F.I.Sh.'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'Роль' : 'Rol'}</th>
@@ -1628,14 +1700,14 @@ function ChiefView({ lang, onViewDetails, user }) {
         {activePanel === 'sms' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              <StatCard icon={<SendIcon />} tone="neutral" value={smsTemplates.length} label={lang === 'ru' ? 'Всего текстов' : 'Jami matnlar'} />
-              <StatCard icon={<ClockIcon />} tone="primary" value={smsTemplates.filter(t => t.status === 'на_модерации').length} label={lang === 'ru' ? 'На модерации' : 'Moderatsiyada'} />
+              <StatCard icon={<SendIcon />} tone="cyan" value={smsTemplates.length} label={lang === 'ru' ? 'Всего текстов' : 'Jami matnlar'} />
+              <StatCard icon={<ClockIcon />} tone="pink" value={smsTemplates.filter(t => t.status === 'на_модерации').length} label={lang === 'ru' ? 'На модерации' : 'Moderatsiyada'} />
               <StatCard icon={<ClockIcon />} tone="warning" value={smsTemplates.filter(t => t.status === 'в_процессе').length} label={lang === 'ru' ? 'В процессе' : 'Jarayonda'} />
               <StatCard icon={<ApprovalIcon />} tone="success" value={smsTemplates.filter(t => t.status === 'одобрено').length} label={lang === 'ru' ? 'Одобрено' : 'Tasdiqlangan'} />
               <StatCard icon={<CloseIcon />} tone="danger" value={smsTemplates.filter(t => t.status === 'отказан').length} label={lang === 'ru' ? 'Отказано' : 'Rad etilgan'} />
             </div>
 
-          <div className="bg-white rounded-2xl shadow-card p-6">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
               <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Тексты SMS-сообщений' : 'SMS xabar matnlari'}</h3>
               <button
@@ -1848,6 +1920,16 @@ function ChiefView({ lang, onViewDetails, user }) {
           user={user}
           onClose={() => setSmsModalCaseId(null)}
           onSent={fetchData}
+        />
+      )}
+
+      {ratingsModalIsLike !== null && (
+        <RatingsModal
+          lang={lang}
+          isLike={ratingsModalIsLike}
+          officerIds={investigatorsList.map(o => o.id)}
+          officerNames={Object.fromEntries(investigatorsList.map(o => [o.id, lang === 'ru' ? o.name_ru : o.name_uz]))}
+          onClose={() => setRatingsModalIsLike(null)}
         />
       )}
     </div>

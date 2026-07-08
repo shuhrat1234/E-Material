@@ -6,7 +6,7 @@ import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, Clo
 import Select from './ui/Select';
 import FilterPill from './ui/FilterPill';
 import ExportButton from './ui/ExportButton';
-import { exportToCsv } from '../exportCsv';
+import { exportToExcel } from '../exportExcel';
 import { notify } from '../toastService';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
@@ -38,6 +38,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [difficulty, setDifficulty] = useState(3);
   const [materialType, setMaterialType] = useState('ariza');
   const [sourceFrom, setSourceFrom] = useState('tashrif');
+  const [iib, setIib] = useState('');
+  const [preliminaryArticle, setPreliminaryArticle] = useState('');
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -111,7 +113,9 @@ function RegistratorView({ lang, onViewDetails, user }) {
       deadline_days: parseInt(deadlineDays, 10),
       difficulty,
       material_type: materialType,
-      source_from: sourceFrom
+      source_from: sourceFrom,
+      iib: iib.trim(),
+      preliminary_article: preliminaryArticle.trim(),
     };
 
     setSubmitting(true);
@@ -128,6 +132,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
         setDifficulty(3);
         setMaterialType('ariza');
         setSourceFrom('tashrif');
+        setIib('');
+        setPreliminaryArticle('');
         setErrors({});
         setSubmitting(false);
         fetchInitialData();
@@ -241,9 +247,9 @@ function RegistratorView({ lang, onViewDetails, user }) {
   }, [registryPageCount]);
 
   const handleExportRegistry = () => {
-    exportToCsv(
+    exportToExcel(
       lang === 'ru' ? 'reestr_materialov' : 'materiallar_reyestri',
-      ['ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
+      ['ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Содержание' : 'Mazmuni', 'ИИБ', lang === 'ru' ? 'Ст. УК' : 'Modda', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
       filteredMaterials.map(m => {
         const off = officers.find(o => o.id === m.officer);
         return [
@@ -252,6 +258,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
           m.citizen_phone,
           off ? (lang === 'ru' ? off.name_ru : off.name_uz) : '',
           lang === 'ru' ? m.title_ru : m.title_uz,
+          m.iib || '',
+          m.preliminary_article || '',
           formatDate(m.deadline),
           getStatusText(m.status),
         ];
@@ -262,7 +270,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex bg-white shadow-card p-1.5 rounded-full w-fit gap-1">
+      <div className="flex bg-gov-surface shadow-card p-1.5 rounded-full w-fit gap-1">
         <button
           onClick={() => setActiveTab('register')}
           className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
@@ -299,7 +307,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       ) : activeTab === 'register' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form Left */}
-          <div className="lg:col-span-1 bg-white rounded-2xl shadow-card p-6 space-y-4">
+          <div className="lg:col-span-1 bg-gov-surface rounded-2xl shadow-card p-6 space-y-4">
             <h3 className="font-semibold text-sm text-gov-text border-b border-gov-border pb-3">
               {lang === 'ru' ? 'Регистрация нового материала' : 'Yangi materialni ro\'yxatdan o\'tkazish'}
             </h3>
@@ -467,6 +475,33 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
+                    ИИБ
+                  </label>
+                  <input
+                    type="text"
+                    value={iib}
+                    onChange={(e) => setIib(e.target.value)}
+                    placeholder="2"
+                    className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
+                    {lang === 'ru' ? 'Предварительная статья' : 'Dastlabki modda'}
+                  </label>
+                  <input
+                    type="text"
+                    value={preliminaryArticle}
+                    onChange={(e) => setPreliminaryArticle(e.target.value)}
+                    placeholder={lang === 'ru' ? 'Например: 169 УК' : 'Masalan: JK 169'}
+                    className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all"
+                  />
+                </div>
+              </div>
+
               <button
                 type="submit"
                 disabled={submitting || investigators.length === 0}
@@ -478,7 +513,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
           </div>
 
           {/* Table Registry Right */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-card p-6 overflow-hidden flex flex-col">
+          <div className="lg:col-span-2 bg-gov-surface rounded-2xl shadow-card p-6 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-4">
               <h3 className="font-semibold text-sm text-gov-text text-left">
                 {lang === 'ru' ? 'Реестр зарегистрированных материалов' : 'Ro\'yxatga olingan materiallar reyestri'}
@@ -493,7 +528,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
-                className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-white focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+                className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-gov-surface focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
               />
             </div>
 
@@ -556,11 +591,13 @@ function RegistratorView({ lang, onViewDetails, user }) {
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
-                  <tr className="bg-gov-light text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                  <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                     <th className="px-4 py-3">ID</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Заявитель' : 'Murojaatchi'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Содержание' : 'Mazmuni'}</th>
+                    <th className="px-4 py-3">ИИБ</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Ст. УК' : 'Modda'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Статус' : 'Status'}</th>
                     <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Просмотр' : 'Ko\'rish'}</th>
@@ -569,7 +606,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 <tbody className="divide-y divide-gov-border text-xs">
                   {pagedMaterials.length === 0 && (
                     <tr>
-                      <td colSpan="7" className="px-4 py-12 text-center text-gov-muted font-medium">{lang === 'ru' ? 'Материалов нет' : 'Materiallar yo\'q'}</td>
+                      <td colSpan="9" className="px-4 py-12 text-center text-gov-muted font-medium">{lang === 'ru' ? 'Материалов нет' : 'Materiallar yo\'q'}</td>
                     </tr>
                   )}
                   {pagedMaterials.map(m => {
@@ -586,6 +623,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
                         <td className="px-4 py-3 text-gov-muted max-w-[150px] truncate" title={lang === 'ru' ? m.title_ru : m.title_uz}>
                           {lang === 'ru' ? m.title_ru : m.title_uz}
                         </td>
+                        <td className="px-4 py-3 text-gov-muted">{m.iib || '—'}</td>
+                        <td className="px-4 py-3 text-gov-muted">{m.preliminary_article || '—'}</td>
                         <td className="px-4 py-3 font-mono text-[11px] text-gov-text">{formatDate(m.deadline)}</td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold leading-none ${getStatusClass(m.status)}`}>
@@ -595,7 +634,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                         <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => onViewDetails(m.id)}
-                            className="p-1.5 bg-gov-light border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                            className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
                             title="Details"
                           >
                             <EyeIcon />
@@ -640,7 +679,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
         </div>
       ) : (
         /* Approvals Tab */
-        <div className="bg-white rounded-2xl shadow-card p-6">
+        <div className="bg-gov-surface rounded-2xl shadow-card p-6">
           <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
             {lang === 'ru' ? 'Запросы на согласование решений' : 'Qarorlarni tasdiqlash so\'rovlari'}
           </h3>
@@ -672,7 +711,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                         >
                           {req.case}
                         </button>
-                        <span className="text-[10px] font-semibold text-gov-muted bg-white border border-gov-border px-1.5 py-0.5 rounded uppercase">
+                        <span className="text-[10px] font-semibold text-gov-muted bg-gov-surface border border-gov-border px-1.5 py-0.5 rounded uppercase">
                           {typeLabel}
                         </span>
                       </div>
