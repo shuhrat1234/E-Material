@@ -91,6 +91,24 @@ class OfficerViewSet(viewsets.ModelViewSet):
             action_uz=f"Xodim {officer.name_uz} ishini baholash: {rating_type}{reason_suffix_uz}"
         )
 
+        if not is_like:
+            channel_layer = get_channel_layer()
+            alert_data = {
+                'kind': 'dislike_alert',
+                'officer_id': officer.id,
+                'officer_name_ru': officer.name_ru,
+                'officer_name_uz': officer.name_uz,
+                'citizen_name': citizen_name,
+                'reason_ru': reason_ru,
+                'reason_uz': reason_uz,
+                'time': timezone.now().isoformat(),
+            }
+            for chief in Officer.objects.filter(role='chief'):
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{chief.id}',
+                    {'type': 'chat.message', 'data': alert_data}
+                )
+
         return Response(OfficerSerializer(officer).data)
 
     @action(detail=True, methods=['get'])

@@ -36,7 +36,7 @@ const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyu
 const MONTH_NAMES_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 const MONTH_NAMES_SHORT_UZ = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
-function ChiefView({ lang, onViewDetails, user, onOpenSettings }) {
+function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onCloseSidebar }) {
   const { isDark } = useSettings();
   const { textColor, gridColor } = chartTheme(isDark);
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ratings, approvals, users
@@ -622,11 +622,24 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings }) {
 
   return (
     <div className="flex flex-col md:flex-row gap-6 items-start w-full">
+      {/* Backdrop, mobile/tablet only, while the drawer is open */}
+      {sidebarOpen && (
+        <div
+          onClick={onCloseSidebar}
+          className="fixed inset-0 bg-gov-navy/50 z-40 lg:hidden"
+        />
+      )}
+
       {/* Sidebar Nav */}
-      <nav className="w-full md:w-64 bg-gov-surface rounded-2xl shadow-card md:rounded-none md:shadow-none md:border-r md:border-gov-border p-4 shrink-0 text-left md:fixed md:left-0 md:top-0 md:h-screen md:z-40 md:overflow-y-auto md:flex md:flex-col">
+      <nav
+        onClick={() => onCloseSidebar && onCloseSidebar()}
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-gov-surface shadow-2xl p-4 text-left overflow-y-auto flex flex-col transform transition-transform duration-300
+          lg:translate-x-0 lg:z-40 lg:w-64 lg:shadow-none lg:border-r lg:border-gov-border
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
         <div className="space-y-1">
-          <div className="p-3 border-b border-gov-border mb-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between p-3 border-b border-gov-border mb-4">
+            <div className="flex items-center gap-3 min-w-0">
               <Avatar src={user?.avatar} initials={user?.photo || (user?.name ? user.name[0] : 'М')} />
               <div className="min-w-0">
                 <h4 className="font-semibold text-xs text-gov-text leading-snug">{user?.name || ''}</h4>
@@ -635,6 +648,12 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings }) {
                 </p>
               </div>
             </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); onCloseSidebar && onCloseSidebar(); }}
+              className="lg:hidden p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
           </div>
 
           <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5">{lang === 'ru' ? 'Разделы' : 'Bo\'limlar'}</div>
@@ -706,7 +725,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings }) {
       </nav>
 
       {/* Content Area */}
-      <div className="flex-1 w-full min-w-0 space-y-6 md:ml-64">
+      <div className="flex-1 w-full min-w-0 space-y-6 lg:ml-64">
         
         {activePanel === 'materials' && (
           <div className="relative max-w-sm">

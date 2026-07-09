@@ -6,9 +6,10 @@ import InvestigatorView from './components/InvestigatorView';
 import ChiefView from './components/ChiefView';
 import CaseDetailsModal from './components/CaseDetailsModal';
 import DeadlineNotifications from './components/DeadlineNotifications';
+import DislikeAlertNotifications from './components/DislikeAlertNotifications';
 import ProfileModal from './components/ProfileModal';
 import SettingsModal from './components/SettingsModal';
-import { GearIcon } from './components/Icons';
+import { GearIcon, MenuIcon } from './components/Icons';
 import ConfirmHost from './components/ConfirmHost';
 import ToastHost from './components/ToastHost';
 import Avatar from './components/ui/Avatar';
@@ -82,6 +83,7 @@ function App() {
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (user) localStorage.setItem('em_user', JSON.stringify(user));
@@ -128,9 +130,9 @@ function App() {
         return <RegistratorView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
       case 'investigator':
       case 'inquiry_officer':
-        return <InvestigatorView lang={lang} onViewDetails={setSelectedCaseId} user={user} onOpenSettings={() => setShowSettings(true)} />;
+        return <InvestigatorView lang={lang} onViewDetails={setSelectedCaseId} user={user} onOpenSettings={() => setShowSettings(true)} sidebarOpen={sidebarOpen} onCloseSidebar={() => setSidebarOpen(false)} />;
       case 'chief':
-        return <ChiefView lang={lang} onViewDetails={setSelectedCaseId} user={user} onOpenSettings={() => setShowSettings(true)} />;
+        return <ChiefView lang={lang} onViewDetails={setSelectedCaseId} user={user} onOpenSettings={() => setShowSettings(true)} sidebarOpen={sidebarOpen} onCloseSidebar={() => setSidebarOpen(false)} />;
       default:
         return <div className="p-8 text-center text-red-500">Неизвестная роль</div>;
     }
@@ -142,10 +144,22 @@ function App() {
   return (
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
-        <header className={`bg-gov-surface text-gov-text px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'md:pl-[17rem]' : ''}`}>
-          <div className="flex items-center gap-3">
-            <img src="/emblem.png" alt="" className="h-12 w-12 shrink-0 object-contain" />
-            <p className="text-sm text-gov-navy font-semibold uppercase leading-snug">{t.subtitle}</p>
+        <header className={`bg-gov-surface text-gov-text px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
+          <div className="flex items-center gap-3 w-full md:w-auto min-w-0">
+            {hasSidebar && (
+              <button
+                onClick={() => setSidebarOpen(o => !o)}
+                className="lg:hidden p-2 -ml-2 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
+                title={lang === 'ru' ? 'Меню' : 'Menyu'}
+              >
+                <MenuIcon className="h-5 w-5" />
+              </button>
+            )}
+            <img src="/emblem.png" alt="" className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 object-contain" />
+            <div className="min-w-0">
+              <p className="hidden lg:block text-sm text-gov-navy font-semibold uppercase leading-snug">{t.subtitle}</p>
+              <p className="lg:hidden text-sm text-gov-navy font-bold uppercase truncate">{t.title}</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-4 mt-4 md:mt-0">
@@ -168,6 +182,11 @@ function App() {
             {/* Deadline notifications */}
             {(user.role === 'investigator' || user.role === 'chief') && (
               <DeadlineNotifications lang={lang} user={user} onViewDetails={setSelectedCaseId} />
+            )}
+
+            {/* Instant dislike alerts, pushed over websocket the moment a citizen rates */}
+            {user.role === 'chief' && (
+              <DislikeAlertNotifications lang={lang} user={user} />
             )}
 
             {/* Settings — moved into the sidebar for roles that have one */}
