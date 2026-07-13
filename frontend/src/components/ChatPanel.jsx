@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
-import { UsersIcon, PaperclipIcon, SendIcon, ChatIcon, CheckIcon, DoubleCheckIcon, CopyIcon } from './Icons';
+import { UsersIcon, PaperclipIcon, SendIcon, ChatIcon, CheckIcon, DoubleCheckIcon, CopyIcon, TrashIcon } from './Icons';
+import { confirm } from '../confirmService';
 import Avatar from './ui/Avatar';
 import { notify } from '../toastService';
 
@@ -75,6 +76,11 @@ function ChatPanel({ lang, user }) {
         setMessages(prev => prev.map(m =>
           (m.sender_id === senderId && m.recipient_id === data.reader_id) ? { ...m, is_read: true } : m
         ));
+        return;
+      }
+
+      if (data.kind === 'delete') {
+        setMessages(prev => prev.filter(m => m.id !== data.id));
         return;
       }
 
@@ -159,6 +165,18 @@ function ChatPanel({ lang, user }) {
       .catch(() => notify(lang === 'ru' ? 'Не удалось скопировать' : 'Nusxalab bo\'lmadi', 'error'));
   };
 
+  const handleDelete = async (m) => {
+    const ok = await confirm(
+      lang === 'ru' ? 'Удалить сообщение у всех?' : 'Xabar barchada o\'chirilsinmi?'
+    );
+    if (!ok) return;
+    axios.delete(`${API_BASE}/chat/messages/${m.id}/`)
+      .catch(err => {
+        console.error('Failed to delete message', err);
+        notify(lang === 'ru' ? 'Не удалось удалить сообщение' : 'Xabarni o\'chirib bo\'lmadi', 'error');
+      });
+  };
+
   return (
     <div className="bg-gov-surface rounded-2xl shadow-card flex h-[700px] overflow-hidden">
       {/* Contacts sidebar */}
@@ -237,9 +255,19 @@ function ChatPanel({ lang, user }) {
                       type="button"
                       onClick={() => handleCopy(m)}
                       title={lang === 'ru' ? 'Копировать' : 'Nusxalash'}
-                      className={`absolute -top-2.5 ${isMine ? '-left-2.5' : '-right-2.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full shadow-sm bg-gov-surface border border-gov-border text-gov-muted hover:text-gov-primary`}
+                      className={`absolute -top-2.5 ${isMine ? 'left-6' : '-right-2.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full shadow-sm bg-gov-surface border border-gov-border text-gov-muted hover:text-gov-primary`}
                     >
                       <CopyIcon className="h-3 w-3" />
+                    </button>
+                  )}
+                  {isMine && (
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(m)}
+                      title={lang === 'ru' ? 'Удалить у всех' : 'Barchada o\'chirish'}
+                      className="absolute -top-2.5 -left-2.5 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full shadow-sm bg-gov-surface border border-gov-border text-gov-muted hover:text-gov-danger"
+                    >
+                      <TrashIcon className="h-3 w-3" />
                     </button>
                   )}
                   {!isMine && (

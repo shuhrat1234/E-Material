@@ -423,6 +423,26 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                 {'type': 'chat.message', 'data': data}
             )
 
+    def perform_destroy(self, instance):
+        message_id = instance.id
+        sender_id = instance.sender_id
+        recipient_id = instance.recipient_id
+        instance.delete()
+
+        channel_layer = get_channel_layer()
+        data = {'kind': 'delete', 'id': message_id}
+        if recipient_id:
+            for participant in {sender_id, recipient_id}:
+                async_to_sync(channel_layer.group_send)(
+                    f'user_{participant}',
+                    {'type': 'chat.message', 'data': data}
+                )
+        else:
+            async_to_sync(channel_layer.group_send)(
+                'chat_global',
+                {'type': 'chat.message', 'data': data}
+            )
+
 class DbOperationsViewSet(viewsets.ViewSet):
     
     @action(detail=False, methods=['post'], url_path='reset')
