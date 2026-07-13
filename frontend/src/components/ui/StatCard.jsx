@@ -33,14 +33,22 @@ const TONE_VAR = {
   neutral: '--gov-muted',
 };
 
+const VALUE_TONES = {
+  primary: 'text-gov-primary',
+  success: 'text-gov-success',
+  danger: 'text-gov-danger',
+  warning: 'text-gov-warning',
+  info: 'text-gov-info',
+  cyan: 'text-gov-cyan',
+  pink: 'text-gov-pink',
+  neutral: 'text-gov-text',
+};
+
 function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend, className = '', onClick }) {
   const up = typeof delta === 'number' ? delta >= 0 : null;
   const numericValue = typeof value === 'number' ? value : parseFloat(value);
   const isPositiveNumber = !isNaN(numericValue) && numericValue > 0;
-  const valueColorClass =
-    tone === 'danger' && isPositiveNumber ? 'text-gov-danger' :
-    tone === 'success' && isPositiveNumber ? 'text-gov-success' :
-    'text-gov-text';
+  const valueColorClass = VALUE_TONES[tone] || VALUE_TONES.primary;
   const shouldPulse = tone === 'danger' && isPositiveNumber;
   const toneVarValue = `rgb(var(${TONE_VAR[tone] || TONE_VAR.primary}))`;
   const Tag = onClick ? 'button' : 'div';

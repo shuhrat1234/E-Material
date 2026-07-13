@@ -10,7 +10,7 @@ function formatDate(iso) {
   return d.toLocaleDateString('ru-RU') + ' ' + d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 }
 
-function RatingsModal({ lang, isLike, officerIds = [], officerNames = {}, onClose }) {
+function RatingsModal({ lang, isLike, officerIds = [], officerNames = {}, hideCitizenName = false, onClose }) {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +60,9 @@ function RatingsModal({ lang, isLike, officerIds = [], officerNames = {}, onClos
             {ratings.map(r => (
               <div key={r.id} className="px-6 py-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gov-text">{r.citizen_name}</p>
+                  <p className="text-sm font-semibold text-gov-text">
+                    {hideCitizenName ? (lang === 'ru' ? 'Гражданин' : 'Fuqaro') : r.citizen_name}
+                  </p>
                   {(lang === 'ru' ? r.reason_ru : r.reason_uz) && (
                     <p className="text-xs text-gov-muted mt-1">{lang === 'ru' ? r.reason_ru : r.reason_uz}</p>
                   )}
@@ -68,7 +70,9 @@ function RatingsModal({ lang, isLike, officerIds = [], officerNames = {}, onClos
                     <p className="text-[10px] font-bold uppercase tracking-wider text-gov-primary mt-1.5">{officerNames[r.officer]}</p>
                   )}
                 </div>
-                <span className="text-[11px] text-gov-muted whitespace-nowrap shrink-0">{formatDate(r.created_at)}</span>
+                {!hideCitizenName && (
+                  <span className="text-[11px] text-gov-muted whitespace-nowrap shrink-0">{formatDate(r.created_at)}</span>
+                )}
               </div>
             ))}
           </div>

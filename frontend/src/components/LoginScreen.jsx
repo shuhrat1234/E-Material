@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE, TRANSLATIONS } from '../App';
-import { KeyIcon, UsersIcon } from './Icons';
+import { KeyIcon, UsersIcon, EyeIcon, EyeOffIcon } from './Icons';
 
 function LoginScreen({ onLogin, lang, setLang }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -13,6 +14,11 @@ function LoginScreen({ onLogin, lang, setLang }) {
     e.preventDefault();
     if (!username || !password) {
       setErrorMsg(lang === 'ru' ? 'Введите логин и пароль!' : 'Login va parolni kiriting!');
+      return;
+    }
+
+    if (username.trim().toLowerCase() === 'planshet' && password === 'planshet') {
+      handleCitizenKiosk();
       return;
     }
 
@@ -49,7 +55,7 @@ function LoginScreen({ onLogin, lang, setLang }) {
 
   return (
     <div
-      className="w-full flex flex-col items-center justify-center py-8 px-4"
+      className="w-full min-h-screen flex flex-col items-center justify-center py-8 px-4"
       style={{
         backgroundImage:
           'radial-gradient(circle at 15% 20%, rgba(37,99,235,0.07), transparent 40%), radial-gradient(circle at 85% 80%, rgba(37,99,235,0.06), transparent 40%)',
@@ -97,13 +103,21 @@ function LoginScreen({ onLogin, lang, setLang }) {
                 <KeyIcon className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gov-muted" />
                 <input
                   id="password-input"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   placeholder="••••••"
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all"
+                  className="block w-full pl-10 pr-10 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gov-muted hover:text-gov-text transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
@@ -115,35 +129,6 @@ function LoginScreen({ onLogin, lang, setLang }) {
               {loading ? (lang === 'ru' ? 'Вход...' : 'Kirilmoqda...') : t.login_btn}
             </button>
           </form>
-
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gov-border"></div>
-            </div>
-            <span className="relative bg-gov-surface px-3 text-[10px] uppercase font-bold text-gov-muted tracking-wider">
-              {lang === 'ru' ? 'Или' : 'Yoki'}
-            </span>
-          </div>
-
-          <button
-            onClick={handleCitizenKiosk}
-            className="w-full py-2.5 bg-gov-light text-gov-text hover:bg-gov-border/50 text-xs font-semibold rounded-xl transition-colors"
-          >
-            {lang === 'ru' ? 'Войти как Гражданин (Планшет)' : 'Fuqaro sifatida kirish (Planshet)'}
-          </button>
-
-          {/* Credentials hint helper */}
-          <div className="bg-gov-primaryLight/60 rounded-xl p-3.5 text-left">
-            <p className="text-[10px] font-bold text-gov-primary uppercase tracking-wider mb-2">
-              {lang === 'ru' ? 'Тестовые учетные записи' : 'Test akkountlari'} <span className="font-medium normal-case text-gov-muted">({lang === 'ru' ? 'пароль' : 'parol'}: password123)</span>
-            </p>
-            <div className="grid grid-cols-2 gap-y-1.5 text-[11px] text-gov-text font-medium">
-              <div>• <span className="font-semibold text-gov-primary">karimov</span> — Следователь</div>
-              <div>• <span className="font-semibold text-gov-primary">registrator</span> — Регистратор</div>
-              <div>• <span className="font-semibold text-gov-primary">makhmudov</span> — Начальник</div>
-              <div>• <span className="font-semibold text-gov-primary">admin</span> — {lang === 'ru' ? 'Администратор' : 'Administrator'}</div>
-            </div>
-          </div>
         </div>
 
         <div className="flex justify-center mt-6">

@@ -135,7 +135,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
         
         officer_id = request.data.get('officer')
         officer = Officer.objects.filter(id=officer_id).first()
-        dept_id = officer.department_id if officer else 'so'
+        dept_id = officer.department_id if officer else None
 
         # Use the manually entered ID if provided, otherwise auto-generate one
         custom_id = (request.data.get('id') or '').strip()
@@ -165,6 +165,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
             source_from=request.data.get('source_from', 'tashrif'),
             iib=request.data.get('iib', ''),
             preliminary_article=request.data.get('preliminary_article', ''),
+            extra_ids=', '.join(p.strip() for p in (request.data.get('extra_ids') or '').split(',') if p.strip()),
         )
         
         # Create initial appeal step

@@ -5,6 +5,7 @@ import { CheckIcon, CloseIcon } from './Icons';
 import Modal from './Modal';
 import Select from './ui/Select';
 import { notify } from '../toastService';
+import { getMaterialTypeLabel, getSourceLabel } from '../materialTaxonomy';
 
 function CaseDetailsModal({ caseId, lang, user, onClose }) {
   const [activeTab, setActiveTab] = useState('info'); // info, timeline
@@ -125,26 +126,6 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
-  const getMaterialTypeLabel = (type) => {
-    const map = {
-      ariza: lang === 'ru' ? 'Заявление (Ариза)' : 'Ariza',
-      bildirgi: lang === 'ru' ? 'Рапорт (Билдирги)' : 'Bildirgi',
-      sud_ajrimi: lang === 'ru' ? 'Определение суда' : 'Sud ajrimi',
-      boshqa: lang === 'ru' ? 'Другое' : 'Boshqa',
-    };
-    return map[type] || type;
-  };
-
-  const getSourceLabel = (source) => {
-    const map = {
-      tashrif: lang === 'ru' ? 'При посещении (Тамбур)' : 'Tashrif orqali',
-      prakuratura: lang === 'ru' ? 'Прокуратура' : 'Prokuratura',
-      prezident_aparat: lang === 'ru' ? 'Аппарат Президента' : 'Prezident apparati',
-      iio: lang === 'ru' ? 'Другой ИИО' : 'Boshqa IIO',
-      portal: lang === 'ru' ? 'Портал' : 'Portal',
-    };
-    return map[source] || source;
-  };
 
   // Timeline milestones: only the actually recorded appeal steps (no fabricated placeholders)
   const timelineSteps = [
@@ -237,11 +218,11 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Тип материала' : 'Material turi'}</p>
-                  <p className="text-gov-text font-semibold">{getMaterialTypeLabel(caseItem.material_type)}</p>
+                  <p className="text-gov-text font-semibold">{getMaterialTypeLabel(caseItem.material_type, lang)}</p>
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Источник' : 'Manba'}</p>
-                  <p className="text-gov-text font-semibold">{getSourceLabel(caseItem.source_from)}</p>
+                  <p className="text-gov-text font-semibold">{getSourceLabel(caseItem.source_from, lang)}</p>
                 </div>
               </div>
 

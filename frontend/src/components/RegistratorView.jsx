@@ -8,6 +8,7 @@ import FilterPill from './ui/FilterPill';
 import ExportButton from './ui/ExportButton';
 import { exportToExcel } from '../exportExcel';
 import { notify } from '../toastService';
+import { MATERIAL_TYPES, getSourceOptions } from '../materialTaxonomy';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
@@ -36,10 +37,11 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [officerId, setOfficerId] = useState('');
   const [deadlineDays, setDeadlineDays] = useState('10');
   const [difficulty, setDifficulty] = useState(3);
-  const [materialType, setMaterialType] = useState('ariza');
-  const [sourceFrom, setSourceFrom] = useState('tashrif');
+  const [materialType, setMaterialType] = useState('e_material');
+  const [sourceFrom, setSourceFrom] = useState('e_material');
   const [iib, setIib] = useState('');
   const [preliminaryArticle, setPreliminaryArticle] = useState('');
+  const [extraIds, setExtraIds] = useState([]); // array of extra ID strings, one input per entry
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -116,6 +118,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       source_from: sourceFrom,
       iib: iib.trim(),
       preliminary_article: preliminaryArticle.trim(),
+      extra_ids: extraIds.map(v => v.trim()).filter(Boolean).join(', '),
     };
 
     setSubmitting(true);
@@ -130,10 +133,11 @@ function RegistratorView({ lang, onViewDetails, user }) {
         setTitleUz('');
         setDeadlineDays('10');
         setDifficulty(3);
-        setMaterialType('ariza');
-        setSourceFrom('tashrif');
+        setMaterialType('e_material');
+        setSourceFrom('e_material');
         setIib('');
         setPreliminaryArticle('');
+        setExtraIds([]);
         setErrors({});
         setSubmitting(false);
         fetchInitialData();
@@ -249,11 +253,12 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const handleExportRegistry = () => {
     exportToExcel(
       lang === 'ru' ? 'reestr_materialov' : 'materiallar_reyestri',
-      ['ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Содержание' : 'Mazmuni', 'ИИБ', lang === 'ru' ? 'Ст. УК' : 'Modda', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
+      ['ID', lang === 'ru' ? 'Доп. ID' : 'Qo\'shimcha ID', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Содержание' : 'Mazmuni', 'ИИБ', lang === 'ru' ? 'Ст. УК' : 'Modda', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
       filteredMaterials.map(m => {
         const off = officers.find(o => o.id === m.officer);
         return [
           m.id,
+          m.extra_ids || '',
           m.citizen_name,
           m.citizen_phone,
           off ? (lang === 'ru' ? off.name_ru : off.name_uz) : '',
@@ -324,6 +329,44 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${errors.materialId ? 'ring-2 ring-gov-danger/40' : ''}`}
                 />
                 {errors.materialId && <p className="text-[11px] text-gov-danger mt-1">{errors.materialId}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
+                  {lang === 'ru' ? 'Дополнительные ID' : 'Qo\'shimcha ID'}
+                </label>
+                <div className="space-y-2">
+                  {extraIds.map((val, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={val}
+                        onChange={(e) => setExtraIds(prev => prev.map((v, idx) => idx === i ? e.target.value : v))}
+                        placeholder="MAT-2026-0100"
+                        className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setExtraIds(prev => prev.filter((_, idx) => idx !== i))}
+                        className="p-2 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors shrink-0"
+                      >
+                        <CloseIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setExtraIds(prev => [...prev, ''])}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-gov-primary hover:bg-gov-primaryLight rounded px-2.5 py-1.5 transition-colors"
+                >
+                  + {lang === 'ru' ? 'Добавить ID' : 'ID qo\'shish'}
+                </button>
+                <p className="text-[10px] text-gov-muted mt-1">
+                  {lang === 'ru'
+                    ? 'Если у одного случая несколько входящих номеров'
+                    : 'Agar bitta holatda bir nechta kirish raqami bo\'lsa'}
+                </p>
               </div>
 
               <div>
@@ -446,14 +489,12 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   </label>
                   <Select
                     value={materialType}
-                    onChange={setMaterialType}
+                    onChange={(val) => {
+                      setMaterialType(val);
+                      setSourceFrom(getSourceOptions(val)[0].value);
+                    }}
                     className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm"
-                    options={[
-                      { value: 'ariza', label: lang === 'ru' ? 'Заявление (Ариза)' : 'Ariza' },
-                      { value: 'bildirgi', label: lang === 'ru' ? 'Рапорт (Билдирги)' : 'Bildirgi' },
-                      { value: 'sud_ajrimi', label: lang === 'ru' ? 'Определение суда' : 'Sud ajrimi' },
-                      { value: 'boshqa', label: lang === 'ru' ? 'Другое' : 'Boshqa' },
-                    ]}
+                    options={MATERIAL_TYPES.map(t => ({ value: t.value, label: lang === 'ru' ? t.ru : t.uz }))}
                   />
                 </div>
                 <div>
@@ -464,13 +505,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                     value={sourceFrom}
                     onChange={setSourceFrom}
                     className="block w-full px-3 py-2.5 rounded bg-gov-light text-sm"
-                    options={[
-                      { value: 'tashrif', label: lang === 'ru' ? 'При посещении (Тамбур)' : 'Tashrif orqali' },
-                      { value: 'prakuratura', label: lang === 'ru' ? 'Прокуратура' : 'Prokuratura' },
-                      { value: 'prezident_aparat', label: lang === 'ru' ? 'Аппарат Президента' : 'Prezident apparati' },
-                      { value: 'iio', label: lang === 'ru' ? 'Другой ИИО' : 'Boshqa IIO' },
-                      { value: 'portal', label: lang === 'ru' ? 'Портал' : 'Portal' },
-                    ]}
+                    options={getSourceOptions(materialType).map(s => ({ value: s.value, label: lang === 'ru' ? s.ru : s.uz }))}
                   />
                 </div>
               </div>
@@ -614,7 +649,10 @@ function RegistratorView({ lang, onViewDetails, user }) {
                     const officerName = officer ? (lang === 'ru' ? officer.name_ru.split(' ')[0] + ' ' + officer.name_ru.split(' ')[1][0] + '.' : officer.name_uz.split(' ')[0]) : '';
                     return (
                       <tr key={m.id} className="hover:bg-gov-light/30">
-                        <td className="px-4 py-3 font-semibold text-gov-text">{m.id}</td>
+                        <td className="px-4 py-3 font-semibold text-gov-text">
+                          {m.id}
+                          {m.extra_ids && <p className="text-[10px] font-normal text-gov-muted mt-0.5">+ {m.extra_ids}</p>}
+                        </td>
                         <td className="px-4 py-3">
                           <p className="font-semibold text-gov-text">{m.citizen_name}</p>
                           <p className="text-[10px] text-gov-muted mt-0.5">{m.citizen_phone}</p>

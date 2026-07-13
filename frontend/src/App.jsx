@@ -16,8 +16,9 @@ import Avatar from './components/ui/Avatar';
 import { confirm } from './confirmService';
 import axios from 'axios';
 
-// API Base URL
-export const API_BASE = 'http://localhost:8000/api';
+// API Base URL — derived from whatever host/IP the browser used to load the page,
+// so the app works both on the server machine itself and from other PCs on the LAN.
+export const API_BASE = `http://${window.location.hostname}:8000/api`;
 
 export const TRANSLATIONS = {
   ru: {

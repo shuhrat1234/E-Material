@@ -43,6 +43,8 @@ function CitizenView({ lang }) {
   const [selectedOfficerId, setSelectedOfficerId] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null); // null | true | false
   const [selectedReasons, setSelectedReasons] = useState([]);
+  const [otherChecked, setOtherChecked] = useState(false);
+  const [otherText, setOtherText] = useState('');
   const [citizenName, setCitizenName] = useState('');
   const [nameError, setNameError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -74,17 +76,27 @@ function CitizenView({ lang }) {
     );
   };
 
+  const hasOtherText = otherChecked && otherText.trim().length > 0;
+
   const handleSubmitRating = () => {
-    if (!selectedOfficerId || selectedRating === null || selectedReasons.length === 0) return;
+    if (!selectedOfficerId || selectedRating === null) return;
+    if (selectedReasons.length === 0 && !hasOtherText) return;
     if (!isNameValid) {
       setNameError(lang === 'ru' ? 'Укажите Ф.И.О. (минимум 3 символа)' : 'F.I.Sh.ni kiriting (kamida 3 belgi)');
       return;
     }
 
+    const reasonsRu = selectedReasons.map(r => r.ru);
+    const reasonsUz = selectedReasons.map(r => r.uz);
+    if (hasOtherText) {
+      reasonsRu.push(otherText.trim());
+      reasonsUz.push(otherText.trim());
+    }
+
     axios.post(`${API_BASE}/officers/${selectedOfficerId}/rate/`, {
       isLike: selectedRating,
-      reasonRu: selectedReasons.map(r => r.ru).join(', '),
-      reasonUz: selectedReasons.map(r => r.uz).join(', '),
+      reasonRu: reasonsRu.join(', '),
+      reasonUz: reasonsUz.join(', '),
       citizenName: citizenName.trim(),
     })
       .then(() => {
@@ -99,17 +111,23 @@ function CitizenView({ lang }) {
     setSelectedOfficerId(id);
     setSelectedRating(null);
     setSelectedReasons([]);
+    setOtherChecked(false);
+    setOtherText('');
   };
 
   const selectRating = (isLike) => {
     setSelectedRating(isLike);
     setSelectedReasons([]);
+    setOtherChecked(false);
+    setOtherText('');
   };
 
   const resetView = () => {
     setSelectedOfficerId(null);
     setSelectedRating(null);
     setSelectedReasons([]);
+    setOtherChecked(false);
+    setOtherText('');
     setCitizenName('');
     setNameError('');
     setSuccess(false);
@@ -289,13 +307,44 @@ function CitizenView({ lang }) {
                     </button>
                   );
                 })}
+
+                <button
+                  onClick={() => setOtherChecked(c => !c)}
+                  className={`py-3 px-4 rounded-lg border text-xs font-semibold text-left flex items-center gap-2.5 transition-all ${
+                    selectedRating
+                      ? (otherChecked ? 'border-gov-success bg-teal-100/60 ring-1 ring-gov-success/30' : 'border-teal-100 bg-teal-50/60 hover:border-gov-success hover:bg-teal-100/50')
+                      : (otherChecked ? 'border-gov-danger bg-rose-100/60 ring-1 ring-gov-danger/30' : 'border-rose-100 bg-rose-50/60 hover:border-gov-danger hover:bg-rose-100/50')
+                  } ${selectedRating ? 'text-gov-success' : 'text-gov-danger'}`}
+                >
+                  <span className={`shrink-0 w-4 h-4 rounded border flex items-center justify-center ${
+                    otherChecked
+                      ? (selectedRating ? 'bg-gov-success border-gov-success' : 'bg-gov-danger border-gov-danger')
+                      : 'border-current bg-gov-surface'
+                  }`}>
+                    {otherChecked && <CheckIcon className="h-3 w-3 text-white" />}
+                  </span>
+                  {lang === 'ru' ? 'Другое' : 'Boshqa'}
+                </button>
               </div>
+
+              {otherChecked && (
+                <textarea
+                  value={otherText}
+                  onChange={(e) => setOtherText(e.target.value)}
+                  placeholder={lang === 'ru' ? 'Опишите своими словами...' : 'O\'z so\'zingiz bilan yozing...'}
+                  rows={3}
+                  autoFocus
+                  className={`w-full mt-3 px-4 py-3 rounded-lg border text-sm bg-gov-surface focus:outline-none focus:ring-2 transition-all resize-none ${
+                    selectedRating ? 'border-teal-200 focus:ring-gov-success/30' : 'border-rose-200 focus:ring-gov-danger/30'
+                  }`}
+                />
+              )}
 
               <button
                 onClick={handleSubmitRating}
-                disabled={selectedReasons.length === 0}
+                disabled={selectedReasons.length === 0 && !hasOtherText}
                 className={`w-full mt-5 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-                  selectedReasons.length === 0
+                  selectedReasons.length === 0 && !hasOtherText
                     ? 'bg-gov-light text-gov-muted cursor-not-allowed'
                     : selectedRating
                       ? 'bg-gov-success text-white hover:bg-teal-700'

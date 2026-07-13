@@ -1,0 +1,22 @@
+D:
+cd \Е-Материал
+
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+
+cd /d D:\Е-Материал\backend
+pip install -r requirements.txt --no-index --find-links=pip_packages_offline
+python manage.py migrate
+--no-index --find-links=pip_packages_offline
+
+
+cd .\frontend
+npm install
+
+New-NetFirewallRule -DisplayName "E-Material Backend" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow
+New-NetFirewallRule -DisplayName "E-Material Frontend" -Direction Inbound -Protocol TCP -LocalPort 5173 -Action Allow
+
+
+Узнайте LAN-адрес нового компьютера: в PowerShell введите ipconfig, найдите строку "IPv4-адрес" у Wi-Fi/сетевого адаптера (например, 192.168.1.105).
+На остальных компьютерах в отделе откройте браузер и введите http://<новый-IP>:5173.

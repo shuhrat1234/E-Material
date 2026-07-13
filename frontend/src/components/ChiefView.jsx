@@ -11,7 +11,7 @@ import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
 import { CATEGORICAL, SEQUENTIAL, chartTheme } from '../chartColors';
 import { useSettings } from '../settingsContext';
-import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon } from './Icons';
+import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon } from './Icons';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
@@ -25,6 +25,7 @@ import ExportButton from './ui/ExportButton';
 import { exportToExcel } from '../exportExcel';
 import { confirm } from '../confirmService';
 import { notify } from '../toastService';
+import { MATERIAL_TYPES, ALL_SOURCES } from '../materialTaxonomy';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -60,6 +61,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
   const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', password: '' };
   const [newUser, setNewUser] = useState(emptyNewUser);
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
   const [createError, setCreateError] = useState('');
   const [createSuccess, setCreateSuccess] = useState('');
 
@@ -316,7 +318,9 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     else difficultyCounts.hard++;
   });
 
-  const calculateDeadlines = () => {
+  const materialsByType = (list, type) => list.filter(m => (m.material_type || 'e_material') === type);
+
+  const calculateDeadlines = (list) => {
     const buckets = { today: [], tomorrow: [], indinga: [], days3: [], days4: [], days5: [], sl1: [], sl2: [], sl3: [], sl4: [], sl5: [] };
     const now = new Date();
     const dStr = (offset) => {
@@ -325,7 +329,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       return d.toISOString().substring(0, 10);
     };
 
-    filteredMaterials.forEach(m => {
+    list.forEach(m => {
       if (m.status === 'закрыт_в_срок') return;
       const dl = new Date(m.deadline).toISOString().substring(0,10);
       if (dl === dStr(0)) buckets.today.push(m);
@@ -343,15 +347,15 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     return buckets;
   };
 
-  const dlBuckets = calculateDeadlines();
-  const dl = Object.fromEntries(Object.entries(dlBuckets).map(([k, v]) => [k, v.length]));
+  const dlBucketsByType = Object.fromEntries(MATERIAL_TYPES.map(t => [t.value, calculateDeadlines(materialsByType(filteredMaterials, t.value))]));
+  const dlByType = Object.fromEntries(MATERIAL_TYPES.map(t => [t.value, Object.fromEntries(Object.entries(dlBucketsByType[t.value]).map(([k, v]) => [k, v.length]))]));
 
   const openMaterialsList = (label, materials) => {
     if (!materials || materials.length === 0) return;
     setMaterialsList({ label, materials });
   };
 
-  const openDeadlineBucket = (key, label) => openMaterialsList(label, dlBuckets[key]);
+  const openDeadlineBucket = (typeValue, key, label) => openMaterialsList(label, dlBucketsByType[typeValue][key]);
 
   // Trailing daily-count series for stat card sparklines / hero chart
   const getTrend = (matchFn, daysCount = 7) => {
@@ -485,13 +489,10 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   };
 
   const getTypesBarData = () => {
-    const counts = { ariza: 0, bildirgi: 0, sud_ajrimi: 0, boshqa: 0 };
-    filteredMaterials.forEach(c => {
-      const t = c.material_type || 'ariza';
-      if (counts[t] !== undefined) counts[t]++;
-    });
-    const labels = lang === 'ru' ? ['Заявл.', 'Рапорт', 'Суд.', 'Друг.'] : ['Ariza', 'Bildirgi', 'Sud', 'Boshqa'];
-    return [counts.ariza, counts.bildirgi, counts.sud_ajrimi, counts.boshqa].map((value, i) => ({ label: labels[i], value }));
+    return MATERIAL_TYPES.map(t => ({
+      label: lang === 'ru' ? t.ru : t.uz,
+      value: filteredMaterials.filter(c => (c.material_type || 'e_material') === t.value).length,
+    }));
   };
 
   const getDifficultyData = () => {
@@ -719,7 +720,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
           </div>
           <div className="px-3 py-2 text-xs flex items-center justify-between text-gov-muted">
             <span>{lang === 'ru' ? 'Истекает сегодня' : 'Bugun tugaydi'}:</span>
-            <span className="font-bold text-gov-warning">{dl.today}</span>
+            <span className="font-bold text-gov-warning">{MATERIAL_TYPES.reduce((sum, t) => sum + dlByType[t.value].today, 0)}</span>
           </div>
         </div>
       </nav>
@@ -797,10 +798,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               onChange={e => setMaterialType(e.target.value)}
               options={[
                 { value: '', label: lang === 'ru' ? 'Все типы' : 'Barcha turlar' },
-                { value: 'ariza', label: lang === 'ru' ? 'Заявление' : 'Ariza' },
-                { value: 'bildirgi', label: lang === 'ru' ? 'Рапорт' : 'Bildirgi' },
-                { value: 'sud_ajrimi', label: lang === 'ru' ? 'Суд. решение' : 'Sud ajrimi' },
-                { value: 'boshqa', label: lang === 'ru' ? 'Другое' : 'Boshqa' },
+                ...MATERIAL_TYPES.map(t => ({ value: t.value, label: lang === 'ru' ? t.ru : t.uz })),
               ]}
             />
             <FilterPill
@@ -809,11 +807,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               onChange={e => setSourceFrom(e.target.value)}
               options={[
                 { value: '', label: lang === 'ru' ? 'Все источники' : 'Barcha manbalar' },
-                { value: 'tashrif', label: lang === 'ru' ? 'Тамбур' : 'Tashrif' },
-                { value: 'prakuratura', label: lang === 'ru' ? 'Прокуратура' : 'Prokuratura' },
-                { value: 'prezident_aparat', label: lang === 'ru' ? 'Аппарат Президента' : 'Prezident ap.' },
-                { value: 'iio', label: 'ИИО' },
-                { value: 'portal', label: lang === 'ru' ? 'Портал' : 'Portal' },
+                ...ALL_SOURCES.map(s => ({ value: s.value, label: lang === 'ru' ? s.ru : s.uz })),
               ]}
             />
             <FilterPill
@@ -946,6 +940,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
                   <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                    <th className="px-3 py-2">{lang === 'ru' ? 'ТИП ДОКУМЕНТА' : 'HUJJAT TURI'}</th>
                     <th className="px-3 py-2">{lang === 'ru' ? 'ВСЕГО' : 'JAMI'}</th>
                     <th className="px-3 py-2">{lang === 'ru' ? 'В РАБОТЕ' : 'IJRODA'}</th>
                     <th className="px-3 py-2">{lang === 'ru' ? 'ИСПОЛНЕНО' : 'BAJARILDI'}</th>
@@ -953,30 +948,41 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     <th className="px-3 py-2">{lang === 'ru' ? 'СР. ИНДЕКС %' : 'O\'RT. INDEKS %'}</th>
                   </tr>
                 </thead>
-                <tbody className="text-xs">
-                  <tr className="hover:bg-gov-light/30">
-                    <td className="px-3 py-3">
-                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'Всего материалов' : 'Jami materiallar', filteredMaterials)} className="font-bold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={total === 0}>{total}</button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'В работе' : 'Ijroda', filteredMaterials.filter(m => m.status !== 'закрыт_в_срок'))} className="font-semibold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={activeCount === 0}>{activeCount}</button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button onClick={() => openMaterialsList(lang === 'ru' ? 'Исполнено' : 'Bajarildi', filteredMaterials.filter(m => m.status === 'закрыт_в_срок'))} className="font-semibold text-gov-success text-sm hover:opacity-70 transition-opacity disabled:opacity-40" disabled={closedCount === 0}>{closedCount}</button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <button
-                        onClick={() => openMaterialsList(lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan', filteredMaterials.filter(m => m.status === 'срок_нарушен'))}
-                        disabled={overdueCount === 0}
-                        className={overdueCount > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded text-sm hover:bg-rose-100 transition-colors' : 'text-gov-muted text-sm disabled:opacity-40'}
-                      >
-                        {overdueCount}
-                      </button>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold text-sm">{avgIndex}%</span>
-                    </td>
-                  </tr>
+                <tbody className="text-xs divide-y divide-gov-border">
+                  {MATERIAL_TYPES.map(t => {
+                    const typeMaterials = materialsByType(filteredMaterials, t.value);
+                    const typeTotal = typeMaterials.length;
+                    const typeActive = typeMaterials.filter(m => m.status !== 'закрыт_в_срок').length;
+                    const typeClosed = typeMaterials.filter(m => m.status === 'закрыт_в_срок').length;
+                    const typeOverdue = typeMaterials.filter(m => m.status === 'срок_нарушен').length;
+                    const typeLabel = lang === 'ru' ? t.ru : t.uz;
+                    return (
+                      <tr key={t.value} className="hover:bg-gov-light/30">
+                        <td className="px-3 py-3 font-semibold text-gov-text">{typeLabel}</td>
+                        <td className="px-3 py-3">
+                          <button onClick={() => openMaterialsList(typeLabel, typeMaterials)} className="font-bold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={typeTotal === 0}>{typeTotal}</button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <button onClick={() => openMaterialsList(`${typeLabel}: ${lang === 'ru' ? 'В работе' : 'Ijroda'}`, typeMaterials.filter(m => m.status !== 'закрыт_в_срок'))} className="font-semibold text-gov-text text-sm hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={typeActive === 0}>{typeActive}</button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <button onClick={() => openMaterialsList(`${typeLabel}: ${lang === 'ru' ? 'Исполнено' : 'Bajarildi'}`, typeMaterials.filter(m => m.status === 'закрыт_в_срок'))} className="font-semibold text-gov-success text-sm hover:opacity-70 transition-opacity disabled:opacity-40" disabled={typeClosed === 0}>{typeClosed}</button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <button
+                            onClick={() => openMaterialsList(`${typeLabel}: ${lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'}`, typeMaterials.filter(m => m.status === 'срок_нарушен'))}
+                            disabled={typeOverdue === 0}
+                            className={typeOverdue > 0 ? 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded text-sm hover:bg-rose-100 transition-colors' : 'text-gov-muted text-sm disabled:opacity-40'}
+                          >
+                            {typeOverdue}
+                          </button>
+                        </td>
+                        <td className="px-3 py-3">
+                          <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold text-sm">{avgIndex}%</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <p className="mt-4 text-xs text-gov-muted">
@@ -996,6 +1002,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 <table className="min-w-full divide-y divide-gov-border text-left">
                   <thead>
                     <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
+                      <th className="px-3 py-2">{lang === 'ru' ? 'ТИП ДОКУМЕНТА' : 'HUJJAT TURI'}</th>
                       <th className="px-3 py-2">{lang === 'ru' ? 'СЕГОДНЯ' : 'BUGUN'}</th>
                       <th className="px-3 py-2">{lang === 'ru' ? 'ЗАВТРА' : 'ERTAGA'}</th>
                       <th className="px-3 py-2">{lang === 'ru' ? 'ПОСЛЕЗАВТРА' : 'INDINGA'}</th>
@@ -1009,42 +1016,40 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       <th className="px-3 py-2">{lang === 'ru' ? 'НЕД.5' : 'H.5'}</th>
                     </tr>
                   </thead>
-                  <tbody className="text-xs">
-                    <tr className="hover:bg-gov-light/30">
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('today', lang === 'ru' ? 'Сегодня' : 'Bugun')} className="font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors disabled:opacity-40" disabled={dl.today === 0}>{dl.today}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('tomorrow', lang === 'ru' ? 'Завтра' : 'Ertaga')} className="font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors disabled:opacity-40" disabled={dl.tomorrow === 0}>{dl.tomorrow}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('indinga', lang === 'ru' ? 'Послезавтра' : 'Indinga')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.indinga === 0}>{dl.indinga}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('days3', lang === 'ru' ? '3 дня' : '3 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days3 === 0}>{dl.days3}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('days4', lang === 'ru' ? '4 дня' : '4 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days4 === 0}>{dl.days4}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('days5', lang === 'ru' ? '5 дней' : '5 kun')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.days5 === 0}>{dl.days5}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('sl1', lang === 'ru' ? 'Неделя 1' : 'H.1')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl1 === 0}>{dl.sl1}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('sl2', lang === 'ru' ? 'Неделя 2' : 'H.2')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl2 === 0}>{dl.sl2}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('sl3', lang === 'ru' ? 'Неделя 3' : 'H.3')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl3 === 0}>{dl.sl3}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('sl4', lang === 'ru' ? 'Неделя 4' : 'H.4')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl4 === 0}>{dl.sl4}</button>
-                      </td>
-                      <td className="px-3 py-3">
-                        <button onClick={() => openDeadlineBucket('sl5', lang === 'ru' ? 'Неделя 5' : 'H.5')} className="font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={dl.sl5 === 0}>{dl.sl5}</button>
-                      </td>
-                    </tr>
+                  <tbody className="text-xs divide-y divide-gov-border">
+                    {MATERIAL_TYPES.map(t => {
+                      const dl = dlByType[t.value];
+                      const typeLabel = lang === 'ru' ? t.ru : t.uz;
+                      const buckets = [
+                        { key: 'today', ru: 'Сегодня', uz: 'Bugun', className: 'font-bold text-gov-danger bg-rose-50 px-2 py-0.5 rounded hover:bg-rose-100 transition-colors disabled:opacity-40' },
+                        { key: 'tomorrow', ru: 'Завтра', uz: 'Ertaga', className: 'font-bold text-gov-warning bg-amber-50 px-2 py-0.5 rounded hover:bg-amber-100 transition-colors disabled:opacity-40' },
+                        { key: 'indinga', ru: 'Послезавтра', uz: 'Indinga', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'days3', ru: '3 дня', uz: '3 kun', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'days4', ru: '4 дня', uz: '4 kun', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'days5', ru: '5 дней', uz: '5 kun', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'sl1', ru: 'Неделя 1', uz: 'H.1', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'sl2', ru: 'Неделя 2', uz: 'H.2', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'sl3', ru: 'Неделя 3', uz: 'H.3', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'sl4', ru: 'Неделя 4', uz: 'H.4', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                        { key: 'sl5', ru: 'Неделя 5', uz: 'H.5', className: 'font-semibold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text' },
+                      ];
+                      return (
+                        <tr key={t.value} className="hover:bg-gov-light/30">
+                          <td className="px-3 py-3 font-semibold text-gov-text">{typeLabel}</td>
+                          {buckets.map(b => (
+                            <td key={b.key} className="px-3 py-3">
+                              <button
+                                onClick={() => openDeadlineBucket(t.value, b.key, `${typeLabel}: ${lang === 'ru' ? b.ru : b.uz}`)}
+                                className={dl[b.key] === 0 ? 'text-gov-muted text-xs disabled:opacity-40' : b.className}
+                                disabled={dl[b.key] === 0}
+                              >
+                                {dl[b.key]}
+                              </button>
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1192,15 +1197,10 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 </h4>
                 <table className="min-w-full divide-y divide-gov-border text-left text-xs">
                   <tbody className="divide-y divide-gov-border">
-                    {[
-                      { key: 'ariza', ru: 'Заявление', uz: 'Ariza' },
-                      { key: 'bildirgi', ru: 'Рапорт', uz: 'Bildirgi' },
-                      { key: 'sud_ajrimi', ru: 'Суд. решение', uz: 'Sud qarori' },
-                      { key: 'boshqa', ru: 'Другое', uz: 'Boshqa' }
-                    ].map(t => {
-                      const items = filteredMaterials.filter(m => (m.material_type || 'ariza') === t.key);
+                    {MATERIAL_TYPES.map(t => {
+                      const items = filteredMaterials.filter(m => (m.material_type || 'e_material') === t.value);
                       return (
-                        <tr key={t.key} className="hover:bg-gov-light/30">
+                        <tr key={t.value} className="hover:bg-gov-light/30">
                           <td className="px-4 py-2.5 text-gov-text">{lang === 'ru' ? t.ru : t.uz}</td>
                           <td className="px-4 py-2.5 text-right">
                             <button onClick={() => openMaterialsList(lang === 'ru' ? t.ru : t.uz, items)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={items.length === 0}>{items.length}</button>
@@ -1218,16 +1218,10 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 </h4>
                 <table className="min-w-full divide-y divide-gov-border text-left text-xs">
                   <tbody className="divide-y divide-gov-border">
-                    {[
-                      { key: 'tashrif', ru: 'Тамбур', uz: 'Tashrif' },
-                      { key: 'prakuratura', ru: 'Прокуратура', uz: 'Prokuratura' },
-                      { key: 'prezident_aparat', ru: 'Аппарат Президента', uz: 'Prezident ap.' },
-                      { key: 'iio', ru: 'Другой ИИО', uz: 'Boshqa IIO' },
-                      { key: 'portal', ru: 'Портал', uz: 'Portal' }
-                    ].map(s => {
-                      const items = filteredMaterials.filter(m => (m.source_from || 'tashrif') === s.key);
+                    {ALL_SOURCES.map(s => {
+                      const items = filteredMaterials.filter(m => (m.source_from || 'e_material') === s.value);
                       return (
-                        <tr key={s.key} className="hover:bg-gov-light/30">
+                        <tr key={s.value} className="hover:bg-gov-light/30">
                           <td className="px-4 py-2.5 text-gov-text">{lang === 'ru' ? s.ru : s.uz}</td>
                           <td className="px-4 py-2.5 text-right">
                             <button onClick={() => openMaterialsList(lang === 'ru' ? s.ru : s.uz, items)} className="font-bold text-gov-text hover:text-gov-primary transition-colors disabled:opacity-40 disabled:hover:text-gov-text" disabled={items.length === 0}>{items.length}</button>
@@ -1642,13 +1636,23 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                   <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
                     {lang === 'ru' ? 'Пароль' : 'Parol'}
                   </label>
-                  <input
-                    type="text"
-                    value={newUser.password}
-                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                    placeholder="password123"
-                    className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewUserPassword ? 'text' : 'password'}
+                      value={newUser.password}
+                      onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                      placeholder="password123"
+                      className="w-full text-xs p-2 pr-8 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewUserPassword(s => !s)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gov-muted hover:text-gov-text transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showNewUserPassword ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="md:col-span-3">

@@ -62,7 +62,6 @@ function DislikeAlertNotifications({ lang, user }) {
         : `${data.citizen_name} ${officerName}ga dislayk qo'ydi${reason ? `: ${reason}` : ''}`;
 
       setToast(message);
-      setTimeout(() => setToast(null), 15000);
       playDislikeChime();
 
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
@@ -84,23 +83,23 @@ function DislikeAlertNotifications({ lang, user }) {
 
   return (
     <div
-      className="fixed top-20 right-6 w-[28rem] max-w-[calc(100vw-3rem)] bg-gov-surface border border-gov-border rounded-xl shadow-pop p-5 text-left z-[200] flex items-start gap-3"
+      className="fixed top-20 right-6 w-[40rem] max-w-[calc(100vw-3rem)] bg-gov-surface border border-gov-border rounded-2xl shadow-2xl p-7 text-left z-[200] flex items-start gap-4"
       style={{ animation: 'fadeIn 0.2s ease-out' }}
     >
-      <span className="w-11 h-11 rounded-full bg-gov-dangerLight flex items-center justify-center shrink-0">
-        <ThumbDownIcon className="h-6 w-6 text-gov-danger" />
+      <span className="w-16 h-16 rounded-full bg-gov-dangerLight flex items-center justify-center shrink-0">
+        <ThumbDownIcon className="h-9 w-9 text-gov-danger" />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-gov-danger uppercase tracking-wide">
+        <p className="text-lg font-bold text-gov-danger uppercase tracking-wide">
           {lang === 'ru' ? 'Новый дизлайк' : 'Yangi dislayk'}
         </p>
-        <p className="text-sm font-medium text-gov-text leading-relaxed mt-1">{toast}</p>
+        <p className="text-base font-medium text-gov-text leading-relaxed mt-2">{toast}</p>
       </div>
       <button
         onClick={() => setToast(null)}
-        className="p-1 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
+        className="p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
       >
-        <CloseIcon className="h-5 w-5" />
+        <CloseIcon className="h-6 w-6" />
       </button>
     </div>
   );
