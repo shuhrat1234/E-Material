@@ -91,24 +91,6 @@ class OfficerViewSet(viewsets.ModelViewSet):
             action_uz=f"Xodim {officer.name_uz} ishini baholash: {rating_type}{reason_suffix_uz}"
         )
 
-        if not is_like:
-            channel_layer = get_channel_layer()
-            alert_data = {
-                'kind': 'dislike_alert',
-                'officer_id': officer.id,
-                'officer_name_ru': officer.name_ru,
-                'officer_name_uz': officer.name_uz,
-                'citizen_name': citizen_name,
-                'reason_ru': reason_ru,
-                'reason_uz': reason_uz,
-                'time': timezone.now().isoformat(),
-            }
-            for chief in Officer.objects.filter(role='chief'):
-                async_to_sync(channel_layer.group_send)(
-                    f'user_{chief.id}',
-                    {'type': 'chat.message', 'data': alert_data}
-                )
-
         return Response(OfficerSerializer(officer).data)
 
     @action(detail=True, methods=['get'])
@@ -135,7 +117,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
         
         officer_id = request.data.get('officer')
         officer = Officer.objects.filter(id=officer_id).first()
-        dept_id = officer.department_id if officer else None
+        dept_id = officer.department_id if officer else 'so'
 
         # Use the manually entered ID if provided, otherwise auto-generate one
         custom_id = (request.data.get('id') or '').strip()
@@ -165,7 +147,6 @@ class MaterialViewSet(viewsets.ModelViewSet):
             source_from=request.data.get('source_from', 'tashrif'),
             iib=request.data.get('iib', ''),
             preliminary_article=request.data.get('preliminary_article', ''),
-            extra_ids=', '.join(p.strip() for p in (request.data.get('extra_ids') or '').split(',') if p.strip()),
         )
         
         # Create initial appeal step

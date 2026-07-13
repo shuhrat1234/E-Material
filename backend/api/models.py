@@ -54,7 +54,6 @@ class Material(models.Model):
     citizen_notification_text = models.TextField(null=True, blank=True)
     iib = models.CharField(max_length=50, blank=True, default='')
     preliminary_article = models.CharField(max_length=255, blank=True, default='')
-    extra_ids = models.CharField(max_length=500, blank=True, default='') # extra comma-separated reference/incoming numbers for the same case
 
     def __str__(self):
         return self.id
