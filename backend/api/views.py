@@ -20,6 +20,7 @@ from .serializers import (
     ApprovalRequestSerializer, AuditLogSerializer, ActiveVisitSerializer, SMSTemplateSerializer,
     ChatMessageSerializer, RatingSerializer
 )
+from .deepseek import deepseek_json, deepseek_chat, DeepSeekError
 
 def parse_difficulty(value):
     try:
@@ -452,84 +453,50 @@ class AiAssistantViewSet(viewsets.ViewSet):
     def chat(self, request):
         query = request.data.get('query', '').strip()
         lang = request.data.get('lang', 'ru')
-        
-        ai_text = ""
-        checklist = []
-        draft = ""
-        
+        case_context = request.data.get('case_context') or None
+
         if not query:
             return Response({'error': 'No query provided'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        ql_matches = ['краж', 'мошен', 'разграничение', 'o\'g\'rilik', 'firibgarlik']
-        chk_matches = ['план', 'действ', 'алгоритм', 'harakat', 'reja']
-        rej_matches = ['отказ', 'постановл', 'возбужд', 'rad etish', 'qaror']
-        
-        is_qualification = any(x in query.lower() for x in ql_matches)
-        is_checklist = any(x in query.lower() for x in chk_matches)
-        is_draft = any(x in query.lower() for x in rej_matches)
-        
-        if is_qualification:
-            if lang == 'ru':
-                ai_text = "Анализ квалификации: Ключевое различие между кражей (ст. 169) и мошенничеством (ст. 168) заключается в способе изъятия. Если виновное лицо использовало чужие реквизиты банковской карты без ведома владельца (например, нашло карту) - это тайное хищение (кража, ст. 169). Если же владелец сам передал код доступа под воздействием обмана - это мошенничество (ст. 168). Коллизионность в судебной практике минимизируется разъяснением Пленума Верховного суда Республики Узбекистан."
-                checklist = [
-                    "Истребовать биллинг телефонных соединений и IP-адрес транзакции.",
-                    "Провести допрос потерпевшего о характере передачи банковских данных.",
-                    "Направить запрос в процессинговый центр банка о получателе средств."
-                ]
-                draft = "ПОСТАНОВЛЕНИЕ\nоб отказе в возбуждении уголовного дела\n\nг. Ташкент                               30 июня 2026 г.\n\nКапитан милиции Каримов С.Б., рассмотрев материалы дела MAT-2026-...\nУСТАНОВИЛ:\nИмели место признаки гражданско-правовых отношений...\nПОСТАНОВИЛ:\n1. В возбуждении дела по ст. 168 УК РУз отказать.\n2. Направить копию прокурору."
-            else:
-                ai_text = "Kvalifikatsiya tahlili: O'g'rilik (169-modda) va firibgarlik (168-modda) o'rtasidagi asosiy farq - bu mulkni qo'lga kiritish usuli. Agar shaxs egasining xabarisiz begona bank karta ma'lumotlaridan foydalansa (masalan, topib olingan karta) - bu yashirin talon-toroj (o'g'rilik, 169-modda). Agar karta egasining o'zi aldov ta'sirida kodni bergan bo'lsa - bu firibgarlik (168-modda)."
-                checklist = [
-                    "Telefon so'zlashuvlari billingi va tranzaksiya amalga oshirilgan IP-manzilni olish.",
-                    "Jabrlanuvchini bank ma'lumotlarini qanday topshirganligi yuzasidan so'roq qilish.",
-                    "Mablag' qabul qiluvchisi haqida bank protsessing markaziga so'rov yuborish."
-                ]
-                draft = "QAROR\nJinoyat ishi qo'zg'atishni rad etish to'g'risida\n\nToshkent sh.                            2026 yil 30 iyun\n\nTergovchi kapitan Karimov S.B. MAT-2026-... materialni o'rganib,\nANIQLADI:\nFuqarolar o'rtasida fuqarolik-huquqiy munosabatlar mavjud...\nQAROR QILDI:\n1. JKning 168-moddasi bilan jinoyat ishi qo'zg'atish rad etilsin.\n2. Nusxasi prokurorga yuborilsin."
-        elif is_checklist:
-            if lang == 'ru':
-                ai_text = "Составлен алгоритм действий доследственной проверки по факту кражи имущества. Рекомендуется выполнить следующие процессуальные действия в течение 3-х суток:"
-                checklist = [
-                    "Осмотр места происшествия с участием криминалиста (снятие отпечатков пальцев).",
-                    "Допрос заявителя и свидетелей, проживающих в непосредственной близости.",
-                    "Направление запросов в ОВД соседних районов на выявление аналогичных преступлений.",
-                    "Изъятие записей камер наружного видеонаблюдения по периметру."
-                ]
-                draft = "ПЛАН ПРОВЕРОЧНЫХ ДЕЙСТВИЙ\nпо материалу № MAT-2026-...\n\n1. Провести осмотр места происшествия.\n2. Установить свидетелей.\n3. Сделать запрос в архив судимостей.\n\nИсполнитель: Каримов С."
-            else:
-                ai_text = "Mulk o'g'irligi holati bo'yicha tergov oldi tekshiruv harakatlari algoritmi tuzildi. 3 kun ichida quyidagi protsessual harakatlarni bajarish tavsiya etiladi:"
-                checklist = [
-                    "Kriminalist ishtirokida voqea joyini ko'zdan kechirish (barmoq izlarini olish).",
-                    "Murojaatchi va yaqin atrofda yashovchi guvohlarni so'roq qilish.",
-                    "Qo'shni tumanlar IIObasiga shunga o'xshash jinoyatlarni aniqlash bo'yicha so'rovlar yuborish.",
-                    "Atrofdagi tashqi videokuzatuv kameralari yozuvlarini olish."
-                ]
-                draft = "TEKSHIRUV HARAKATLARI REJASI\nMAT-2026-...-sonli material yuzasidan\n\n1. Voqea joyini ko'zdan kechirish.\n2. Guvohlarni aniqlash.\n3. Muqaddam sudlanganlar bazasiga so'rov yuborish.\n\nIjrochi: Karimov S."
-        elif is_draft:
-            if lang == 'ru':
-                ai_text = "Шаблон постановления сформирован на основании типовых реквизитов Олмазорского РУВД. Вы можете скопировать его для дальнейшего редактирования в текстовом редакторе."
-                checklist = [
-                    "Проверить отсутствие ущерба (признание ущерба малозначительным).",
-                    "Приобщить объяснительные сторон спора.",
-                    "Зарегистрировать проект решения в АИС Е-Материал."
-                ]
-                draft = "ПОСТАНОВЛЕНИЕ\nоб отказе в возбуждении уголовного дела\n\nг. Ташкент                               30 июня 2026 г.\n\nСледователь СО УКД ОВД Олмазорского района капитан Каримов С.Б.,\nрассмотрев заявление гр-на Абдуллаева А.У. от 20.06.2026 г.,\nУСТАНОВИЛ:\nЗаявитель сообщил о краже, однако в ходе проверки установлено, что телефон был утерян по собственной неосторожности. Признаков состава преступления, предусмотренного ст. 169 УК РУз, не обнаружено.\nРуководствуясь ст. 83 п. 2 УПК РУз,\nПОСТАНОВИЛ:\n1. В возбуждении уголовного дела отказать за отсутствием состава преступления.\n2. Уведомить заявителя о принятом решении."
-            else:
-                ai_text = "Qaror andozasi Olmazor tumani IIO FMB rekvizitlari asosida yaratildi. Uni matn muharririga nusxalab olishingiz mumkin."
-                checklist = [
-                    "Zarar yetkazilmaganini tekshirish (kam ahamiyatli deb topish).",
-                    "Nizo taraflarining tushuntirish xatlarini ilova qilish.",
-                    "Qaror loyihasini E-Material tizimida ro'yxatdan o'tkazish."
-                ]
-                draft = "QAROR\nJinoyat ishi qo'zg'atishni rad etish to'g'risida\n\nToshkent sh.                            2026 yil 30 iyun\n\nOlmazor tumani IIO FMB Tergov bo'limi tergovchisi kapitan Karimov S.B.,\nfuqaro Abdullayev A.U.ning 20.06.2026 yildagi arizasini o'rganib,\nANIQLADI:\nMurojaatchi o'g'rilik haqida xabar bergan, biroq tekshiruv davomida telefon o'zining ehtiyotsizligi oqibatida yo'qolgani aniqlangan. O'g'rilik tarkibi aniqlanmadi.\nJinoyat-protsessual kodeksining 83-moddasi 2-bandiga asosan,\nQAROR QILDI:\n1. Jinoyat tarkibi bo'lmaganligi sababli jinoyat ishi qo'zg'atish rad etilsin.\n2. Murojaatchiga qaror nusxasi yuborilsin."
-        else:
-            if lang == 'ru':
-                ai_text = "Я проанализировал ваш вопрос. В контексте доследственной проверки Олмазорского РУВД, для квалификации правонарушения требуется детальный разбор субъективной стороны деяния. Пожалуйста, уточните детали происшествия."
-                checklist = ["Сбор дополнительных объяснений"]
-                draft = "// AI Draft: Custom query response"
-            else:
-                ai_text = "Sizning savolingizni tahlil qildim. Tergovga qadar tekshiruv doirasida huquqbuzarlikni malakalash uchun qilmishning subyektiv tomonini batafsil o'rganish lozim. Iltimos, batafsilroq ma'lumot bering."
-                checklist = ["Qo'shimcha tushuntirishlar olish"]
-                draft = "// AI Qaror loyihasi"
+
+        lang_name = 'русском языке' if lang == 'ru' else "o'zbek tilida"
+        system_prompt = (
+            "Ты — юридический AI-ассистент для следователей отдела внутренних дел "
+            "Олмазорского района (Узбекистан), встроенный в систему учёта дел «Е-Материал». "
+            "Следователи задают тебе вопросы по квалификации правонарушений, просят алгоритм "
+            "проверочных действий или черновик процессуального документа (постановление, план и т.п.).\n\n"
+            "Если в сообщении пользователя указан контекст конкретного дела (Контекст дела: ...), "
+            "используй его данные (ID, фабула, ИИБ, статья, тип материала и т.п.) как основу для анализа "
+            "и черновика, а не общие рассуждения.\n\n"
+            f"Отвечай строго в формате JSON с тремя полями, весь текст — на {lang_name}:\n"
+            '- "aiText": краткий профессиональный анализ/ответ со ссылками на статьи УК РУз или УПК РУз, если applicable.\n'
+            '- "checklist": массив из 2-5 коротких пунктов конкретных действий следователя (пустой массив, если не applicable).\n'
+            '- "draftText": если вопрос подразумевает необходимость черновика документа — дай оформленный черновик '
+            "(с условным номером материала вида MAT-2026-...), иначе пустая строка."
+        )
+
+        user_content = query
+        if case_context:
+            context_lines = "\n".join(
+                f"{key}: {value}" for key, value in case_context.items() if value not in (None, '')
+            )
+            user_content = f"Контекст дела:\n{context_lines}\n\nВопрос следователя: {query}"
+
+        try:
+            result = deepseek_json([
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': user_content},
+            ])
+            ai_text = str(result.get('aiText', ''))
+            checklist = result.get('checklist') or []
+            draft = str(result.get('draftText', ''))
+        except DeepSeekError as e:
+            ai_text = (
+                'AI-ассистент временно недоступен (нет интернета или сервис перегружен). Попробуйте позже.'
+                if lang == 'ru' else
+                "AI-yordamchi vaqtincha mavjud emas (internet yo'q yoki xizmat band). Keyinroq urinib ko'ring."
+            )
+            checklist = []
+            draft = ''
 
         AuditLog.objects.create(
             time=timezone.now(),
@@ -537,12 +504,54 @@ class AiAssistantViewSet(viewsets.ViewSet):
             action_ru=f"AI-чатбот: Запрос: \"{query[:50]}...\"",
             action_uz=f"AI-chatbot: So'rov: \"{query[:50]}...\""
         )
-        
+
         return Response({
             'aiText': ai_text,
             'checklist': checklist,
             'draftText': draft
         })
+
+    @action(detail=False, methods=['post'], url_path='citizen-chat')
+    def citizen_chat(self, request):
+        query = (request.data.get('query') or '').strip()
+        lang = request.data.get('lang', 'ru')
+        history = request.data.get('history') or []  # [{role: 'user'|'assistant', text: '...'}, ...]
+
+        if not query:
+            return Response({'error': 'No query provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lang_name = 'русском языке' if lang == 'ru' else "o'zbek tilida"
+        system_prompt = (
+            "Ты — вежливый AI-помощник у входа в Олмазорский районный отдел внутренних дел (Узбекистан). "
+            "К тебе обращаются обычные граждане (не юристы) с вопросами вроде «у меня украли телефон», "
+            "«потерял паспорт», «сосед шумит» и т.п.\n\n"
+            "Правила:\n"
+            "- Объясняй простым языком, без юридического жаргона, 3-6 предложений.\n"
+            "- Не давай юридических консультаций как адвокат — только практические шаги: куда обратиться, "
+            "какие документы взять с собой, к кому подойти в отделе.\n"
+            "- Если ситуация экстренная (угроза жизни, происшествие прямо сейчас) — сразу скажи звонить 102.\n"
+            "- Всегда заверши напоминанием обратиться к регистратору отдела для подачи официального заявления.\n"
+            f"- Отвечай только на {lang_name}, обычным текстом (не JSON, без Markdown-разметки)."
+        )
+
+        messages = [{'role': 'system', 'content': system_prompt}]
+        for turn in history[-10:]:
+            role = 'assistant' if turn.get('role') == 'assistant' else 'user'
+            text = str(turn.get('text', ''))
+            if text:
+                messages.append({'role': role, 'content': text})
+        messages.append({'role': 'user', 'content': query})
+
+        try:
+            reply = deepseek_chat(messages, json_mode=False, temperature=0.4)
+        except DeepSeekError:
+            reply = (
+                'AI-помощник временно недоступен (нет интернета). Пожалуйста, обратитесь к регистратору отдела.'
+                if lang == 'ru' else
+                "AI-yordamchi vaqtincha mavjud emas (internet yo'q). Iltimos, bo'lim registratoriga murojaat qiling."
+            )
+
+        return Response({'reply': reply})
 
 
 @api_view(['POST'])

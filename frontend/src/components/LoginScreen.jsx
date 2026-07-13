@@ -22,6 +22,11 @@ function LoginScreen({ onLogin, lang, setLang }) {
       return;
     }
 
+    if (username.trim().toLowerCase() === 'yordam' && password === 'yordam') {
+      handleAiKiosk();
+      return;
+    }
+
     setLoading(true);
     setErrorMsg('');
 
@@ -49,6 +54,17 @@ function LoginScreen({ onLogin, lang, setLang }) {
       photo: 'П'
     };
     onLogin(citizenUser);
+  };
+
+  const handleAiKiosk = () => {
+    const aiKioskUser = {
+      role: 'ai_kiosk',
+      name: lang === 'ru' ? 'AI-помощник' : 'AI-yordamchi',
+      id: 'off_ai_kiosk',
+      roleLabel: lang === 'ru' ? 'Приёмная' : 'Qabulxona',
+      photo: 'AI'
+    };
+    onLogin(aiKioskUser);
   };
 
   const t = TRANSLATIONS[lang];

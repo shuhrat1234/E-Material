@@ -20,6 +20,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('db/reset/', DbOperationsViewSet.as_view({'post': 'reset_db'})),
     path('ai/chat/', AiAssistantViewSet.as_view({'post': 'chat'})),
+    path('ai/citizen-chat/', AiAssistantViewSet.as_view({'post': 'citizen_chat'})),
     path('auth/login/', login_view),
 ]
 

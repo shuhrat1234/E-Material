@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE, TRANSLATIONS } from '../App';
 import ChatPanel from './ChatPanel';
-import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon } from './Icons';
+import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon, TrashIcon } from './Icons';
 import Select from './ui/Select';
 import FilterPill from './ui/FilterPill';
 import ExportButton from './ui/ExportButton';
 import { exportToExcel } from '../exportExcel';
 import { notify } from '../toastService';
+import { confirm } from '../confirmService';
 import { MATERIAL_TYPES, getSourceOptions } from '../materialTaxonomy';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
@@ -168,6 +169,25 @@ function RegistratorView({ lang, onViewDetails, user }) {
         fetchInitialData();
       })
       .catch(err => console.error(err));
+  };
+
+  const handleDeleteMaterial = async (caseId) => {
+    const ok = await confirm(
+      lang === 'ru'
+        ? `Удалить материал ${caseId}? Это действие необратимо.`
+        : `${caseId} materialini o'chirasizmi? Bu amalni qaytarib bo'lmaydi.`
+    );
+    if (!ok) return;
+
+    axios.delete(`${API_BASE}/materials/${caseId}/`)
+      .then(() => {
+        notify(lang === 'ru' ? 'Материал удалён' : 'Material o\'chirildi', 'success');
+        fetchInitialData();
+      })
+      .catch(err => {
+        console.error("Error deleting material", err);
+        notify(lang === 'ru' ? 'Ошибка при удалении материала' : 'Materialni o\'chirishda xatolik yuz berdi', 'error');
+      });
   };
 
   const getStatusClass = (status) => {
@@ -635,7 +655,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                     <th className="px-4 py-3">{lang === 'ru' ? 'Ст. УК' : 'Modda'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
                     <th className="px-4 py-3">{lang === 'ru' ? 'Статус' : 'Status'}</th>
-                    <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Просмотр' : 'Ko\'rish'}</th>
+                    <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Действия' : 'Amallar'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gov-border text-xs">
@@ -670,13 +690,22 @@ function RegistratorView({ lang, onViewDetails, user }) {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => onViewDetails(m.id)}
-                            className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
-                            title="Details"
-                          >
-                            <EyeIcon />
-                          </button>
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              onClick={() => onViewDetails(m.id)}
+                              className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                              title="Details"
+                            >
+                              <EyeIcon />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMaterial(m.id)}
+                              className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-danger rounded hover:bg-rose-50 hover:border-rose-200 transition-colors inline-flex"
+                              title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -49,11 +49,12 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
     {
       sender: 'ai',
       text: lang === 'ru' 
-        ? 'Приветствую! Я ваш интеллектуальный правовой ассистент АИС «Е-Материал».\n\nЯ могу помочь вам:\n- Проверить дело на коллизионность норм права.\n- Сформировать список необходимых следственных действий.\n- Подготовить проект постановления.'
-        : 'Assalomu alaykum! Men sizning «E-Material» intellektual huquqiy yordamchingizman.\n\nSizga yordam bera olaman:\n- Ishni qonunchilik normalariga muvofiqligini tekshirish.\n- Zaruriy tergov harakatlari ro\'yxatini tuzish.\n- Qaror loyihasini tayyorlash.'
+        ? 'Приветствую! Я ваш интеллектуальный правовой ассистент.\n\nЯ могу помочь вам:\n- Проверить дело на коллизионность норм права.\n- Сформировать список необходимых следственных действий.\n- Подготовить проект постановления.'
+        : 'Assalomu alaykum! Men sizning intellektual huquqiy yordamchingizman.\n\nSizga yordam bera olaman:\n- Ishni qonunchilik normalariga muvofiqligini tekshirish.\n- Zaruriy tergov harakatlari ro\'yxatini tuzish.\n- Qaror loyihasini tayyorlash.'
     }
   ]);
   const [aiInput, setAiInput] = useState('');
+  const [aiThinking, setAiThinking] = useState(false);
   const [selectedCaseForAi, setSelectedCaseForAi] = useState(null);
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [aiDraftResolution, setAiDraftResolution] = useState('');
@@ -272,20 +273,43 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
   const trendClosed = getTrend(m => m.status === 'закрыт_в_срок');
   const trendOverdue = getTrend(m => m.status === 'срок_нарушен');
 
-  const handleAiSend = (textInput) => {
-    const query = textInput || aiInput;
-    if (!query.trim()) return;
+  const buildCaseContext = (mat) => {
+    if (!mat) return null;
+    return {
+      id: mat.id,
+      title_ru: mat.title_ru,
+      title_uz: mat.title_uz,
+      citizen_name: mat.citizen_name,
+      iib: mat.iib,
+      preliminary_article: mat.preliminary_article,
+      material_type: mat.material_type,
+      source_from: mat.source_from,
+      status: mat.status,
+      difficulty: mat.difficulty,
+    };
+  };
 
-    setAiChat(prev => [...prev, { sender: 'user', text: query }]);
-    setAiInput('');
-
-    axios.post(`${API_BASE}/ai/chat/`, { query, lang })
+  const sendAiQuery = (query, caseContext) => {
+    setAiThinking(true);
+    axios.post(`${API_BASE}/ai/chat/`, { query, lang, case_context: caseContext })
       .then(res => {
         setAiChat(prev => [...prev, { sender: 'ai', text: res.data.aiText }]);
         setAiRecommendations(res.data.checklist || []);
         setAiDraftResolution(res.data.draftText || '');
       })
-      .catch(err => console.error(err));
+      .catch(err => console.error(err))
+      .finally(() => setAiThinking(false));
+  };
+
+  const handleAiSend = (textInput) => {
+    const query = textInput || aiInput;
+    if (!query.trim() || aiThinking) return;
+
+    setAiChat(prev => [...prev, { sender: 'user', text: query }]);
+    setAiInput('');
+
+    const mat = selectedCaseForAi ? materials.find(m => m.id === selectedCaseForAi) : null;
+    sendAiQuery(query, buildCaseContext(mat));
   };
 
   const handleTemplateAi = (type) => {
@@ -309,16 +333,23 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
   const handleLoadAiContext = (caseId) => {
     setSelectedCaseForAi(caseId);
     setActivePanel('ai');
-    
+
     const mat = materials.find(m => m.id === caseId);
+    if (!mat) return;
     const summary = lang === 'ru' ? mat.title_ru : mat.title_uz;
-    
-    setAiChat(prev => [...prev, { 
-      sender: 'ai', 
-      text: lang === 'ru' 
-        ? `Загружен контекст дела **${caseId}**:\n"${summary}"\n\nЯ готов проанализировать состав, составить список проверочных мероприятий или подготовить проект постановления.`
-        : `**${caseId}** ishi bo'yicha ma'lumotlar yuklandi:\n"${summary}"\n\nMen jinoyat tarkibini tahlil qilish, tekshiruv harakatlari ro'yxatini tuzish yoki qaror loyihasini tayyorlashga tayyorman.`
+
+    setAiChat(prev => [...prev, {
+      sender: 'ai',
+      text: lang === 'ru'
+        ? `Загружен контекст дела **${caseId}**:\n"${summary}"\n\nАнализирую дело...`
+        : `**${caseId}** ishi bo'yicha ma'lumotlar yuklandi:\n"${summary}"\n\nIsh tahlil qilinmoqda...`
     }]);
+
+    const query = lang === 'ru'
+      ? 'Проанализируй дело: определи квалификацию, дай список проверочных действий и, при необходимости, черновик постановления.'
+      : "Ishni tahlil qiling: kvalifikatsiyani aniqlang, tekshiruv harakatlari ro'yxatini bering va zarur bo'lsa qaror loyihasini tayyorlang.";
+
+    sendAiQuery(query, buildCaseContext(mat));
   };
 
   const handleDecisionSubmit = (e) => {
@@ -969,13 +1000,10 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Chat Column */}
             <div className="lg:col-span-2 bg-gov-surface rounded-2xl shadow-card p-5 flex flex-col h-[700px]">
-              <div className="border-b border-gov-border pb-3 mb-4 flex justify-between items-center">
+              <div className="border-b border-gov-border pb-3 mb-4">
                 <h3 className="font-semibold text-sm text-gov-text">
                   {lang === 'ru' ? 'AI Правовой Ассистент' : 'AI Huquqiy Yordamchi'}
                 </h3>
-                <span className="px-2 py-0.5 border border-gov-border bg-gov-light text-gov-text text-[9px] font-bold rounded">
-                  E-Material AI v1.2
-                </span>
               </div>
 
               {/* Message History */}
@@ -992,17 +1020,24 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
                     <span className="whitespace-pre-line">{m.text}</span>
                   </div>
                 ))}
+                {aiThinking && (
+                  <div className="flex items-center gap-1.5 max-w-[85%] p-3 rounded-lg border border-gov-border bg-gov-surface text-gov-muted self-start">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gov-muted animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gov-muted animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gov-muted animate-bounce" />
+                  </div>
+                )}
               </div>
 
               {/* Templates */}
               <div className="flex flex-wrap gap-2 my-4">
-                <button onClick={() => handleTemplateAi('qual')} className="px-3 py-1.5 border border-gov-border hover:bg-gov-light rounded text-[10px] font-bold text-gov-muted hover:text-gov-text transition-colors">
+                <button disabled={aiThinking} onClick={() => handleTemplateAi('qual')} className="px-3 py-1.5 border border-gov-border hover:bg-gov-light rounded text-[10px] font-bold text-gov-muted hover:text-gov-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   {lang === 'ru' ? 'Кража vs Мошенничество' : 'O\'g\'irlik va firibgarlik'}
                 </button>
-                <button onClick={() => handleTemplateAi('checklist')} className="px-3 py-1.5 border border-gov-border hover:bg-gov-light rounded text-[10px] font-bold text-gov-muted hover:text-gov-text transition-colors">
+                <button disabled={aiThinking} onClick={() => handleTemplateAi('checklist')} className="px-3 py-1.5 border border-gov-border hover:bg-gov-light rounded text-[10px] font-bold text-gov-muted hover:text-gov-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   {lang === 'ru' ? 'План действий по краже' : 'O\'g\'irlik bo\'yicha reja'}
                 </button>
-                <button onClick={() => handleTemplateAi('reject')} className="px-3 py-1.5 border border-gov-border hover:bg-gov-light rounded text-[10px] font-bold text-gov-muted hover:text-gov-text transition-colors">
+                <button disabled={aiThinking} onClick={() => handleTemplateAi('reject')} className="px-3 py-1.5 border border-gov-border hover:bg-gov-light rounded text-[10px] font-bold text-gov-muted hover:text-gov-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                   {lang === 'ru' ? 'Черновик Отказа в ВУД' : 'JIQ rad etish loyihasi'}
                 </button>
               </div>
@@ -1014,12 +1049,14 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
                   value={aiInput}
                   onChange={e => setAiInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAiSend()}
+                  disabled={aiThinking}
                   placeholder={lang === 'ru' ? 'Задайте правовой вопрос...' : 'Huquqiy savol bering...'}
-                  className="flex-1 px-3 py-2 border border-gov-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-gov-blue/50 focus:border-gov-blue"
+                  className="flex-1 px-3 py-2 border border-gov-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-gov-blue/50 focus:border-gov-blue disabled:opacity-60"
                 />
                 <button
                   onClick={() => handleAiSend()}
-                  className="px-4 py-2 bg-gov-primary text-white rounded-xl hover:bg-blue-700 inline-flex items-center"
+                  disabled={aiThinking}
+                  className="px-4 py-2 bg-gov-primary text-white rounded-xl hover:bg-blue-700 inline-flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <SendIcon />
                 </button>

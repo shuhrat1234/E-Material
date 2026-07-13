@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import CitizenView from './components/CitizenView';
+import AiKioskView from './components/AiKioskView';
 import RegistratorView from './components/RegistratorView';
 import InvestigatorView from './components/InvestigatorView';
 import ChiefView from './components/ChiefView';
@@ -23,7 +24,7 @@ export const API_BASE = `http://${window.location.hostname}:8000/api`;
 export const TRANSLATIONS = {
   ru: {
     title: "АИС «Е-Материал»",
-    subtitle: "Olmazor tumani bo'yicha IIO FMB huzuridagi Tergov bo'limi Tergovga qadar tekshiruv bo'linmasi",
+    subtitle: "Подразделение доследственной проверки Следственного отдела при РУВД Олмазорского района",
     select_role: "Выберите роль",
     password: "Пароль доступа",
     login_btn: "Войти в систему",
@@ -127,6 +128,8 @@ function App() {
     switch (user.role) {
       case 'citizen':
         return <CitizenView lang={lang} />;
+      case 'ai_kiosk':
+        return <AiKioskView lang={lang} />;
       case 'registrator':
         return <RegistratorView lang={lang} onViewDetails={setSelectedCaseId} user={user} />;
       case 'investigator':

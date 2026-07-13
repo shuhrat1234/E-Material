@@ -3,6 +3,17 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load local secrets (e.g. DEEPSEEK_API_KEY) from backend/.env if present.
+# This file is git-ignored — see .env.example for the expected format.
+_env_path = BASE_DIR / '.env'
+if _env_path.exists():
+    for _line in _env_path.read_text(encoding='utf-8').splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith('#') or '=' not in _line:
+            continue
+        _key, _, _value = _line.partition('=')
+        os.environ.setdefault(_key.strip(), _value.strip())
+
 SECRET_KEY = 'django-insecure-mock-key-for-e-material'
 
 DEBUG = True
@@ -89,3 +100,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ]
 }
+
+# DeepSeek AI (OpenAI-compatible) — used by the investigator AI assistant and
+# the citizen kiosk legal-guidance chat. Both require internet access to reach
+# api.deepseek.com, so they simply fail gracefully on the offline LAN deployment.
+# Key is read from backend/.env (git-ignored), not committed to source.
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+DEEPSEEK_BASE_URL = 'https://api.deepseek.com'
+DEEPSEEK_MODEL = 'deepseek-v4-flash'
