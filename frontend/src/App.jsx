@@ -17,9 +17,14 @@ import Avatar from './components/ui/Avatar';
 import { confirm } from './confirmService';
 import axios from 'axios';
 
-// API Base URL — derived from whatever host/IP the browser used to load the page,
-// so the app works both on the server machine itself and from other PCs on the LAN.
-export const API_BASE = `http://${window.location.hostname}:8000/api`;
+// API Base URL.
+// Production build (npm run build): same-origin /api — nginx proxies it to the backend,
+// so it works over both http and https without extra open ports.
+// Dev (npm run dev): direct to the backend on port 8000 of the same host/IP,
+// so the app works on the server machine itself and from other PCs on the LAN.
+export const API_BASE = import.meta.env.PROD
+  ? `${window.location.protocol}//${window.location.host}/api`
+  : `http://${window.location.hostname}:8000/api`;
 
 export const TRANSLATIONS = {
   ru: {

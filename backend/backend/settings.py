@@ -16,7 +16,8 @@ if _env_path.exists():
 
 SECRET_KEY = 'django-insecure-mock-key-for-e-material'
 
-DEBUG = True
+# Set DJANGO_DEBUG=False in backend/.env on production servers.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True').lower() != 'false'
 
 ALLOWED_HOSTS = ['*']
 
