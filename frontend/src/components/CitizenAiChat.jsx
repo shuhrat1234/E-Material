@@ -154,7 +154,7 @@ function CitizenAiChat({ lang, fullPage = false }) {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
           placeholder={lang === 'ru' ? 'Введите вопрос...' : 'Savolingizni kiriting...'}
-          className={`flex-1 rounded-full bg-gov-light focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${fullPage ? 'px-6 py-4 text-xl' : 'px-4 py-2.5 text-sm'}`}
+          className={`flex-1 min-w-0 rounded-full bg-gov-light focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all ${fullPage ? 'px-6 py-4 text-xl' : 'px-4 py-2.5 text-sm'}`}
         />
         <button
           onClick={() => send()}
