@@ -332,7 +332,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       ) : activeTab === 'register' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form Left */}
-          <div className="lg:col-span-1 bg-gov-surface rounded-2xl shadow-card p-6 space-y-4">
+          <div className="lg:col-span-1 bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6 space-y-4">
             <h3 className="font-semibold text-sm text-gov-text border-b border-gov-border pb-3">
               {lang === 'ru' ? 'Регистрация нового материала' : 'Yangi materialni ro\'yxatdan o\'tkazish'}
             </h3>
@@ -568,7 +568,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
           </div>
 
           {/* Table Registry Right */}
-          <div className="lg:col-span-2 bg-gov-surface rounded-2xl shadow-card p-6 overflow-hidden flex flex-col">
+          <div className="lg:col-span-2 bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6 overflow-hidden flex flex-col">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-4">
               <h3 className="font-semibold text-sm text-gov-text text-left">
                 {lang === 'ru' ? 'Реестр зарегистрированных материалов' : 'Ro\'yxatga olingan materiallar reyestri'}
@@ -746,7 +746,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
         </div>
       ) : (
         /* Approvals Tab */
-        <div className="bg-gov-surface rounded-2xl shadow-card p-6">
+        <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
           <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
             {lang === 'ru' ? 'Запросы на согласование решений' : 'Qarorlarni tasdiqlash so\'rovlari'}
           </h3>

@@ -236,7 +236,7 @@ function App() {
         </header>
       )}
 
-      <main className={`flex-1 min-w-0 p-6 w-full flex flex-col overflow-x-hidden overflow-y-auto ${!user ? 'items-center justify-center' : ''}`}>
+      <main className={`flex-1 min-w-0 p-3 sm:p-6 w-full flex flex-col overflow-x-hidden overflow-y-auto ${!user ? 'items-center justify-center' : ''}`}>
         {renderView()}
       </main>
 

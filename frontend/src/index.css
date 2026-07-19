@@ -119,3 +119,14 @@ html, body {
   60% { opacity: 1; transform: scale(1.12); }
   100% { opacity: 1; transform: scale(1); }
 }
+
+/* Data tables: keep cells on one line so a narrow viewport scrolls the
+   table horizontally (inside its .overflow-x-auto wrapper) instead of
+   every cell wrapping its text and squashing the row height. */
+.overflow-x-auto table td,
+.overflow-x-auto table th {
+  white-space: nowrap;
+}
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}

@@ -777,7 +777,7 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
             </div>
 
             {/* Personal planning table: own active cases sorted by nearest deadline */}
-            <div className="bg-gov-surface rounded-2xl shadow-card p-6 ">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6 ">
               <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
                 {lang === 'ru' ? 'Планирование: мои ближайшие сроки' : 'Rejalashtirish: eng yaqin muddatlar'}
               </h3>
@@ -841,7 +841,7 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
 
         {/* Panel 2: Materials */}
         {activePanel === 'materials' && (
-          <div className="bg-gov-surface rounded-2xl shadow-card p-6 ">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6 ">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6 gap-3 flex-wrap">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="font-semibold text-base text-gov-text text-left">
@@ -1111,7 +1111,7 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
 
         {/* Panel 4: History */}
         {activePanel === 'history' && (
-          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
             <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
               {lang === 'ru' ? 'История действий по делам' : 'Ishlar bo\'yicha harakatlar tarixi'}
             </h3>

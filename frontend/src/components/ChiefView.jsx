@@ -1239,7 +1239,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
         {/* Panel 2: All Materials with Reassignments */}
         {activePanel === 'materials' && (
-          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6 gap-3 flex-wrap">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <h3 className="font-semibold text-base text-gov-text text-left">
@@ -1385,7 +1385,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
         {/* Panel 3: Staff Rating */}
         {activePanel === 'ratings' && (
-          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
               <h3 className="font-semibold text-base text-gov-text text-left">
                 {lang === 'ru' ? 'Рейтинг и показатели сотрудников отделения' : 'Bo\'lim xodimlari reytingi va ko\'rsatkichlari'}
@@ -1478,7 +1478,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
         {/* Panel 4: Approvals */}
         {activePanel === 'approvals' && (
-          <div className="bg-gov-surface rounded-2xl shadow-card p-6 ">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6 ">
             <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
               Согласование процессуальных решений следователей
             </h3>
@@ -1552,7 +1552,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
         {/* Panel 5: Users (create/manage staff accounts) */}
         {activePanel === 'users' && (
           <div className="space-y-6">
-            <div className="bg-gov-surface rounded-2xl shadow-card p-6  text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6  text-left">
               <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6">
                 {lang === 'ru' ? 'Создать нового пользователя' : 'Yangi foydalanuvchi yaratish'}
               </h3>
@@ -1671,7 +1671,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               </form>
             </div>
 
-            <div className="bg-gov-surface rounded-2xl shadow-card p-6  text-left">
+            <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6  text-left">
               <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6">
                 {lang === 'ru' ? 'Существующие пользователи' : 'Mavjud foydalanuvchilar'}
               </h3>
@@ -1730,7 +1730,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               <StatCard icon={<CloseIcon />} tone="danger" value={smsTemplates.filter(t => t.status === 'отказан').length} label={lang === 'ru' ? 'Отказано' : 'Rad etilgan'} />
             </div>
 
-          <div className="bg-gov-surface rounded-2xl shadow-card p-6">
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
             <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
               <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Тексты SMS-сообщений' : 'SMS xabar matnlari'}</h3>
               <button

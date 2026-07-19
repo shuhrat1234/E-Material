@@ -92,6 +92,27 @@ class OfficerViewSet(viewsets.ModelViewSet):
             action_uz=f"Xodim {officer.name_uz} ishini baholash: {rating_type}{reason_suffix_uz}"
         )
 
+        # Send real-time dislike alert to Chief via WebSocket
+        if not is_like:
+            try:
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    'chat_global',
+                    {
+                        'type': 'chat.message',
+                        'data': {
+                            'kind': 'dislike_alert',
+                            'officer_name_ru': officer.name_ru,
+                            'officer_name_uz': officer.name_uz,
+                            'reason_ru': reason_ru,
+                            'reason_uz': reason_uz,
+                            'citizen_name': citizen_name,
+                        }
+                    }
+                )
+            except Exception as e:
+                print("Failed to send WebSocket alert:", e)
+
         return Response(OfficerSerializer(officer).data)
 
     @action(detail=True, methods=['get'])
