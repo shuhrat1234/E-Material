@@ -115,6 +115,14 @@ function CitizenView({ lang }) {
     setOtherText('');
   };
 
+  const changeOfficer = () => {
+    setSelectedOfficerId(null);
+    setSelectedRating(null);
+    setSelectedReasons([]);
+    setOtherChecked(false);
+    setOtherText('');
+  };
+
   const selectRating = (isLike) => {
     setSelectedRating(isLike);
     setSelectedReasons([]);
@@ -163,7 +171,7 @@ function CitizenView({ lang }) {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 py-6">
+    <div className="w-full max-w-5xl mx-auto space-y-5 py-4">
       <div className="text-center">
         <h2 className="font-display font-bold text-xl text-gov-primary uppercase tracking-wide">
           {lang === 'ru' ? 'Оценка качества обслуживания' : 'Xizmat sifatini baholash'}
@@ -193,38 +201,55 @@ function CitizenView({ lang }) {
         {nameError && <p className="text-[11px] text-gov-danger mt-2">{nameError}</p>}
       </div>
 
-      {isNameValid && (
+      {isNameValid && !selectedOfficerId && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {officers.filter(off => off.role === 'investigator').map(off => {
-            const isSelected = off.id === selectedOfficerId;
-            return (
-              <div
-                key={off.id}
-                onClick={() => selectOfficer(off.id)}
-                className={`p-4 border rounded-lg cursor-pointer transition-all flex items-center gap-4 ${
-                  isSelected
-                    ? 'border-gov-blue bg-gov-light shadow-sm ring-1 ring-gov-blue/20'
-                    : 'border-gov-border bg-gov-surface hover:border-gov-muted/40 hover:bg-gov-light/30'
-                }`}
-              >
-                <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
-                <div className="text-left overflow-hidden">
-                  <h4 className="font-semibold text-xs text-gov-text truncate">
-                    {lang === 'ru' ? off.name_ru : off.name_uz}
-                  </h4>
-                  <p className="text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
-                    {lang === 'ru' ? off.rank_ru : off.rank_uz}
-                  </p>
-                </div>
+          {officers.filter(off => off.role === 'investigator').map(off => (
+            <div
+              key={off.id}
+              onClick={() => selectOfficer(off.id)}
+              className="p-4 border border-gov-border bg-gov-surface hover:border-gov-muted/40 hover:bg-gov-light/30 rounded-lg cursor-pointer transition-all flex items-center gap-4"
+            >
+              <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
+              <div className="text-left overflow-hidden">
+                <h4 className="font-semibold text-xs text-gov-text truncate">
+                  {lang === 'ru' ? off.name_ru : off.name_uz}
+                </h4>
+                <p className="text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                  {lang === 'ru' ? off.rank_ru : off.rank_uz}
+                </p>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
 
+      {selectedOfficerId && (() => {
+        const off = officers.find(o => o.id === selectedOfficerId);
+        if (!off) return null;
+        return (
+          <div className="max-w-2xl mx-auto flex items-center gap-4 p-3 pr-4 border border-gov-blue bg-gov-light rounded-lg shadow-sm ring-1 ring-gov-blue/20">
+            <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
+            <div className="text-left overflow-hidden flex-1">
+              <h4 className="font-semibold text-xs text-gov-text truncate">
+                {lang === 'ru' ? off.name_ru : off.name_uz}
+              </h4>
+              <p className="text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                {lang === 'ru' ? off.rank_ru : off.rank_uz}
+              </p>
+            </div>
+            <button
+              onClick={changeOfficer}
+              className="text-[10px] font-semibold text-gov-muted hover:text-gov-primary underline uppercase tracking-wider shrink-0"
+            >
+              {lang === 'ru' ? 'Изменить' : "O'zgartirish"}
+            </button>
+          </div>
+        );
+      })()}
+
       {selectedOfficerId && (
-        <div className="bg-gov-surface rounded-2xl shadow-card p-8 transition-all max-w-2xl mx-auto mt-8">
-          <div className="flex items-center justify-center gap-3 mb-6">
+        <div className="bg-gov-surface rounded-2xl shadow-card p-6 transition-all max-w-2xl mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-4">
             <h3 className="text-center font-display font-semibold text-sm text-gov-text uppercase tracking-wider">
               {lang === 'ru' ? 'Оцените работу сотрудника' : 'Xodim ishini baholang'}
             </h3>
@@ -238,43 +263,42 @@ function CitizenView({ lang }) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => selectRating(true)}
-              className={`py-6 px-4 bg-teal-50 border rounded-lg flex flex-col items-center gap-2 transition-all text-gov-success group ${
-                selectedRating === true
-                  ? 'border-gov-success ring-2 ring-gov-success/30'
-                  : selectedRating === false
-                    ? 'border-teal-100 opacity-40'
-                    : 'border-teal-100 hover:border-teal-200 hover:bg-teal-100/40'
-              }`}
-            >
-              <ThumbUpIcon className="h-8 w-8 group-hover:scale-105 transition-transform" />
-              <span className="font-bold text-xs uppercase tracking-wider">LIKE</span>
-              <span className="text-[10px] text-gov-muted font-normal text-center">
-                {lang === 'ru' ? '(Вежливое, быстрое обслуживание)' : '(Xushmuomala, tezkor xizmat)'}
-              </span>
-            </button>
-            <button
-              onClick={() => selectRating(false)}
-              className={`py-6 px-4 bg-rose-50 border rounded-lg flex flex-col items-center gap-2 transition-all text-gov-danger group ${
-                selectedRating === false
-                  ? 'border-gov-danger ring-2 ring-gov-danger/30'
-                  : selectedRating === true
-                    ? 'border-rose-100 opacity-40'
-                    : 'border-rose-100 hover:border-rose-200 hover:bg-rose-100/40'
-              }`}
-            >
-              <ThumbDownIcon className="h-8 w-8 group-hover:scale-105 transition-transform" />
-              <span className="font-bold text-xs uppercase tracking-wider">DISLIKE</span>
-              <span className="text-[10px] text-gov-muted font-normal text-center">
-                {lang === 'ru' ? '(Грубое обращение, долгое ожидание)' : '(Qo\'pol muomala, asossiz kutish)'}
-              </span>
-            </button>
-          </div>
+          {selectedRating === null ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={() => selectRating(true)}
+                className="py-6 px-4 bg-teal-50 border border-teal-100 hover:border-teal-200 hover:bg-teal-100/40 rounded-lg flex flex-col items-center gap-2 transition-all text-gov-success group"
+              >
+                <ThumbUpIcon className="h-8 w-8 group-hover:scale-105 transition-transform" />
+                <span className="font-bold text-xs uppercase tracking-wider">LIKE</span>
+                <span className="text-[10px] text-gov-muted font-normal text-center">
+                  {lang === 'ru' ? '(Вежливое, быстрое обслуживание)' : '(Xushmuomala, tezkor xizmat)'}
+                </span>
+              </button>
+              <button
+                onClick={() => selectRating(false)}
+                className="py-6 px-4 bg-rose-50 border border-rose-100 hover:border-rose-200 hover:bg-rose-100/40 rounded-lg flex flex-col items-center gap-2 transition-all text-gov-danger group"
+              >
+                <ThumbDownIcon className="h-8 w-8 group-hover:scale-105 transition-transform" />
+                <span className="font-bold text-xs uppercase tracking-wider">DISLIKE</span>
+                <span className="text-[10px] text-gov-muted font-normal text-center">
+                  {lang === 'ru' ? '(Грубое обращение, долгое ожидание)' : '(Qo\'pol muomala, asossiz kutish)'}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <div className={`flex items-center justify-center gap-2 py-2.5 rounded-lg border text-xs font-bold uppercase tracking-wider ${
+              selectedRating
+                ? 'border-gov-success bg-teal-50 text-gov-success'
+                : 'border-gov-danger bg-rose-50 text-gov-danger'
+            }`}>
+              {selectedRating ? <ThumbUpIcon className="h-4 w-4" /> : <ThumbDownIcon className="h-4 w-4" />}
+              {selectedRating ? 'LIKE' : 'DISLIKE'}
+            </div>
+          )}
 
           {selectedRating !== null && (
-            <div className="mt-6 pt-6 border-t border-gov-border">
+            <div className="mt-4 pt-4 border-t border-gov-border">
               <p className="text-center text-[11px] font-semibold text-gov-muted uppercase tracking-wider mb-1">
                 {selectedRating
                   ? (lang === 'ru' ? 'Что вам понравилось?' : 'Sizga nima yoqdi?')
