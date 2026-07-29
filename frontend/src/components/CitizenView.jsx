@@ -218,7 +218,8 @@ function CitizenView({ lang }) {
                 <h4 className="font-semibold text-xs text-gov-text truncate">
                   {lang === 'ru' ? off.name_ru : off.name_uz}
                 </h4>
-                <p className="text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                <p className="flex items-center gap-1 text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                  <ApprovalIcon className="h-3 w-3 shrink-0 opacity-60" />
                   {lang === 'ru' ? off.rank_ru : off.rank_uz}
                 </p>
               </div>
@@ -237,7 +238,8 @@ function CitizenView({ lang }) {
               <h4 className="font-semibold text-xs text-gov-text truncate">
                 {lang === 'ru' ? off.name_ru : off.name_uz}
               </h4>
-              <p className="text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+              <p className="flex items-center gap-1 text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                <ApprovalIcon className="h-3 w-3 shrink-0 opacity-60" />
                 {lang === 'ru' ? off.rank_ru : off.rank_uz}
               </p>
             </div>
