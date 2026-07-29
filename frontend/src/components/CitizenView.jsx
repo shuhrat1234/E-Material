@@ -1,41 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
-import { CheckIcon, ThumbUpIcon, ThumbDownIcon } from './Icons';
+import {
+  CheckIcon, ThumbUpIcon, ThumbDownIcon, ChatIcon, ChatBubbleIcon, ClockIcon,
+  ApprovalIcon, EyeIcon, EyeOffIcon, AlarmIcon, UsersIcon, ScaleIcon, SunIcon,
+  DoubleCheckIcon, SendIcon, BellIcon, GearIcon, CloseIcon, KeyIcon, TrashIcon,
+} from './Icons';
 import Avatar from './ui/Avatar';
 
 const LIKE_REASONS = [
-  { value: 'polite', ru: 'Вежливое обращение', uz: 'Xushmuomalalik' },
-  { value: 'fast', ru: 'Быстрое обслуживание', uz: 'Tezkor xizmat' },
-  { value: 'professional', ru: 'Профессионализм', uz: 'Professionallik' },
-  { value: 'clear', ru: 'Понятное объяснение', uz: 'Tushunarli tushuntirish' },
-  { value: 'attentive', ru: 'Внимательное отношение', uz: 'Diqqatli munosabat' },
-  { value: 'helpful', ru: 'Помог решить вопрос', uz: 'Muammoni hal qilishga yordam berdi' },
-  { value: 'ontime', ru: 'Соблюдение сроков', uz: 'Muddatlarga rioya qilish' },
-  { value: 'respectful', ru: 'Уважительное отношение', uz: 'Hurmatli munosabat' },
-  { value: 'competent', ru: 'Хорошее знание дела', uz: 'Ishni yaxshi bilishi' },
-  { value: 'friendly', ru: 'Доброжелательность', uz: 'Xayrixohlik' },
-  { value: 'objective', ru: 'Объективное решение', uz: 'Xolisona qaror' },
-  { value: 'available', ru: 'Легко было связаться', uz: 'Bog\'lanish oson bo\'ldi' },
-  { value: 'followup', ru: 'Держал в курсе дела', uz: 'Jarayondan xabardor qilib turdi' },
-  { value: 'clean', ru: 'Чистота и порядок в кабинете', uz: 'Kabinetda tozalik va tartib' },
+  { value: 'polite', ru: 'Вежливое обращение', uz: 'Xushmuomalalik', icon: ChatIcon },
+  { value: 'fast', ru: 'Быстрое обслуживание', uz: 'Tezkor xizmat', icon: ClockIcon },
+  { value: 'professional', ru: 'Профессионализм', uz: 'Professionallik', icon: ApprovalIcon },
+  { value: 'clear', ru: 'Понятное объяснение', uz: 'Tushunarli tushuntirish', icon: ChatBubbleIcon },
+  { value: 'attentive', ru: 'Внимательное отношение', uz: 'Diqqatli munosabat', icon: EyeIcon },
+  { value: 'helpful', ru: 'Помог решить вопрос', uz: 'Muammoni hal qilishga yordam berdi', icon: CheckIcon },
+  { value: 'ontime', ru: 'Соблюдение сроков', uz: 'Muddatlarga rioya qilish', icon: AlarmIcon },
+  { value: 'respectful', ru: 'Уважительное отношение', uz: 'Hurmatli munosabat', icon: UsersIcon },
+  { value: 'competent', ru: 'Хорошее знание дела', uz: 'Ishni yaxshi bilishi', icon: ScaleIcon },
+  { value: 'friendly', ru: 'Доброжелательность', uz: 'Xayrixohlik', icon: SunIcon },
+  { value: 'objective', ru: 'Объективное решение', uz: 'Xolisona qaror', icon: DoubleCheckIcon },
+  { value: 'available', ru: 'Легко было связаться', uz: 'Bog\'lanish oson bo\'ldi', icon: SendIcon },
+  { value: 'followup', ru: 'Держал в курсе дела', uz: 'Jarayondan xabardor qilib turdi', icon: BellIcon },
+  { value: 'clean', ru: 'Чистота и порядок в кабинете', uz: 'Kabinetda tozalik va tartib', icon: GearIcon },
 ];
 
 const DISLIKE_REASONS = [
-  { value: 'rude', ru: 'Грубое обращение', uz: 'Qo\'pol muomala' },
-  { value: 'slow', ru: 'Долгое ожидание', uz: 'Uzoq kutish' },
-  { value: 'incompetent', ru: 'Некомпетентность', uz: 'Nokompetentlik' },
-  { value: 'unhelpful', ru: 'Вопрос не решен', uz: 'Muammo hal qilinmadi' },
-  { value: 'indifferent', ru: 'Равнодушное отношение', uz: 'Beparvo munosabat' },
-  { value: 'delayed', ru: 'Нарушение сроков', uz: 'Muddatlarning buzilishi' },
-  { value: 'noinfo', ru: 'Отсутствие информации', uz: 'Ma\'lumot yo\'qligi' },
-  { value: 'unfair', ru: 'Необъективное решение', uz: 'Noxolis qaror' },
-  { value: 'unreachable', ru: 'Невозможно было связаться', uz: 'Bog\'lanib bo\'lmadi' },
-  { value: 'redirect', ru: 'Отправляли по кругу', uz: 'Bir joydan ikkinchisiga yuborishdi' },
-  { value: 'bribe', ru: 'Требование взятки', uz: 'Pora talab qilish' },
-  { value: 'unprofessional', ru: 'Непрофессиональные действия', uz: 'Nokasbiy harakatlar' },
-  { value: 'noexplanation', ru: 'Не объяснили причину решения', uz: 'Qaror sababini tushuntirishmadi' },
-  { value: 'lostdocs', ru: 'Утеря или порча документов', uz: 'Hujjatlarning yo\'qolishi yoki buzilishi' },
+  { value: 'rude', ru: 'Грубое обращение', uz: 'Qo\'pol muomala', icon: CloseIcon },
+  { value: 'slow', ru: 'Долгое ожидание', uz: 'Uzoq kutish', icon: ClockIcon },
+  { value: 'incompetent', ru: 'Некомпетентность', uz: 'Nokompetentlik', icon: ScaleIcon },
+  { value: 'unhelpful', ru: 'Вопрос не решен', uz: 'Muammo hal qilinmadi', icon: CloseIcon },
+  { value: 'indifferent', ru: 'Равнодушное отношение', uz: 'Beparvo munosabat', icon: EyeOffIcon },
+  { value: 'delayed', ru: 'Нарушение сроков', uz: 'Muddatlarning buzilishi', icon: AlarmIcon },
+  { value: 'noinfo', ru: 'Отсутствие информации', uz: 'Ma\'lumot yo\'qligi', icon: ChatBubbleIcon },
+  { value: 'unfair', ru: 'Необъективное решение', uz: 'Noxolis qaror', icon: ScaleIcon },
+  { value: 'unreachable', ru: 'Невозможно было связаться', uz: 'Bog\'lanib bo\'lmadi', icon: SendIcon },
+  { value: 'redirect', ru: 'Отправляли по кругу', uz: 'Bir joydan ikkinchisiga yuborishdi', icon: UsersIcon },
+  { value: 'bribe', ru: 'Требование взятки', uz: 'Pora talab qilish', icon: KeyIcon },
+  { value: 'unprofessional', ru: 'Непрофессиональные действия', uz: 'Nokasbiy harakatlar', icon: ApprovalIcon },
+  { value: 'noexplanation', ru: 'Не объяснили причину решения', uz: 'Qaror sababini tushuntirishmadi', icon: ChatIcon },
+  { value: 'lostdocs', ru: 'Утеря или порча документов', uz: 'Hujjatlarning yo\'qolishi yoki buzilishi', icon: TrashIcon },
 ];
 
 function CitizenView({ lang }) {
@@ -327,6 +331,7 @@ function CitizenView({ lang }) {
                       }`}>
                         {isChecked && <CheckIcon className="h-3 w-3 text-white" />}
                       </span>
+                      <reason.icon className="h-4 w-4 shrink-0 opacity-70" />
                       {lang === 'ru' ? reason.ru : reason.uz}
                     </button>
                   );
