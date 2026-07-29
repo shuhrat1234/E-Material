@@ -10,7 +10,7 @@ import DeadlineNotifications from './components/DeadlineNotifications';
 import DislikeAlertNotifications from './components/DislikeAlertNotifications';
 import ProfileModal from './components/ProfileModal';
 import SettingsModal from './components/SettingsModal';
-import { GearIcon, MenuIcon } from './components/Icons';
+import { GearIcon, MenuIcon, ScaleIcon, AiIcon } from './components/Icons';
 import ConfirmHost from './components/ConfirmHost';
 import ToastHost from './components/ToastHost';
 import Avatar from './components/ui/Avatar';
@@ -150,10 +150,21 @@ function App() {
   const t = TRANSLATIONS[lang];
   const hasSidebar = user && (user.role === 'chief' || user.role === 'investigator');
 
+  // Kiosk roles (citizen tablet, AI reception) have no real person behind them —
+  // their name/role label must follow the live language toggle, not the value
+  // frozen into `user` at login time.
+  const KIOSK_LABELS = {
+    citizen: { name: { ru: 'Планшет оценки', uz: 'Baholash plansheti' }, roleLabel: { ru: 'Оценка качества', uz: 'Sifatni baholash' }, Icon: ScaleIcon },
+    ai_kiosk: { name: { ru: 'AI-помощник', uz: 'AI-yordamchi' }, roleLabel: { ru: 'Приёмная', uz: 'Qabulxona' }, Icon: AiIcon },
+  };
+  const kioskInfo = user && KIOSK_LABELS[user.role];
+  const displayName = kioskInfo ? kioskInfo.name[lang] : user?.name;
+  const displayRoleLabel = kioskInfo ? kioskInfo.roleLabel[lang] : user?.roleLabel;
+
   return (
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
-        <header className={`bg-gov-surface text-gov-text px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
+        <header className={`bg-gov-surface text-gov-text px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
           <div className="flex items-center gap-3 w-full md:w-auto min-w-0">
             {hasSidebar && (
               <button
@@ -164,14 +175,13 @@ function App() {
                 <MenuIcon className="h-5 w-5" />
               </button>
             )}
-            <img src="/emblem.png" alt="" className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 object-contain" />
+            <img src="/emblem.png" alt="" className="h-9 w-9 sm:h-11 sm:w-11 lg:h-12 lg:w-12 shrink-0 object-contain" />
             <div className="min-w-0">
-              <p className="hidden lg:block text-sm text-gov-navy font-semibold uppercase leading-snug">{t.subtitle}</p>
-              <p className="lg:hidden text-sm text-gov-navy font-bold uppercase truncate">{t.title}</p>
+              <p className="text-[11px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-snug lg:leading-snug line-clamp-2 lg:line-clamp-none">{t.subtitle}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 mt-4 md:mt-0">
+          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mt-2.5 md:mt-0">
             {/* Language Selector */}
             <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold">
               <button
@@ -216,10 +226,16 @@ function App() {
                 className="flex items-center gap-2.5 hover:bg-gov-light rounded-lg px-2 py-1.5 -my-1.5 transition-colors"
                 title={lang === 'ru' ? 'Мой профиль' : 'Mening profilim'}
               >
-                <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8" textSize="text-[10px]" className="border border-gov-border" />
+                {kioskInfo ? (
+                  <span className="w-8 h-8 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
+                    <kioskInfo.Icon className="h-4 w-4" />
+                  </span>
+                ) : (
+                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8" textSize="text-[10px]" className="border border-gov-border" />
+                )}
                 <div className="text-left">
-                  <p className="text-xs font-semibold text-gov-text">{user.name}</p>
-                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider">{user.roleLabel}</p>
+                  <p className="text-xs font-semibold text-gov-text">{displayName}</p>
+                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider">{displayRoleLabel}</p>
                 </div>
               </button>
               <button
