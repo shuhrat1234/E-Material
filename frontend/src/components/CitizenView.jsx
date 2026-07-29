@@ -227,7 +227,7 @@ function CitizenView({ lang }) {
         const off = officers.find(o => o.id === selectedOfficerId);
         if (!off) return null;
         return (
-          <div className="max-w-2xl mx-auto flex items-center gap-4 p-3 pr-4 border border-gov-blue bg-gov-light rounded-lg shadow-sm ring-1 ring-gov-blue/20">
+          <div className="max-w-4xl mx-auto flex items-center gap-4 p-3 pr-4 border border-gov-blue bg-gov-light rounded-lg shadow-sm ring-1 ring-gov-blue/20">
             <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
             <div className="text-left overflow-hidden flex-1">
               <h4 className="font-semibold text-xs text-gov-text truncate">
@@ -248,7 +248,7 @@ function CitizenView({ lang }) {
       })()}
 
       {selectedOfficerId && (
-        <div className="bg-gov-surface rounded-2xl shadow-card p-6 transition-all max-w-2xl mx-auto">
+        <div className="bg-gov-surface rounded-2xl shadow-card p-6 transition-all max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-3 mb-4">
             <h3 className="text-center font-display font-semibold text-sm text-gov-text uppercase tracking-wider">
               {lang === 'ru' ? 'Оцените работу сотрудника' : 'Xodim ishini baholang'}
@@ -307,14 +307,14 @@ function CitizenView({ lang }) {
               <p className="text-center text-[10px] text-gov-muted mb-4">
                 {lang === 'ru' ? 'Можно выбрать несколько вариантов' : 'Bir nechta variant tanlash mumkin'}
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 {(selectedRating ? LIKE_REASONS : DISLIKE_REASONS).map(reason => {
                   const isChecked = selectedReasons.some(r => r.value === reason.value);
                   return (
                     <button
                       key={reason.value}
                       onClick={() => toggleReason(reason)}
-                      className={`py-3 px-4 rounded-lg border text-xs font-semibold text-left flex items-center gap-2.5 transition-all ${
+                      className={`py-2.5 px-3 rounded-lg border text-xs font-semibold text-left flex items-center gap-2 transition-all ${
                         selectedRating
                           ? (isChecked ? 'border-gov-success bg-teal-100/60 ring-1 ring-gov-success/30' : 'border-teal-100 bg-teal-50/60 hover:border-gov-success hover:bg-teal-100/50')
                           : (isChecked ? 'border-gov-danger bg-rose-100/60 ring-1 ring-gov-danger/30' : 'border-rose-100 bg-rose-50/60 hover:border-gov-danger hover:bg-rose-100/50')
@@ -334,7 +334,7 @@ function CitizenView({ lang }) {
 
                 <button
                   onClick={() => setOtherChecked(c => !c)}
-                  className={`py-3 px-4 rounded-lg border text-xs font-semibold text-left flex items-center gap-2.5 transition-all ${
+                  className={`py-2.5 px-3 rounded-lg border text-xs font-semibold text-left flex items-center gap-2 transition-all ${
                     selectedRating
                       ? (otherChecked ? 'border-gov-success bg-teal-100/60 ring-1 ring-gov-success/30' : 'border-teal-100 bg-teal-50/60 hover:border-gov-success hover:bg-teal-100/50')
                       : (otherChecked ? 'border-gov-danger bg-rose-100/60 ring-1 ring-gov-danger/30' : 'border-rose-100 bg-rose-50/60 hover:border-gov-danger hover:bg-rose-100/50')
