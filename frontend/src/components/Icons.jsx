@@ -201,3 +201,9 @@ export const MapIcon = ({ className = 'h-4 w-4' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75L3.75 9v11.25L9 18m0-11.25l6 3m-6-3v11.25m6-8.25l5.25-2.25v11.25L15 20.25m0-11.25v11.25m0-11.25l-6 3" />
   </svg>
 );
+
+export const DocumentIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 3.75h6M9 8.25h1.5M6.75 3.75h6.879a1.5 1.5 0 011.06.44l3.622 3.62a1.5 1.5 0 01.439 1.061V18.75a1.5 1.5 0 01-1.5 1.5H6.75a1.5 1.5 0 01-1.5-1.5V5.25a1.5 1.5 0 011.5-1.5z" />
+  </svg>
+);

@@ -152,6 +152,19 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"{self.sender_name}: {self.text[:30]}"
 
+class MaterialDocument(models.Model):
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='documents')
+    file = models.FileField(upload_to='material_docs/')
+    original_name = models.CharField(max_length=255, blank=True)
+    uploaded_by = models.CharField(max_length=255, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f"{self.material_id} - {self.original_name}"
+
 
 # Signals to automatically create linked User model when creating Officer
 from django.db.models.signals import post_save

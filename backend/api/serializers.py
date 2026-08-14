@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import (
-    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage, Rating
+    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage, Rating,
+    MaterialDocument
 )
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -28,6 +29,23 @@ class MaterialSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'status': {'required': False}
         }
+
+class MaterialDocumentSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MaterialDocument
+        fields = ['id', 'material', 'file', 'file_url', 'original_name', 'uploaded_by', 'uploaded_at']
+        extra_kwargs = {
+            'file': {'write_only': True}
+        }
+
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            url = obj.file.url
+            return request.build_absolute_uri(url) if request else url
+        return None
 
 class ApprovalRequestSerializer(serializers.ModelSerializer):
     class Meta:

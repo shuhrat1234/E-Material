@@ -1,15 +1,16 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    DepartmentViewSet, OfficerViewSet, MaterialViewSet, ApprovalRequestViewSet,
+    DepartmentViewSet, OfficerViewSet, MaterialViewSet, MaterialDocumentViewSet, ApprovalRequestViewSet,
     AuditLogViewSet, ActiveVisitViewSet, SMSTemplateViewSet, DbOperationsViewSet, AiAssistantViewSet,
-    ChatMessageViewSet, login_view
+    ChatMessageViewSet, login_view, check_material_status
 )
 
 router = DefaultRouter()
 router.register(r'departments', DepartmentViewSet)
 router.register(r'officers', OfficerViewSet)
 router.register(r'materials', MaterialViewSet)
+router.register(r'material-documents', MaterialDocumentViewSet)
 router.register(r'approvals', ApprovalRequestViewSet)
 router.register(r'audit-logs', AuditLogViewSet)
 router.register(r'visits', ActiveVisitViewSet)
@@ -22,5 +23,6 @@ urlpatterns = [
     path('ai/chat/', AiAssistantViewSet.as_view({'post': 'chat'})),
     path('ai/citizen-chat/', AiAssistantViewSet.as_view({'post': 'citizen_chat'})),
     path('auth/login/', login_view),
+    path('public/check-status/', check_material_status),
 ]
 

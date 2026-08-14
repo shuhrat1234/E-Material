@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
-import { CheckIcon, CloseIcon } from './Icons';
+import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import Select from './ui/Select';
 import { notify } from '../toastService';
+import { confirm } from '../confirmService';
 import { getMaterialTypeLabel, getSourceLabel } from '../materialTaxonomy';
 
 function CaseDetailsModal({ caseId, lang, user, onClose }) {
-  const [activeTab, setActiveTab] = useState('info'); // info, timeline
+  const [activeTab, setActiveTab] = useState('info'); // info, timeline, documents
   const [caseItem, setCaseItem] = useState(null);
   const [officer, setOfficer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,6 +18,9 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
   const [changingStatus, setChangingStatus] = useState(false);
   const [addingStep, setAddingStep] = useState(false);
   const [statusDraft, setStatusDraft] = useState(null);
+  const [documents, setDocuments] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [qrDocId, setQrDocId] = useState(null);
 
   const fetchCaseDetails = () => {
     if (!caseId) return;
@@ -40,10 +45,56 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
       });
   };
 
+  const fetchDocuments = () => {
+    if (!caseId) return;
+    axios.get(`${API_BASE}/material-documents/`, { params: { material: caseId } })
+      .then(res => setDocuments(res.data))
+      .catch(err => console.error('Failed to load documents', err));
+  };
+
   useEffect(() => {
     setLoading(true);
     fetchCaseDetails();
+    fetchDocuments();
+    setQrDocId(null);
   }, [caseId]);
+
+  const handleUploadDocument = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setUploading(true);
+    const form = new FormData();
+    form.append('material', caseId);
+    form.append('file', file);
+    form.append('uploaded_by', user?.name || '');
+
+    axios.post(`${API_BASE}/material-documents/`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+      .then(() => {
+        setUploading(false);
+        fetchDocuments();
+        notify(lang === 'ru' ? 'Документ загружен!' : 'Hujjat yuklandi!', 'success');
+      })
+      .catch(err => {
+        console.error(err);
+        setUploading(false);
+        notify(lang === 'ru' ? 'Ошибка при загрузке документа' : 'Hujjatni yuklashda xatolik', 'error');
+      });
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    const ok = await confirm(lang === 'ru' ? 'Удалить документ?' : 'Hujjatni o\'chirasizmi?', { danger: true });
+    if (!ok) return;
+    axios.delete(`${API_BASE}/material-documents/${docId}/`)
+      .then(() => {
+        if (qrDocId === docId) setQrDocId(null);
+        fetchDocuments();
+      })
+      .catch(() => notify(lang === 'ru' ? 'Ошибка удаления.' : 'O\'chirishda xatolik.', 'error'));
+  };
 
   const handleStatusChange = (newStatus) => {
     if (!newStatus || newStatus === caseItem.status) return;
@@ -176,6 +227,19 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
           >
             {t.timeline_tab}
           </button>
+          <button
+            onClick={() => setActiveTab('documents')}
+            className={`pb-2.5 px-4 -mb-[1px] border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'documents' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
+            }`}
+          >
+            {lang === 'ru' ? 'Документы' : 'Hujjatlar'}
+            {documents.length > 0 && (
+              <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-gov-primaryLight text-gov-primary text-[9px] font-bold inline-flex items-center justify-center">
+                {documents.length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Content */}
@@ -261,7 +325,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
               </div>
 
             </div>
-          ) : (
+          ) : activeTab === 'timeline' ? (
             /* Timeline Tab */
             <div className="space-y-4 text-xs text-left max-w-md mx-auto py-2">
               {displayList.map((step, idx) => (
@@ -309,6 +373,74 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                   {addingStep ? '...' : (lang === 'ru' ? "Добавить" : "Qo'shish")}
                 </button>
               </form>
+            </div>
+          ) : (
+            /* Documents Tab */
+            <div className="space-y-4 text-xs">
+              <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gov-border rounded-xl text-gov-muted hover:text-gov-primary hover:border-gov-primary/40 hover:bg-gov-primaryLight/30 transition-colors cursor-pointer font-semibold">
+                <PaperclipIcon className="h-4 w-4" />
+                {uploading
+                  ? (lang === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...')
+                  : (lang === 'ru' ? 'Загрузить документ' : 'Hujjat yuklash')}
+                <input type="file" className="hidden" disabled={uploading} onChange={handleUploadDocument} />
+              </label>
+
+              {documents.length === 0 ? (
+                <p className="text-center py-8 text-gov-muted font-semibold">
+                  {lang === 'ru' ? 'Документов пока нет' : 'Hozircha hujjatlar yo\'q'}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {documents.map(doc => (
+                    <div key={doc.id} className="border border-gov-border rounded-xl p-3">
+                      <div className="flex items-center gap-3">
+                        <span className="w-9 h-9 rounded-lg bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0">
+                          <DocumentIcon className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <a
+                            href={doc.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors truncate block"
+                            title={doc.original_name}
+                          >
+                            {doc.original_name || doc.file_url}
+                          </a>
+                          <p className="text-[10px] text-gov-muted mt-0.5">
+                            {doc.uploaded_by && `${doc.uploaded_by} · `}{formatDate(doc.uploaded_at)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
+                          className="px-2 py-1.5 border border-gov-border rounded text-[10px] font-semibold text-gov-text hover:bg-gov-light transition-colors shrink-0"
+                        >
+                          QR
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors shrink-0"
+                          title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                      {qrDocId === doc.id && (
+                        <div className="mt-3 pt-3 border-t border-gov-border flex flex-col items-center gap-2">
+                          <div className="p-2 bg-white rounded-lg">
+                            <QRCodeSVG value={doc.file_url} size={140} />
+                          </div>
+                          <p className="text-[10px] text-gov-muted text-center">
+                            {lang === 'ru'
+                              ? 'Отсканируйте, чтобы открыть документ'
+                              : 'Hujjatni ochish uchun skanerlang'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

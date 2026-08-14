@@ -60,7 +60,21 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     chief: { ru: 'Начальник', uz: 'Boshliq' }
   };
 
-  const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', password: '' };
+  // Specific job positions offered when creating a user. Each maps to one of the
+  // three permission tiers (`role`) the app actually gates on, while giving staff
+  // a title that matches the department's real structure. Selecting one fills in
+  // both `role` and the rank fields; the rank fields stay editable afterward for
+  // military/police grade (e.g. "Капитан"), which is a separate concept.
+  const POSITIONS = {
+    inspector: { rank_ru: 'Инспектор', rank_uz: 'Inspektor', role: 'investigator' },
+    senior_inspector: { rank_ru: 'Старший инспектор', rank_uz: 'Katta inspektor', role: 'investigator' },
+    investigator: { rank_ru: 'Следователь', rank_uz: 'Tergovchi', role: 'investigator' },
+    division_chief: { rank_ru: 'Начальник отделения', rank_uz: 'Bo\'linma boshlig\'i', role: 'chief' },
+    chief: { rank_ru: 'Начальник', rank_uz: 'Boshliq', role: 'chief' },
+    registrator: { rank_ru: 'Регистратор', rank_uz: 'Registrator', role: 'registrator' },
+  };
+
+  const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', position: 'investigator', password: '' };
   const [newUser, setNewUser] = useState(emptyNewUser);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -1600,17 +1614,22 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 </div>
                 <div>
                   <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
-                    {lang === 'ru' ? 'Роль' : 'Rol'}
+                    {lang === 'ru' ? 'Должность' : 'Lavozim'}
                   </label>
                   <Select
-                    value={newUser.role}
-                    onChange={val => setNewUser({ ...newUser, role: val })}
+                    value={newUser.position}
+                    onChange={val => setNewUser({
+                      ...newUser,
+                      position: val,
+                      role: POSITIONS[val].role,
+                      rank_ru: POSITIONS[val].rank_ru,
+                      rank_uz: POSITIONS[val].rank_uz,
+                    })}
                     className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light"
-                    options={[
-                      { value: 'investigator', label: ROLE_LABELS.investigator[lang] },
-                      { value: 'registrator', label: ROLE_LABELS.registrator[lang] },
-                      { value: 'chief', label: ROLE_LABELS.chief[lang] },
-                    ]}
+                    options={Object.entries(POSITIONS).map(([value, p]) => ({
+                      value,
+                      label: lang === 'ru' ? p.rank_ru : p.rank_uz,
+                    }))}
                   />
                 </div>
                 <div>
@@ -1634,18 +1653,6 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     value={newUser.name_uz}
                     onChange={e => setNewUser({ ...newUser, name_uz: e.target.value })}
                     placeholder="Ivanov Ivan Ivanovich"
-                    className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
-                    {lang === 'ru' ? 'Звание (необязательно)' : 'Unvon (ixtiyoriy)'}
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.rank_ru}
-                    onChange={e => setNewUser({ ...newUser, rank_ru: e.target.value, rank_uz: e.target.value })}
-                    placeholder={lang === 'ru' ? 'Капитан' : 'Kapitan'}
                     className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
                   />
                 </div>
@@ -1698,7 +1705,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
                       <th className="px-4 py-3">{lang === 'ru' ? 'Логин' : 'Login'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'ФИО' : 'F.I.Sh.'}</th>
-                      <th className="px-4 py-3">{lang === 'ru' ? 'Роль' : 'Rol'}</th>
+                      <th className="px-4 py-3">{lang === 'ru' ? 'Должность' : 'Lavozim'}</th>
                       <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Действие' : 'Amal'}</th>
                     </tr>
                   </thead>
@@ -1711,7 +1718,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                           <td className="px-4 py-3 text-gov-text">{lang === 'ru' ? o.name_ru : o.name_uz}</td>
                           <td className="px-4 py-3">
                             <span className="px-2 py-0.5 border border-gov-border rounded-full text-[10px] font-semibold bg-gov-light">
-                              {ROLE_LABELS[o.role] ? ROLE_LABELS[o.role][lang] : o.role}
+                              {(lang === 'ru' ? o.rank_ru : o.rank_uz) || (ROLE_LABELS[o.role] ? ROLE_LABELS[o.role][lang] : o.role)}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
