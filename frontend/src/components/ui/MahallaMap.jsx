@@ -12,7 +12,7 @@ const PAD = 0.01;
 // from OpenStreetMap, see src/data/). Pan/zoom is clamped to the district via maxBounds.
 // Marker appearance is fully delegated to getMarkerProps so the crime map (bubbles sized
 // by case count) and the registration-form picker (simple selectable pins) can share this.
-function MahallaMap({ getMarkerProps, onMarkerClick, height = '420px', scrollWheelZoom = true, className = '' }) {
+function MahallaMap({ getMarkerProps, onMarkerClick, renderMarker, height = '420px', scrollWheelZoom = true, className = '' }) {
   const { isDark } = useSettings();
 
   const bounds = useMemo(() => [
@@ -48,6 +48,7 @@ function MahallaMap({ getMarkerProps, onMarkerClick, height = '420px', scrollWhe
         {OLMAZOR_MAHALLAS.map(m => {
           const props = getMarkerProps(m);
           if (!props) return null;
+          if (renderMarker) return renderMarker(m, props, onMarkerClick);
           const { tooltip, radius, ...pathOptions } = props;
           return (
             <CircleMarker
