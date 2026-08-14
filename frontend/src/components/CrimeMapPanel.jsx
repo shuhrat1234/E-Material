@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import L from 'leaflet';
 import { Delaunay } from 'd3-delaunay';
 import polygonClipping from 'polygon-clipping';
-import { Polygon, Tooltip } from 'react-leaflet';
+import { Marker, Polygon, Tooltip } from 'react-leaflet';
 import MahallaMap from './ui/MahallaMap';
 import Card, { CardHeader } from './ui/Card';
 import { MapIcon } from './Icons';
@@ -14,6 +15,14 @@ import { OLMAZOR_BOUNDARY, OLMAZOR_BOUNDS } from '../data/olmazorBoundary';
 function hexToRgb(hex) {
   const clean = hex.replace('#', '');
   return [0, 2, 4].map(i => parseInt(clean.substring(i, i + 2), 16));
+}
+
+// Drop the generic "mahalla/dahasi/massiv" suffix word for the on-map label so it
+// fits inside a small cell — the full name is still in the tooltip and side panel.
+const NAME_SUFFIXES = /\s+(mahallasi|maxallasi|mahalla|dahasi|massivi?|shaharchasi|tumani)$/i;
+const NAME_SUFFIXES_RU = /\s+(махалля|массив|шахарчаси|туман[аи]?)$/i;
+function shortName(name) {
+  return name.replace(NAME_SUFFIXES, '').replace(NAME_SUFFIXES_RU, '').trim();
 }
 
 // Each mahalla only has a point in OpenStreetMap, not a real boundary polygon for
@@ -149,6 +158,23 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
           >
             <Tooltip sticky opacity={1}>{buildTooltip(mahalla, count, list)}</Tooltip>
           </Polygon>
+        );
+      })}
+      {OLMAZOR_MAHALLAS.map(mahalla => {
+        const label = shortName(lang === 'ru' ? mahalla.name_ru : mahalla.name_uz);
+        const icon = L.divIcon({
+          className: 'mahalla-label-marker',
+          html: `<span class="mahalla-label-text">${label}</span>`,
+          iconSize: [0, 0],
+        });
+        return (
+          <Marker
+            key={`label_${mahalla.id}`}
+            position={[mahalla.lat, mahalla.lon]}
+            icon={icon}
+            interactive={false}
+            keyboard={false}
+          />
         );
       })}
     </>
