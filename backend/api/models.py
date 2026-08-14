@@ -54,6 +54,7 @@ class Material(models.Model):
     citizen_notification_text = models.TextField(null=True, blank=True)
     iib = models.CharField(max_length=50, blank=True, default='')
     preliminary_article = models.CharField(max_length=255, blank=True, default='')
+    mahalla = models.CharField(max_length=100, blank=True, default='')
 
     def __str__(self):
         return self.id

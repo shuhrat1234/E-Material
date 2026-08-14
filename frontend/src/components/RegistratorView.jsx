@@ -4,6 +4,7 @@ import { API_BASE, TRANSLATIONS } from '../App';
 import ChatPanel from './ChatPanel';
 import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon, TrashIcon } from './Icons';
 import Select from './ui/Select';
+import MahallaPicker from './ui/MahallaPicker';
 import FilterPill from './ui/FilterPill';
 import ExportButton from './ui/ExportButton';
 import { exportToExcel } from '../exportExcel';
@@ -42,6 +43,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [sourceFrom, setSourceFrom] = useState('e_material');
   const [iib, setIib] = useState('');
   const [preliminaryArticle, setPreliminaryArticle] = useState('');
+  const [mahalla, setMahalla] = useState('');
   const [extraIds, setExtraIds] = useState([]); // array of extra ID strings, one input per entry
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +70,9 @@ function RegistratorView({ lang, onViewDetails, user }) {
     }
     if (!officerId) {
       next.officerId = lang === 'ru' ? 'Выберите исполнителя' : 'Ijrochini tanlang';
+    }
+    if (!mahalla) {
+      next.mahalla = lang === 'ru' ? 'Выберите махаллю на карте' : 'Xaritada mahallani tanlang';
     }
     const days = parseInt(deadlineDays, 10);
     if (!Number.isFinite(days) || days < 1 || days > 90) {
@@ -119,6 +124,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       source_from: sourceFrom,
       iib: iib.trim(),
       preliminary_article: preliminaryArticle.trim(),
+      mahalla,
       extra_ids: extraIds.map(v => v.trim()).filter(Boolean).join(', '),
     };
 
@@ -138,6 +144,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
         setSourceFrom('e_material');
         setIib('');
         setPreliminaryArticle('');
+        setMahalla('');
         setExtraIds([]);
         setErrors({});
         setSubmitting(false);
@@ -528,6 +535,14 @@ function RegistratorView({ lang, onViewDetails, user }) {
                     options={getSourceOptions(materialType).map(s => ({ value: s.value, label: lang === 'ru' ? s.ru : s.uz }))}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
+                  {lang === 'ru' ? 'Махалля' : 'Mahalla'}
+                </label>
+                <MahallaPicker value={mahalla} onChange={setMahalla} lang={lang} error={!!errors.mahalla} />
+                {errors.mahalla && <p className="text-[11px] text-gov-danger mt-1">{errors.mahalla}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

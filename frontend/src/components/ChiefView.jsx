@@ -9,9 +9,10 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
+import CrimeMapPanel from './CrimeMapPanel';
 import { CATEGORICAL, SEQUENTIAL, chartTheme } from '../chartColors';
 import { useSettings } from '../settingsContext';
-import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon } from './Icons';
+import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon, MapIcon } from './Icons';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
@@ -670,6 +671,12 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             active={activePanel === 'materials'}
             onClick={() => setActivePanel('materials')}
             count={materials.filter(m => m.status !== 'закрыт_в_срок').length}
+          />
+          <SidebarLink
+            icon={<MapIcon />}
+            label={lang === 'ru' ? 'Карта преступлений' : 'Jinoyatlar xaritasi'}
+            active={activePanel === 'map'}
+            onClick={() => setActivePanel('map')}
           />
           <SidebarLink
             icon={<UsersIcon />}
@@ -1380,6 +1387,16 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Panel: Crime Map */}
+        {activePanel === 'map' && (
+          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
+            <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
+              {lang === 'ru' ? 'Карта преступлений по махаллям' : 'Mahallalar bo\'yicha jinoyatlar xaritasi'}
+            </h3>
+            <CrimeMapPanel materials={materials} lang={lang} onOpenMaterialsList={openMaterialsList} />
           </div>
         )}
 

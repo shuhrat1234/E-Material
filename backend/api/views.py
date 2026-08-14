@@ -169,6 +169,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
             source_from=request.data.get('source_from', 'tashrif'),
             iib=request.data.get('iib', ''),
             preliminary_article=request.data.get('preliminary_article', ''),
+            mahalla=request.data.get('mahalla', ''),
         )
         
         # Create initial appeal step

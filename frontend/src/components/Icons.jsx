@@ -195,3 +195,9 @@ export const MoonIcon = ({ className = 'h-4 w-4' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
   </svg>
 );
+
+export const MapIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75L3.75 9v11.25L9 18m0-11.25l6 3m-6-3v11.25m6-8.25l5.25-2.25v11.25L15 20.25m0-11.25v11.25m0-11.25l-6 3" />
+  </svg>
+);
