@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import L from 'leaflet';
 import { Marker, Polygon, Tooltip } from 'react-leaflet';
 import MahallaMap from './ui/MahallaMap';
@@ -14,6 +14,16 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   const [selectedId, setSelectedId] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const cells = useVoronoiCells();
+  const detailsRef = useRef(null);
+
+  // The details card sits beside the map on wide screens but drops below it on
+  // narrow ones (flex-col below the lg breakpoint) — easy to click a cell and not
+  // notice the result appeared off-screen. Bring it into view on every selection.
+  useEffect(() => {
+    if (selectedId && detailsRef.current) {
+      detailsRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedId]);
 
   const byMahalla = useMemo(() => {
     const map = {};
@@ -90,9 +100,9 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
               opacity: 1,
             }}
             eventHandlers={{
-              mouseover: (e) => { console.log('[crimemap] hover', mahalla.id); setHoveredId(mahalla.id); e.target.bringToFront(); },
+              mouseover: (e) => { setHoveredId(mahalla.id); e.target.bringToFront(); },
               mouseout: () => setHoveredId(null),
-              click: () => { console.log('[crimemap] click', mahalla.id); setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)); },
+              click: () => setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)),
             }}
           >
             <Tooltip sticky opacity={1}>{buildTooltip(mahalla, count, list)}</Tooltip>
@@ -132,7 +142,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         )}
       </div>
 
-      <div className="w-full lg:w-80 shrink-0">
+      <div className="w-full lg:w-80 shrink-0" ref={detailsRef}>
         <Card>
           {!selected ? (
             <div className="text-center py-10 text-gov-muted text-xs font-semibold">
