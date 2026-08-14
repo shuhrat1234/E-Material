@@ -80,6 +80,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
   const [createError, setCreateError] = useState('');
   const [createSuccess, setCreateSuccess] = useState('');
+  const [creatingUser, setCreatingUser] = useState(false);
 
   // Filter States
   const [dateRange, setDateRange] = useState('all');
@@ -183,6 +184,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     e.preventDefault();
     setCreateError('');
     setCreateSuccess('');
+    if (creatingUser) return; // guard against double-submit (e.g. an impatient double-click)
 
     const username = newUser.username.trim().toLowerCase();
     if (!username || !newUser.name_ru) {
@@ -202,6 +204,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     const parts = newUser.name_ru.split(' ').filter(Boolean);
     const photo = parts.length > 1 ? parts[0][0] + parts[1][0] : (parts[0] ? parts[0][0] : 'У');
 
+    setCreatingUser(true);
     axios.post(`${API_BASE}/officers/`, {
       id: `off_${username}`,
       name_ru: newUser.name_ru,
@@ -212,6 +215,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       password,
       photo
     }).then(() => {
+      setCreatingUser(false);
       setCreateSuccess(
         lang === 'ru'
           ? `Пользователь "${username}" создан! Пароль: ${password}`
@@ -220,12 +224,17 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       setNewUser(emptyNewUser);
       fetchData();
     }).catch(err => {
+      setCreatingUser(false);
       const idErr = err.response?.data?.id?.[0];
       const passwordErr = err.response?.data?.error;
       const msg = idErr
         ? (lang === 'ru' ? 'Такой логин уже занят.' : 'Bu login band.')
         : passwordErr || (lang === 'ru' ? 'Ошибка создания пользователя.' : 'Foydalanuvchi yaratishda xatolik.');
       setCreateError(msg);
+      // The failed request might have lost a race with a duplicate submission that
+      // actually succeeded server-side — refetch so the table reflects reality
+      // instead of silently hiding a user that already exists.
+      fetchData();
     });
   };
 
@@ -1728,9 +1737,12 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 <div className="md:col-span-3">
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
+                    disabled={creatingUser}
+                    className="px-5 py-2.5 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors disabled:opacity-60"
                   >
-                    {lang === 'ru' ? 'Создать пользователя' : 'Foydalanuvchi yaratish'}
+                    {creatingUser
+                      ? (lang === 'ru' ? 'Создание...' : 'Yaratilmoqda...')
+                      : (lang === 'ru' ? 'Создать пользователя' : 'Foydalanuvchi yaratish')}
                   </button>
                   <p className="mt-2 text-[10px] text-gov-muted">
                     {lang === 'ru'

@@ -6,7 +6,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils import timezone
 import datetime
 import mimetypes
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import Q, Count
 from django.contrib.auth import authenticate
 from channels.layers import get_channel_layer
@@ -44,7 +44,15 @@ class OfficerViewSet(viewsets.ModelViewSet):
         if password and len(password) < 6:
             return Response({'error': 'Password must be at least 6 characters'}, status=status.HTTP_400_BAD_REQUEST)
 
-        response = super().create(request, *args, **kwargs)
+        try:
+            response = super().create(request, *args, **kwargs)
+        except IntegrityError:
+            # DRF's uniqueness check (a SELECT) and the actual INSERT aren't atomic,
+            # so a double-submit (e.g. an impatient double-click) can slip both
+            # requests past validation before either commits, and the second one
+            # then hits the real DB constraint. Surface that as a clean 400 instead
+            # of an uncaught 500.
+            return Response({'id': ['officer with this id already exists.']}, status=status.HTTP_400_BAD_REQUEST)
 
         if password:
             officer = Officer.objects.filter(id=response.data.get('id')).first()
