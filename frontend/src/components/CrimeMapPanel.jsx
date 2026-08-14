@@ -106,8 +106,9 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
     );
   };
 
-  const emptyFill = isDark ? [30, 41, 59] : [226, 232, 240];
-  const emptyBorder = isDark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.35)';
+  const emptyFill = isDark ? [51, 65, 85] : [203, 213, 225];
+  const emptyBorder = isDark ? 'rgba(203,213,225,0.55)' : 'rgba(71,85,105,0.55)';
+  const accent = isDark ? [93, 178, 255] : [37, 99, 235]; // gov-primary — the hover/select accent
 
   const overlayLayers = (
     <>
@@ -119,24 +120,25 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         const emphasized = isSelected || isHovered;
 
         let fillRgb = emptyFill;
-        let baseFillOpacity = 0.12;
+        let baseFillOpacity = 0.35;
         if (count > 0) {
           const ratio = count / maxCount;
           const bucket = Math.min(SEQUENTIAL.length - 1, Math.floor(ratio * (SEQUENTIAL.length - 1)));
           fillRgb = hexToRgb(SEQUENTIAL[bucket]);
-          baseFillOpacity = 0.32 + ratio * 0.3;
+          baseFillOpacity = 0.45 + ratio * 0.35;
         }
-        const [r, g, b] = fillRgb;
+        const [ar, ag, ab] = accent;
+        const [r, g, b] = emphasized ? accent : fillRgb;
 
         return (
           <Polygon
             key={key}
             positions={positions}
             pathOptions={{
-              color: emphasized ? '#ffffff' : emptyBorder,
-              weight: emphasized ? 2.5 : 1,
+              color: emphasized ? `rgb(${ar},${ag},${ab})` : emptyBorder,
+              weight: emphasized ? 3 : 1.25,
               fillColor: `rgb(${r},${g},${b})`,
-              fillOpacity: isHovered ? Math.min(0.85, baseFillOpacity + 0.3) : baseFillOpacity,
+              fillOpacity: emphasized ? 0.55 : baseFillOpacity,
               opacity: 1,
             }}
             eventHandlers={{
