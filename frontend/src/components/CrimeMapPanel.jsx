@@ -90,9 +90,9 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
               opacity: 1,
             }}
             eventHandlers={{
-              mouseover: (e) => { setHoveredId(mahalla.id); e.target.bringToFront(); },
+              mouseover: (e) => { console.log('[crimemap] hover', mahalla.id); setHoveredId(mahalla.id); e.target.bringToFront(); },
               mouseout: () => setHoveredId(null),
-              click: () => setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)),
+              click: () => { console.log('[crimemap] click', mahalla.id); setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)); },
             }}
           >
             <Tooltip sticky opacity={1}>{buildTooltip(mahalla, count, list)}</Tooltip>
