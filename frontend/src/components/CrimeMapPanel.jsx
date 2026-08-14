@@ -6,7 +6,6 @@ import { Marker, Polygon, Tooltip } from 'react-leaflet';
 import MahallaMap from './ui/MahallaMap';
 import Card, { CardHeader } from './ui/Card';
 import { MapIcon } from './Icons';
-import { SEQUENTIAL } from '../chartColors';
 import { useSettings } from '../settingsContext';
 import { MATERIAL_TYPES } from '../materialTaxonomy';
 import { OLMAZOR_MAHALLAS } from '../data/olmazorMahallas';
@@ -16,6 +15,11 @@ function hexToRgb(hex) {
   const clean = hex.replace('#', '');
   return [0, 2, 4].map(i => parseInt(clean.substring(i, i + 2), 16));
 }
+
+// Crime-severity ramp: green (few/no cases) -> yellow (moderate) -> red (heavy),
+// the traffic-light convention for a risk map. Bucketed by count relative to the
+// busiest mahalla, same idea as a sequential ramp but three hues instead of one.
+const SEVERITY = ['#22c55e', '#84cc16', '#eab308', '#f97316', '#ef4444'];
 
 // Drop the generic "mahalla/dahasi/massiv" suffix word for the on-map label so it
 // fits inside a small cell — the full name is still in the tooltip and side panel.
@@ -117,7 +121,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
 
   const emptyFill = isDark ? [51, 65, 85] : [203, 213, 225];
   const emptyBorder = isDark ? 'rgba(203,213,225,0.55)' : 'rgba(71,85,105,0.55)';
-  const accent = isDark ? [93, 178, 255] : [37, 99, 235]; // gov-primary — the hover/select accent
+  const highlightBorder = isDark ? '#f8fafc' : '#0f172a'; // hover/select ring — a fixed dark/light outline, not a color swap, so severity color stays legible
 
   const overlayLayers = (
     <>
@@ -129,25 +133,24 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         const emphasized = isSelected || isHovered;
 
         let fillRgb = emptyFill;
-        let baseFillOpacity = 0.35;
+        let baseFillOpacity = 0.4;
         if (count > 0) {
           const ratio = count / maxCount;
-          const bucket = Math.min(SEQUENTIAL.length - 1, Math.floor(ratio * (SEQUENTIAL.length - 1)));
-          fillRgb = hexToRgb(SEQUENTIAL[bucket]);
-          baseFillOpacity = 0.45 + ratio * 0.35;
+          const bucket = Math.min(SEVERITY.length - 1, Math.floor(ratio * (SEVERITY.length - 1)));
+          fillRgb = hexToRgb(SEVERITY[bucket]);
+          baseFillOpacity = 0.5 + ratio * 0.3;
         }
-        const [ar, ag, ab] = accent;
-        const [r, g, b] = emphasized ? accent : fillRgb;
+        const [r, g, b] = fillRgb;
 
         return (
           <Polygon
             key={key}
             positions={positions}
             pathOptions={{
-              color: emphasized ? `rgb(${ar},${ag},${ab})` : emptyBorder,
+              color: emphasized ? highlightBorder : emptyBorder,
               weight: emphasized ? 3 : 1.25,
               fillColor: `rgb(${r},${g},${b})`,
-              fillOpacity: emphasized ? 0.55 : baseFillOpacity,
+              fillOpacity: emphasized ? Math.min(0.95, baseFillOpacity + 0.2) : baseFillOpacity,
               opacity: 1,
             }}
             eventHandlers={{
