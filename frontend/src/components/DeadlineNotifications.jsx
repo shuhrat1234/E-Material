@@ -137,11 +137,12 @@ function DeadlineNotifications({ lang, user, onViewDetails }) {
       </button>
 
       {toast && (
-        // Fixed to the viewport corner (not absolute within the header) and capped
-        // narrow so it can never grow wide enough to sit on top of page content —
-        // it used to be a 46rem banner overlapping whatever was directly below the
-        // header (e.g. the crime map), intercepting clicks meant for that content.
-        <div className="fixed top-16 right-4 w-[22rem] max-w-[calc(100vw-2rem)] bg-gov-surface border border-gov-border rounded-2xl shadow-2xl text-left z-50 animate-[fadeIn_0.2s]">
+        // Fixed to the bottom-right viewport corner — narrow, and deliberately NOT
+        // anchored under the header, because anything docked top-right collides
+        // with whatever a page puts in that same corner (it used to be a 46rem
+        // banner over the crime map, then a narrower one still over the crime map's
+        // own side panel). Bottom-right is essentially never used by page content.
+        <div className="fixed bottom-4 right-4 w-[22rem] max-w-[calc(100vw-2rem)] bg-gov-surface border border-gov-border rounded-2xl shadow-2xl text-left z-50 animate-[fadeIn_0.2s]">
           <div className="flex items-start gap-3 p-4 pb-3">
             <span className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
               <AlarmIcon className="h-5 w-5 text-gov-warning" />
