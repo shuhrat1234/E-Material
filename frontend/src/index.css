@@ -130,23 +130,3 @@ html, body {
 .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
-
-/* Crime map glow markers (CrimeMapPanel): Leaflet's default divIcon ships a
-   white box + border — strip it so only our radial-gradient blob shows, and
-   scale/brighten the inner blob (not the outer positioned wrapper) on hover
-   so the glow reads as spreading across the mahalla rather than a hard dot. */
-.leaflet-div-icon.mahalla-marker-wrapper {
-  background: transparent;
-  border: none;
-}
-.mahalla-marker-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  transition: transform 0.2s ease, filter 0.2s ease;
-  will-change: transform;
-}
-.mahalla-marker-wrapper:hover .mahalla-marker-inner {
-  transform: scale(1.4);
-  filter: brightness(1.2);
-}

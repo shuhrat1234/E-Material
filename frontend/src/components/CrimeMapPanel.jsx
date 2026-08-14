@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import L from 'leaflet';
-import { Marker, Tooltip } from 'react-leaflet';
+import { Delaunay } from 'd3-delaunay';
+import polygonClipping from 'polygon-clipping';
+import { Polygon, Tooltip } from 'react-leaflet';
 import MahallaMap from './ui/MahallaMap';
 import Card, { CardHeader } from './ui/Card';
 import { MapIcon } from './Icons';
@@ -8,25 +9,55 @@ import { SEQUENTIAL } from '../chartColors';
 import { useSettings } from '../settingsContext';
 import { MATERIAL_TYPES } from '../materialTaxonomy';
 import { OLMAZOR_MAHALLAS } from '../data/olmazorMahallas';
-
-const MIN_SIZE = 16;
-const MAX_SIZE = 72;
+import { OLMAZOR_BOUNDARY, OLMAZOR_BOUNDS } from '../data/olmazorBoundary';
 
 function hexToRgb(hex) {
   const clean = hex.replace('#', '');
   return [0, 2, 4].map(i => parseInt(clean.substring(i, i + 2), 16));
 }
 
-// Proportional-symbol (bubble) map, not a choropleth: OpenStreetMap only has real
-// polygon shapes for a fraction of Olmazor's mahallas, so every mahalla is a soft
-// glowing marker sized/colored by case count instead — see plan notes on data
-// availability. Markers are custom Leaflet divIcons (radial-gradient blob + blur
-// glow) rather than flat CircleMarkers so hovering reads as illuminating the
-// mahalla's area, not just lighting up a dot.
+// Each mahalla only has a point in OpenStreetMap, not a real boundary polygon for
+// most of them (see the original build's plan notes). A Voronoi tessellation of
+// the 64 points gives every mahalla a real, derived "zone" — the area closer to
+// it than to any other mahalla — so hovering highlights a whole area with a
+// border, not just a small dot. It's a computed proximity region, not an
+// official boundary; the tooltip still names the exact mahalla.
+//
+// Voronoi cells are only bounded to a rectangle, so each one is then clipped
+// against the true district polygon (via polygon-clipping — a real geometric
+// intersection, not a fill-rule masking trick) to stay inside Olmazor tumani.
+// A cell can split into more than one piece where the district's edge is
+// concave, so each mahalla maps to one or more polygon pieces.
+function useVoronoiCells() {
+  return useMemo(() => {
+    const pad = 0.02;
+    const points = OLMAZOR_MAHALLAS.map(m => [m.lon, m.lat]);
+    const delaunay = Delaunay.from(points);
+    const voronoi = delaunay.voronoi([
+      OLMAZOR_BOUNDS.west - pad, OLMAZOR_BOUNDS.south - pad,
+      OLMAZOR_BOUNDS.east + pad, OLMAZOR_BOUNDS.north + pad,
+    ]);
+    const boundaryLonLat = [OLMAZOR_BOUNDARY.map(([lat, lon]) => [lon, lat])];
+
+    const cells = [];
+    OLMAZOR_MAHALLAS.forEach((mahalla, i) => {
+      const cell = voronoi.cellPolygon(i);
+      if (!cell) return;
+      const clipped = polygonClipping.intersection([cell], boundaryLonLat);
+      clipped.forEach((polygon, pieceIndex) => {
+        const positions = polygon[0].map(([lon, lat]) => [lat, lon]);
+        cells.push({ mahalla, positions, key: `${mahalla.id}_${pieceIndex}` });
+      });
+    });
+    return cells;
+  }, []);
+}
+
 function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   const { isDark } = useSettings();
   const [selectedId, setSelectedId] = useState(null);
-  const mutedRgb = isDark ? [148, 163, 184] : [100, 116, 139];
+  const [hoveredId, setHoveredId] = useState(null);
+  const cells = useVoronoiCells();
 
   const byMahalla = useMemo(() => {
     const map = {};
@@ -51,7 +82,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
     .filter(t => t.count > 0);
 
   // Hover tooltip: name, total, and the per-type breakdown (the "what kind of
-  // crime" the marker's size/color alone can't show).
+  // crime" a fill color alone can't show).
   const buildTooltip = (mahalla, count, list) => {
     const name = lang === 'ru' ? mahalla.name_ru : mahalla.name_uz;
     const breakdown = breakdownFor(list);
@@ -75,65 +106,56 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
     );
   };
 
-  const getMarkerProps = (mahalla) => {
-    const list = byMahalla[mahalla.id] || [];
-    const count = list.length;
-    const isSelected = mahalla.id === selectedId;
-    const tooltip = buildTooltip(mahalla, count, list);
+  const emptyFill = isDark ? [30, 41, 59] : [226, 232, 240];
+  const emptyBorder = isDark ? 'rgba(148,163,184,0.35)' : 'rgba(100,116,139,0.35)';
 
-    if (count === 0) {
-      const [r, g, b] = mutedRgb;
-      return {
-        size: isSelected ? 16 : 10,
-        tooltip,
-        background: `radial-gradient(circle at 42% 38%, rgba(${r},${g},${b},0.55) 0%, rgba(${r},${g},${b},0.25) 55%, rgba(${r},${g},${b},0) 78%)`,
-        ring: isSelected ? '2px solid #ffffff' : `1px solid rgba(${r},${g},${b},0.5)`,
-        glow: isSelected ? `0 0 10px rgba(${r},${g},${b},0.6)` : 'none',
-      };
-    }
+  const overlayLayers = (
+    <>
+      {cells.map(({ mahalla, positions, key }) => {
+        const list = byMahalla[mahalla.id] || [];
+        const count = list.length;
+        const isSelected = mahalla.id === selectedId;
+        const isHovered = mahalla.id === hoveredId;
+        const emphasized = isSelected || isHovered;
 
-    const ratio = count / maxCount;
-    const bucket = Math.min(SEQUENTIAL.length - 1, Math.floor(ratio * (SEQUENTIAL.length - 1)));
-    const [r, g, b] = hexToRgb(SEQUENTIAL[bucket]);
-    const size = MIN_SIZE + Math.sqrt(ratio) * (MAX_SIZE - MIN_SIZE);
-    return {
-      size,
-      tooltip,
-      background: `radial-gradient(circle at 42% 38%, rgba(${r},${g},${b},0.95) 0%, rgba(${r},${g},${b},0.6) 48%, rgba(${r},${g},${b},0) 78%)`,
-      ring: isSelected ? '2.5px solid #ffffff' : `1.5px solid rgba(${r},${g},${b},0.9)`,
-      glow: `0 0 ${10 + ratio * 22}px rgba(${r},${g},${b},${isSelected ? 0.85 : 0.6})`,
-    };
-  };
+        let fillRgb = emptyFill;
+        let baseFillOpacity = 0.12;
+        if (count > 0) {
+          const ratio = count / maxCount;
+          const bucket = Math.min(SEQUENTIAL.length - 1, Math.floor(ratio * (SEQUENTIAL.length - 1)));
+          fillRgb = hexToRgb(SEQUENTIAL[bucket]);
+          baseFillOpacity = 0.32 + ratio * 0.3;
+        }
+        const [r, g, b] = fillRgb;
 
-  const renderMarker = (mahalla, props, onClick) => {
-    const boxSize = Math.ceil(props.size + 14); // headroom so the hover scale-up glow isn't clipped
-    const icon = L.divIcon({
-      className: 'mahalla-marker-wrapper',
-      html: `<div class="mahalla-marker-inner" style="background:${props.background};border:${props.ring};box-shadow:${props.glow};"></div>`,
-      iconSize: [boxSize, boxSize],
-      iconAnchor: [boxSize / 2, boxSize / 2],
-    });
-    return (
-      <Marker
-        key={mahalla.id}
-        position={[mahalla.lat, mahalla.lon]}
-        icon={icon}
-        eventHandlers={{ click: () => onClick(mahalla) }}
-      >
-        <Tooltip direction="top" offset={[0, -boxSize / 2]}>{props.tooltip}</Tooltip>
-      </Marker>
-    );
-  };
+        return (
+          <Polygon
+            key={key}
+            positions={positions}
+            pathOptions={{
+              color: emphasized ? '#ffffff' : emptyBorder,
+              weight: emphasized ? 2.5 : 1,
+              fillColor: `rgb(${r},${g},${b})`,
+              fillOpacity: isHovered ? Math.min(0.85, baseFillOpacity + 0.3) : baseFillOpacity,
+              opacity: 1,
+            }}
+            eventHandlers={{
+              mouseover: (e) => { setHoveredId(mahalla.id); e.target.bringToFront(); },
+              mouseout: () => setHoveredId(null),
+              click: () => setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)),
+            }}
+          >
+            <Tooltip sticky opacity={1}>{buildTooltip(mahalla, count, list)}</Tooltip>
+          </Polygon>
+        );
+      })}
+    </>
+  );
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
       <div className="flex-1 w-full min-w-0">
-        <MahallaMap
-          height="560px"
-          getMarkerProps={getMarkerProps}
-          renderMarker={renderMarker}
-          onMarkerClick={(m) => setSelectedId(prev => (prev === m.id ? null : m.id))}
-        />
+        <MahallaMap height="560px" overlayLayers={overlayLayers} />
         {untaggedCount > 0 && (
           <p className="text-[11px] text-gov-muted mt-2">
             {lang === 'ru'

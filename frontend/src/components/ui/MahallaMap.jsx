@@ -12,7 +12,15 @@ const PAD = 0.01;
 // from OpenStreetMap, see src/data/). Pan/zoom is clamped to the district via maxBounds.
 // Marker appearance is fully delegated to getMarkerProps so the crime map (bubbles sized
 // by case count) and the registration-form picker (simple selectable pins) can share this.
-function MahallaMap({ getMarkerProps, onMarkerClick, renderMarker, height = '420px', scrollWheelZoom = true, className = '' }) {
+function MahallaMap({
+  getMarkerProps = () => null,
+  onMarkerClick,
+  renderMarker,
+  overlayLayers,
+  height = '420px',
+  scrollWheelZoom = true,
+  className = '',
+}) {
   const { isDark } = useSettings();
 
   const bounds = useMemo(() => [
@@ -41,6 +49,7 @@ function MahallaMap({ getMarkerProps, onMarkerClick, renderMarker, height = '420
         style={{ height: '100%', width: '100%', background: isDark ? '#111827' : '#eef2f7' }}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
+        {overlayLayers}
         <Polygon
           positions={OLMAZOR_BOUNDARY}
           pathOptions={{ color: isDark ? '#5598e7' : '#2a78d6', weight: 2, fillOpacity: 0, interactive: false }}
