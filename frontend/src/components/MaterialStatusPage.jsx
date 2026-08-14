@@ -30,6 +30,11 @@ function MaterialStatusPage({ lang, setLang, onBack }) {
       setError(lang === 'ru' ? 'Укажите ID материала и телефон' : 'Material ID va telefonni kiriting');
       return;
     }
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 9) {
+      setError(lang === 'ru' ? 'Введите корректный номер телефона' : 'Telefon raqamini to\'g\'ri kiriting');
+      return;
+    }
     setLoading(true);
     axios.post(`${API_BASE}/public/check-status/`, {
       material_id: materialId.trim(),

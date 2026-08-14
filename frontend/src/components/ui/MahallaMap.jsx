@@ -51,7 +51,11 @@ function MahallaMap({
   const mapBg = isDark ? '#0b1220' : '#eef2f7';
 
   return (
-    <div className={`rounded-xl overflow-hidden border border-gov-border ${className}`} style={{ height }}>
+    // `isolate` pins Leaflet's internal stacking (its zoom controls alone use
+    // z-index: 1000) to this element, so it can never leak above the app's own
+    // layers — modals, open Select dropdowns, the mobile sidebar, toasts — which
+    // all sit much lower on the page's own z-index scale.
+    <div className={`relative isolate rounded-xl overflow-hidden border border-gov-border ${className}`} style={{ height }}>
       <MapContainer
         bounds={bounds}
         maxBounds={bounds}
