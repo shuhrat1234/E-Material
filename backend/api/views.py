@@ -54,6 +54,21 @@ class OfficerViewSet(viewsets.ModelViewSet):
 
         return response
 
+    def partial_update(self, request, *args, **kwargs):
+        password = (request.data.get('password') or '').strip()
+        if password and len(password) < 6:
+            return Response({'error': 'Password must be at least 6 characters'}, status=status.HTTP_400_BAD_REQUEST)
+
+        response = super().partial_update(request, *args, **kwargs)
+
+        if password:
+            officer = self.get_object()
+            if officer.user:
+                officer.user.set_password(password)
+                officer.user.save()
+
+        return response
+
     @action(detail=True, methods=['post'])
     def rate(self, request, pk=None):
         officer = self.get_object()

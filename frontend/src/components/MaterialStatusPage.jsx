@@ -11,7 +11,7 @@ const STATUS_LABELS = {
 };
 
 // Public, no-login page: a citizen tracks their own material with just its ID and
-// the phone number they registered with. Reached at /status, independent of the
+// the phone number they registered with. Reached at /arizalarim, independent of the
 // normal login flow — see App.jsx's manual route check.
 function MaterialStatusPage({ lang, setLang, onBack }) {
   const [materialId, setMaterialId] = useState('');

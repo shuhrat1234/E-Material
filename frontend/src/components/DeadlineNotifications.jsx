@@ -137,40 +137,44 @@ function DeadlineNotifications({ lang, user, onViewDetails }) {
       </button>
 
       {toast && (
-        <div className="absolute right-0 top-14 w-[46rem] bg-gov-surface border border-gov-border rounded-2xl shadow-2xl text-left z-50 animate-[fadeIn_0.2s]">
-          <div className="flex items-start gap-5 p-8 pb-5">
-            <span className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-              <AlarmIcon className="h-11 w-11 text-gov-warning" />
+        // Fixed to the viewport corner (not absolute within the header) and capped
+        // narrow so it can never grow wide enough to sit on top of page content —
+        // it used to be a 46rem banner overlapping whatever was directly below the
+        // header (e.g. the crime map), intercepting clicks meant for that content.
+        <div className="fixed top-16 right-4 w-[22rem] max-w-[calc(100vw-2rem)] bg-gov-surface border border-gov-border rounded-2xl shadow-2xl text-left z-50 animate-[fadeIn_0.2s]">
+          <div className="flex items-start gap-3 p-4 pb-3">
+            <span className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+              <AlarmIcon className="h-5 w-5 text-gov-warning" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-xl font-bold text-gov-text uppercase tracking-wide">
+              <p className="text-xs font-bold text-gov-text uppercase tracking-wide">
                 {lang === 'ru' ? 'Внимание' : 'Diqqat'}
               </p>
-              <p className="text-base font-medium text-gov-text leading-relaxed mt-2">
+              <p className="text-xs font-medium text-gov-text leading-relaxed mt-1">
                 {toast.message}
               </p>
             </div>
             <button
               onClick={() => setToast(null)}
-              className="p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
+              className="p-1 -m-1 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
               title={lang === 'ru' ? 'Закрыть' : 'Yopish'}
             >
-              <CloseIcon className="h-6 w-6" />
+              <CloseIcon className="h-4 w-4" />
             </button>
           </div>
 
           {toast.items.length > 0 && (
-            <div className="border-t border-gov-border divide-y divide-gov-border max-h-80 overflow-y-auto">
+            <div className="border-t border-gov-border divide-y divide-gov-border max-h-56 overflow-y-auto">
               {toast.items.map(({ material, bucket }) => (
                 <button
                   key={material.id}
                   onClick={() => { onViewDetails(material.id); setToast(null); }}
-                  className="w-full text-left px-8 py-4 hover:bg-gov-light/40 transition-colors flex items-center justify-between gap-3"
+                  className="w-full text-left px-4 py-2.5 hover:bg-gov-light/40 transition-colors flex items-center justify-between gap-3"
                 >
                   <span className="min-w-0">
-                    <span className="block text-base font-semibold text-gov-primary truncate">{material.id} — {material.citizen_name}</span>
+                    <span className="block text-xs font-semibold text-gov-primary truncate">{material.id} — {material.citizen_name}</span>
                   </span>
-                  <span className={`text-xs font-bold uppercase tracking-wider shrink-0 ${bucket === 'today' ? 'text-gov-danger' : 'text-gov-warning'}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${bucket === 'today' ? 'text-gov-danger' : 'text-gov-warning'}`}>
                     {bucket === 'today'
                       ? (lang === 'ru' ? 'Сегодня' : 'Bugun')
                       : (lang === 'ru' ? 'Завтра' : 'Ertaga')}

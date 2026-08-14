@@ -117,7 +117,7 @@ function App() {
   // Public, no-login page for citizens tracking their own case — reachable
   // independent of auth state. Checked after all hooks above (Rules of Hooks:
   // an early return before them would skip hooks on some renders but not others).
-  if (route.startsWith('/status')) {
+  if (route.startsWith('/arizalarim')) {
     return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate('/')} />;
   }
 
@@ -147,7 +147,7 @@ function App() {
 
   const renderView = () => {
     if (!user) {
-      return <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} onOpenStatusCheck={() => navigate('/status')} />;
+      return <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} onOpenStatusCheck={() => navigate('/arizalarim')} />;
     }
 
     switch (user.role) {

@@ -237,6 +237,49 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       .catch(() => notify(lang === 'ru' ? 'Ошибка удаления.' : 'O\'chirishda xatolik.', 'error'));
   };
 
+  const [editingOfficer, setEditingOfficer] = useState(null);
+  const [editPosition, setEditPosition] = useState('investigator');
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEditUser = (officer) => {
+    const matched = Object.entries(POSITIONS).find(
+      ([, p]) => p.rank_ru === officer.rank_ru && p.role === officer.role
+    );
+    const fallback = Object.entries(POSITIONS).find(([, p]) => p.role === officer.role);
+    setEditPosition((matched || fallback || ['investigator'])[0]);
+    setEditPassword('');
+    setEditError('');
+    setEditingOfficer(officer);
+  };
+
+  const handleSaveEditUser = (e) => {
+    e.preventDefault();
+    setEditError('');
+    if (editPassword && editPassword.trim().length < 6) {
+      setEditError(lang === 'ru' ? 'Пароль должен быть не менее 6 символов' : 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
+      return;
+    }
+    const p = POSITIONS[editPosition];
+    const payload = { role: p.role, rank_ru: p.rank_ru, rank_uz: p.rank_uz };
+    if (editPassword.trim()) payload.password = editPassword.trim();
+
+    setEditSaving(true);
+    axios.patch(`${API_BASE}/officers/${editingOfficer.id}/`, payload)
+      .then(() => {
+        setEditSaving(false);
+        setEditingOfficer(null);
+        notify(lang === 'ru' ? 'Пользователь обновлён' : 'Foydalanuvchi yangilandi', 'success');
+        fetchData();
+      })
+      .catch(() => {
+        setEditSaving(false);
+        setEditError(lang === 'ru' ? 'Ошибка сохранения.' : 'Saqlashda xatolik.');
+      });
+  };
+
   // Filter materials
   const matchesNonDateFilters = (c) => {
     if (difficulty && c.difficulty != difficulty) return false;
@@ -1725,12 +1768,20 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => handleDeleteUser(o.id)}
-                              className="px-2 py-1 bg-rose-50 border border-rose-100 text-gov-danger rounded hover:bg-rose-100 transition-colors text-[10px] font-bold"
-                            >
-                              {lang === 'ru' ? 'Удалить' : 'O\'chirish'}
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => openEditUser(o)}
+                                className="px-2 py-1 bg-gov-primaryLight border border-gov-primary/20 text-gov-primary rounded hover:opacity-80 transition-colors text-[10px] font-bold"
+                              >
+                                {lang === 'ru' ? 'Изменить' : 'O\'zgartirish'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteUser(o.id)}
+                                className="px-2 py-1 bg-rose-50 border border-rose-100 text-gov-danger rounded hover:bg-rose-100 transition-colors text-[10px] font-bold"
+                              >
+                                {lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1895,6 +1946,80 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 </div>
               ))}
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {editingOfficer && (
+        <Modal onClose={() => setEditingOfficer(null)} maxWidth="max-w-md">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
+              <h3 className="font-semibold text-base text-gov-text">
+                {lang === 'ru' ? editingOfficer.name_ru : editingOfficer.name_uz}
+              </h3>
+              <button onClick={() => setEditingOfficer(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+            </div>
+
+            {editError && (
+              <div className="mb-4 p-3 bg-rose-50 border border-rose-100 text-gov-danger text-xs rounded font-medium">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditUser} className="space-y-4">
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
+                  {lang === 'ru' ? 'Должность' : 'Lavozim'}
+                </label>
+                <Select
+                  value={editPosition}
+                  onChange={setEditPosition}
+                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light"
+                  options={Object.entries(POSITIONS).map(([value, p]) => ({
+                    value,
+                    label: lang === 'ru' ? p.rank_ru : p.rank_uz,
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
+                  {lang === 'ru' ? 'Новый пароль' : 'Yangi parol'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? 'text' : 'password'}
+                    value={editPassword}
+                    onChange={e => setEditPassword(e.target.value)}
+                    placeholder={lang === 'ru' ? 'Оставьте пустым, чтобы не менять' : 'O\'zgartirmaslik uchun bo\'sh qoldiring'}
+                    className="w-full text-xs p-2 pr-8 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(s => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gov-muted hover:text-gov-text transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showEditPassword ? <EyeOffIcon className="h-3.5 w-3.5" /> : <EyeIcon className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="px-5 py-2.5 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors disabled:opacity-60"
+                >
+                  {editSaving ? (lang === 'ru' ? 'Сохранение...' : 'Saqlanmoqda...') : (lang === 'ru' ? 'Сохранить' : 'Saqlash')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingOfficer(null)}
+                  className="px-5 py-2.5 border border-gov-border text-gov-text text-xs font-semibold rounded hover:bg-gov-light transition-colors"
+                >
+                  {lang === 'ru' ? 'Отмена' : 'Bekor qilish'}
+                </button>
+              </div>
+            </form>
           </div>
         </Modal>
       )}
