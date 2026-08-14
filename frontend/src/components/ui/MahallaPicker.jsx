@@ -1,11 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import MahallaMap from './MahallaMap';
+import Select from './Select';
 import { OLMAZOR_MAHALLAS } from '../../data/olmazorMahallas';
 
 // Compact click-to-select mahalla picker for the registration form — real Olmazor
 // tumani pins (see MahallaMap), scroll-wheel zoom off so it doesn't hijack page scroll.
+// A dropdown is offered alongside the map since precisely tapping a small pin isn't
+// always practical — both control the same value, so either one works.
 function MahallaPicker({ value, onChange, lang, error }) {
   const selected = value ? OLMAZOR_MAHALLAS.find(m => m.id === value) : null;
+
+  const options = useMemo(
+    () => [...OLMAZOR_MAHALLAS]
+      .sort((a, b) => (lang === 'ru' ? a.name_ru.localeCompare(b.name_ru) : a.name_uz.localeCompare(b.name_uz)))
+      .map(m => ({ value: m.id, label: lang === 'ru' ? m.name_ru : m.name_uz })),
+    [lang]
+  );
 
   const getMarkerProps = (mahalla) => {
     const isSelected = mahalla.id === value;
@@ -22,6 +32,13 @@ function MahallaPicker({ value, onChange, lang, error }) {
 
   return (
     <div>
+      <Select
+        value={value}
+        onChange={onChange}
+        placeholder={lang === 'ru' ? 'Выберите махаллю из списка...' : 'Ro\'yxatdan mahallani tanlang...'}
+        options={options}
+        className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm mb-2 ${error ? 'ring-2 ring-gov-danger/40' : ''}`}
+      />
       <MahallaMap
         height="220px"
         scrollWheelZoom={false}
@@ -36,7 +53,7 @@ function MahallaPicker({ value, onChange, lang, error }) {
           </span>
         ) : (
           <span className="text-gov-muted">
-            {lang === 'ru' ? 'Махалля не выбрана — нажмите на карту' : 'Mahalla tanlanmagan — xaritani bosing'}
+            {lang === 'ru' ? 'Махалля не выбрана — выберите из списка или нажмите на карту' : 'Mahalla tanlanmagan — ro\'yxatdan tanlang yoki xaritani bosing'}
           </span>
         )}
       </p>

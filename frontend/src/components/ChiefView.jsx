@@ -10,6 +10,7 @@ import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
 import CrimeMapPanel from './CrimeMapPanel';
+import CrimeMapMini from './CrimeMapMini';
 import { CATEGORICAL, SEQUENTIAL, chartTheme } from '../chartColors';
 import { useSettings } from '../settingsContext';
 import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon, MapIcon } from './Icons';
@@ -902,6 +903,8 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 <PillBarChart title={lang === 'ru' ? 'Типы материалов' : 'Material turlari'} data={getTypesBarData()} />
               </div>
             </div>
+
+            <CrimeMapMini materials={materials} lang={lang} onOpen={() => setActivePanel('map')} />
 
             {/* Charts */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

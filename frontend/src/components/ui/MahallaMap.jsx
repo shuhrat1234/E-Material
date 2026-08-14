@@ -25,6 +25,9 @@ function MahallaMap({
   overlayLayers,
   height = '420px',
   scrollWheelZoom = true,
+  dragging = true,
+  zoomControl = true,
+  doubleClickZoom = true,
   className = '',
 }) {
   const { isDark } = useSettings();
@@ -55,6 +58,9 @@ function MahallaMap({
         maxBoundsViscosity={1.0}
         minZoom={12}
         scrollWheelZoom={scrollWheelZoom}
+        dragging={dragging}
+        zoomControl={zoomControl}
+        doubleClickZoom={doubleClickZoom}
         style={{ height: '100%', width: '100%', background: mapBg }}
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />

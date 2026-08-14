@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
+import MaterialStatusPage from './components/MaterialStatusPage';
 import CitizenView from './components/CitizenView';
 import AiKioskView from './components/AiKioskView';
 import RegistratorView from './components/RegistratorView';
@@ -91,6 +92,18 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [route, setRoute] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const onPopState = () => setRoute(window.location.pathname);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const navigate = (path) => {
+    window.history.pushState({}, '', path);
+    setRoute(path);
+  };
 
   useEffect(() => {
     if (user) localStorage.setItem('em_user', JSON.stringify(user));
@@ -100,6 +113,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem('em_lang', lang);
   }, [lang]);
+
+  // Public, no-login page for citizens tracking their own case — reachable
+  // independent of auth state. Checked after all hooks above (Rules of Hooks:
+  // an early return before them would skip hooks on some renders but not others).
+  if (route.startsWith('/status')) {
+    return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate('/')} />;
+  }
 
   const handleLogin = (selectedUser) => {
     setUser(selectedUser);
@@ -127,7 +147,7 @@ function App() {
 
   const renderView = () => {
     if (!user) {
-      return <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} />;
+      return <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} onOpenStatusCheck={() => navigate('/status')} />;
     }
 
     switch (user.role) {

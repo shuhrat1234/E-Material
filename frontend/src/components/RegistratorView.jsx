@@ -11,6 +11,7 @@ import { exportToExcel } from '../exportExcel';
 import { notify } from '../toastService';
 import { confirm } from '../confirmService';
 import { MATERIAL_TYPES, getSourceOptions } from '../materialTaxonomy';
+import { OLMAZOR_MAHALLAS } from '../data/olmazorMahallas';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
@@ -71,8 +72,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
     if (!officerId) {
       next.officerId = lang === 'ru' ? 'Выберите исполнителя' : 'Ijrochini tanlang';
     }
-    if (!mahalla) {
-      next.mahalla = lang === 'ru' ? 'Выберите махаллю на карте' : 'Xaritada mahallani tanlang';
+    if (!mahalla || !OLMAZOR_MAHALLAS.some(m => m.id === mahalla)) {
+      next.mahalla = lang === 'ru' ? 'Выберите махаллю из списка или на карте' : 'Ro\'yxatdan yoki xaritada mahallani tanlang';
     }
     const days = parseInt(deadlineDays, 10);
     if (!Number.isFinite(days) || days < 1 || days > 90) {
