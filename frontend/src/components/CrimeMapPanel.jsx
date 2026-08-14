@@ -76,6 +76,27 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   const emptyBorder = isDark ? 'rgba(203,213,225,0.55)' : 'rgba(71,85,105,0.55)';
   const highlightBorder = isDark ? '#f8fafc' : '#0f172a'; // hover/select ring — a fixed dark/light outline, not a color swap, so severity color stays legible
 
+  // react-leaflet re-binds a Polygon's Leaflet event listeners (off the old
+  // object, on the new one) whenever the `eventHandlers` prop's *reference*
+  // changes — it doesn't diff contents. Building this object inline in the
+  // render below would recreate it (and force an unbind/rebind cycle across
+  // all ~65 cells) on every hover, which raced against real mouse events often
+  // enough that hover/click could end up permanently unbound. Keying handlers
+  // by mahalla id here keeps each cell's object reference stable across
+  // hoveredId/selectedId changes, so react-leaflet only binds them once.
+  const cellHandlers = useMemo(() => {
+    const map = {};
+    cells.forEach(({ mahalla }) => {
+      if (map[mahalla.id]) return;
+      map[mahalla.id] = {
+        mouseover: (e) => { setHoveredId(mahalla.id); e.target.bringToFront(); },
+        mouseout: () => setHoveredId(null),
+        click: () => setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)),
+      };
+    });
+    return map;
+  }, [cells]);
+
   const overlayLayers = (
     <>
       {cells.map(({ mahalla, positions, key }) => {
@@ -99,11 +120,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
               fillOpacity: emphasized ? Math.min(0.95, baseFillOpacity + 0.2) : baseFillOpacity,
               opacity: 1,
             }}
-            eventHandlers={{
-              mouseover: (e) => { setHoveredId(mahalla.id); e.target.bringToFront(); },
-              mouseout: () => setHoveredId(null),
-              click: () => setSelectedId(prev => (prev === mahalla.id ? null : mahalla.id)),
-            }}
+            eventHandlers={cellHandlers[mahalla.id]}
           >
             <Tooltip sticky opacity={1}>{buildTooltip(mahalla, count, list)}</Tooltip>
           </Polygon>

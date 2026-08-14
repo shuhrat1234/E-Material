@@ -69,13 +69,22 @@ function MahallaMap({
       >
         <TileLayer url={tile.url} attribution={tile.attribution} />
         {overlayLayers}
+        {/* `interactive` must be a direct prop, not nested in pathOptions: react-leaflet
+            only forwards pathOptions to Leaflet's setStyle() after the layer already
+            exists, but `interactive` is read once at construction time to decide
+            whether the DOM path gets the `leaflet-interactive` class (pointer-events:
+            auto over its whole geometry, painted or not). Nested here, it silently
+            fell back to Leaflet's default (true) — so this invisible mask, painted on
+            top of every mahalla cell, was swallowing every click/hover on the map. */}
         <Polygon
+          interactive={false}
           positions={[WORLD_MASK_OUTER, OLMAZOR_BOUNDARY]}
-          pathOptions={{ stroke: false, fillColor: mapBg, fillOpacity: 1, interactive: false }}
+          pathOptions={{ stroke: false, fillColor: mapBg, fillOpacity: 1 }}
         />
         <Polygon
+          interactive={false}
           positions={OLMAZOR_BOUNDARY}
-          pathOptions={{ color: isDark ? '#5598e7' : '#2a78d6', weight: 2, fillOpacity: 0, interactive: false }}
+          pathOptions={{ color: isDark ? '#5598e7' : '#2a78d6', weight: 2, fillOpacity: 0 }}
         />
         {OLMAZOR_MAHALLAS.map(m => {
           const props = getMarkerProps(m);
