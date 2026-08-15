@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
 import { SearchIcon, CloseIcon } from './Icons';
 
@@ -142,6 +143,11 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
                 <span className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold ${STATUS_LABELS[result.status]?.tone || 'bg-gray-50 text-gray-700 border-gov-border'}`}>
                   {STATUS_LABELS[result.status] ? STATUS_LABELS[result.status][lang] : result.status}
                 </span>
+              </div>
+              <div className="flex justify-center py-2">
+                <div className="p-3 bg-white border border-gov-border rounded-xl">
+                  <QRCodeSVG value={`${window.location.origin}/arizalarim?id=${encodeURIComponent(result.id)}`} size={120} />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="border border-gov-border rounded-lg p-2.5 bg-gov-light/45">
