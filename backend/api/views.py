@@ -740,4 +740,5 @@ def check_material_status(request):
         'officer_name_uz': officer.name_uz if officer else None,
         'officer_rank_ru': officer.rank_ru if officer else None,
         'officer_rank_uz': officer.rank_uz if officer else None,
+        'officer_phone': officer.phone if officer else None,
     })

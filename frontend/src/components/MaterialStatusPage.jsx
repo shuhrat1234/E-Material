@@ -13,8 +13,8 @@ const STATUS_LABELS = {
 // Public, no-login page: a citizen tracks their own material with just its ID and
 // the phone number they registered with. Reached at /arizalarim, independent of the
 // normal login flow — see App.jsx's manual route check.
-function MaterialStatusPage({ lang, setLang, onBack }) {
-  const [materialId, setMaterialId] = useState('');
+function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
+  const [materialId, setMaterialId] = useState(initialMaterialId);
   const [phone, setPhone] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -159,6 +159,9 @@ function MaterialStatusPage({ lang, setLang, onBack }) {
                   <p className="font-semibold text-gov-text mt-0.5">
                     {lang === 'ru' ? result.officer_rank_ru : result.officer_rank_uz} {lang === 'ru' ? result.officer_name_ru : result.officer_name_uz}
                   </p>
+                  {result.officer_phone && (
+                    <p className="text-gov-primary font-semibold mt-1">{result.officer_phone}</p>
+                  )}
                 </div>
               )}
               <button

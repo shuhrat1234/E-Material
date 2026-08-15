@@ -118,7 +118,11 @@ function App() {
   // independent of auth state. Checked after all hooks above (Rules of Hooks:
   // an early return before them would skip hooks on some renders but not others).
   if (route.startsWith('/arizalarim')) {
-    return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate('/')} />;
+    // Pre-fills the Material ID when reached via the QR code printed on a
+    // citizen's registration receipt (?id=MAT-...), so scanning it is enough
+    // instead of retyping the ID.
+    const initialMaterialId = new URLSearchParams(window.location.search).get('id') || '';
+    return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate('/')} initialMaterialId={initialMaterialId} />;
   }
 
   const handleLogin = (selectedUser) => {

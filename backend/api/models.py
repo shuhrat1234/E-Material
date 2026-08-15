@@ -23,6 +23,7 @@ class Officer(models.Model):
     rank_ru = models.CharField(max_length=100)
     rank_uz = models.CharField(max_length=100)
     role = models.CharField(max_length=50, choices=ROLE_CHOICES)
+    phone = models.CharField(max_length=30, blank=True, default='')
 
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name='officers', null=True, blank=True)
     likes = models.IntegerField(default=0)

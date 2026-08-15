@@ -75,7 +75,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     registrator: { rank_ru: 'Регистратор', rank_uz: 'Registrator', role: 'registrator' },
   };
 
-  const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', position: 'investigator', password: '' };
+  const emptyNewUser = { username: '', name_ru: '', name_uz: '', rank_ru: '', rank_uz: '', role: 'investigator', position: 'investigator', password: '', phone: '' };
   const [newUser, setNewUser] = useState(emptyNewUser);
   const [showNewUserPassword, setShowNewUserPassword] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -212,6 +212,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       rank_ru: newUser.rank_ru || '-',
       rank_uz: newUser.rank_uz || '-',
       role: newUser.role,
+      phone: newUser.phone.trim(),
       password,
       photo
     }).then(() => {
@@ -249,6 +250,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const [editingOfficer, setEditingOfficer] = useState(null);
   const [editPosition, setEditPosition] = useState('investigator');
   const [editPassword, setEditPassword] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSaving, setEditSaving] = useState(false);
@@ -260,6 +262,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     const fallback = Object.entries(POSITIONS).find(([, p]) => p.role === officer.role);
     setEditPosition((matched || fallback || ['investigator'])[0]);
     setEditPassword('');
+    setEditPhone(officer.phone || '');
     setEditError('');
     setEditingOfficer(officer);
   };
@@ -272,7 +275,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       return;
     }
     const p = POSITIONS[editPosition];
-    const payload = { role: p.role, rank_ru: p.rank_ru, rank_uz: p.rank_uz };
+    const payload = { role: p.role, rank_ru: p.rank_ru, rank_uz: p.rank_uz, phone: editPhone.trim() };
     if (editPassword.trim()) payload.password = editPassword.trim();
 
     setEditSaving(true);
@@ -1733,6 +1736,18 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     </button>
                   </div>
                 </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
+                    {lang === 'ru' ? 'Телефон' : 'Telefon'}
+                  </label>
+                  <input
+                    type="tel"
+                    value={newUser.phone}
+                    onChange={e => setNewUser({ ...newUser, phone: e.target.value })}
+                    placeholder="+998 90 123-45-67"
+                    className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                  />
+                </div>
 
                 <div className="md:col-span-3">
                   <button
@@ -1764,6 +1779,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       <th className="px-4 py-3">{lang === 'ru' ? 'Логин' : 'Login'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'ФИО' : 'F.I.Sh.'}</th>
                       <th className="px-4 py-3">{lang === 'ru' ? 'Должность' : 'Lavozim'}</th>
+                      <th className="px-4 py-3">{lang === 'ru' ? 'Телефон' : 'Telefon'}</th>
                       <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Действие' : 'Amal'}</th>
                     </tr>
                   </thead>
@@ -1779,6 +1795,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                               {(lang === 'ru' ? o.rank_ru : o.rank_uz) || (ROLE_LABELS[o.role] ? ROLE_LABELS[o.role][lang] : o.role)}
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-gov-muted">{o.phone || '—'}</td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex items-center justify-center gap-1.5">
                               <button
@@ -1991,6 +2008,18 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     value,
                     label: lang === 'ru' ? p.rank_ru : p.rank_uz,
                   }))}
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] font-bold uppercase tracking-wider text-gov-muted mb-1">
+                  {lang === 'ru' ? 'Телефон' : 'Telefon'}
+                </label>
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={e => setEditPhone(e.target.value)}
+                  placeholder="+998 90 123-45-67"
+                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
                 />
               </div>
               <div>

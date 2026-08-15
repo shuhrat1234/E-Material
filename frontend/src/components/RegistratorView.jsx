@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
 import ChatPanel from './ChatPanel';
+import Modal from './Modal';
 import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon, TrashIcon } from './Icons';
 import Select from './ui/Select';
 import MahallaPicker from './ui/MahallaPicker';
@@ -48,6 +50,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [extraIds, setExtraIds] = useState([]); // array of extra ID strings, one input per entry
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [receipt, setReceipt] = useState(null); // { materialId } — shown after a successful registration
 
   const investigators = officers.filter(o => o.role === 'investigator');
 
@@ -130,9 +133,11 @@ function RegistratorView({ lang, onViewDetails, user }) {
     };
 
     setSubmitting(true);
+    const registeredId = payload.id;
     axios.post(`${API_BASE}/materials/`, payload)
       .then(() => {
         notify(lang === 'ru' ? 'Материал успешно зарегистрирован!' : 'Material muvaffaqiyatli ro\'yxatdan o\'tkazildi!', 'success');
+        setReceipt({ materialId: registeredId });
         // Reset form
         setMaterialId('');
         setCitizenName('');
@@ -831,6 +836,35 @@ function RegistratorView({ lang, onViewDetails, user }) {
             </div>
           )}
         </div>
+      )}
+
+      {receipt && (
+        <Modal onClose={() => setReceipt(null)} maxWidth="max-w-sm">
+          <div className="p-6 text-center">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-base text-gov-text">
+                {lang === 'ru' ? 'Материал зарегистрирован' : 'Material ro\'yxatga olindi'}
+              </h3>
+              <button onClick={() => setReceipt(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+            </div>
+            <p className="text-xs text-gov-muted mb-4">
+              {lang === 'ru'
+                ? 'Отдайте этот QR-код гражданину — он отсканирует его для проверки статуса'
+                : 'Ushbu QR-kodni fuqaroga bering — u holatni tekshirish uchun skanerlaydi'}
+            </p>
+            <div className="inline-flex p-4 bg-white border border-gov-border rounded-xl">
+              <QRCodeSVG value={`${window.location.origin}/arizalarim?id=${encodeURIComponent(receipt.materialId)}`} size={180} />
+            </div>
+            <p className="text-sm font-bold text-gov-primary mt-4">{receipt.materialId}</p>
+            <button
+              type="button"
+              onClick={() => setReceipt(null)}
+              className="w-full mt-5 py-2.5 px-4 text-xs font-semibold rounded-xl bg-gov-primary text-white hover:opacity-90 transition-opacity"
+            >
+              {lang === 'ru' ? 'Готово' : 'Tayyor'}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );
