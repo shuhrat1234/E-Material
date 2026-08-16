@@ -13,7 +13,7 @@ import CrimeMapPanel from './CrimeMapPanel';
 import CrimeMapMini from './CrimeMapMini';
 import { CATEGORICAL, SEQUENTIAL, chartTheme } from '../chartColors';
 import { useSettings } from '../settingsContext';
-import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon, MapIcon } from './Icons';
+import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon, MapIcon, FlaskIcon, LockIcon } from './Icons';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
@@ -24,10 +24,12 @@ import PillBarChart from './ui/PillBarChart';
 import Select from './ui/Select';
 import Modal from './Modal';
 import ExportButton from './ui/ExportButton';
+import RegistryPanel from './RegistryPanel';
 import { exportToExcel } from '../exportExcel';
 import { confirm } from '../confirmService';
 import { notify } from '../toastService';
 import { MATERIAL_TYPES, ALL_SOURCES } from '../materialTaxonomy';
+import { ZAPROS_TYPES, ZAPROS_STATUSES, EKSPERTIZA_TYPES, EKSPERTIZA_STATUSES, TAQIQ_TYPES, TAQIQ_STATUSES } from '../requestsTaxonomy';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -766,6 +768,25 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             label={lang === 'ru' ? 'Пользователи' : 'Foydalanuvchilar'}
             active={activePanel === 'users'}
             onClick={() => setActivePanel('users')}
+          />
+          <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5 mt-2">{lang === 'ru' ? 'Реестры' : 'Reyestrlar'}</div>
+          <SidebarLink
+            icon={<SendIcon />}
+            label={lang === 'ru' ? 'Запрос' : 'Zapros'}
+            active={activePanel === 'zapros'}
+            onClick={() => setActivePanel('zapros')}
+          />
+          <SidebarLink
+            icon={<FlaskIcon />}
+            label={lang === 'ru' ? 'Экспертиза' : 'Ekspertiza'}
+            active={activePanel === 'ekspertiza'}
+            onClick={() => setActivePanel('ekspertiza')}
+          />
+          <SidebarLink
+            icon={<LockIcon />}
+            label={lang === 'ru' ? "Та'кик" : "Ta'qiq"}
+            active={activePanel === 'taqiq'}
+            onClick={() => setActivePanel('taqiq')}
           />
           <SidebarLink
             icon={<ChatIcon />}
@@ -1820,6 +1841,84 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               </div>
             </div>
           </div>
+        )}
+
+        {/* Panel: Zapros (GAI, Notarius, Kadastr, Soliq) */}
+        {activePanel === 'zapros' && (
+          <RegistryPanel
+            lang={lang}
+            officer={user}
+            materials={materials}
+            apiPath="case-requests"
+            typeOptions={ZAPROS_TYPES}
+            statusOptions={ZAPROS_STATUSES}
+            openStatusValue="yuborilgan"
+            icon={<SendIcon />}
+            labels={{
+              title: lang === 'ru' ? 'Запросы во внешние органы' : "Tashqi organlarga so'rovlar",
+              addButton: lang === 'ru' ? 'Новый запрос' : "Yangi so'rov",
+              typeColumn: lang === 'ru' ? 'Орган' : 'Organ',
+              subjectColumn: lang === 'ru' ? 'Предмет запроса' : "So'rov predmeti",
+              subjectPlaceholder: lang === 'ru' ? 'Гос. номер / ФИО / кадастровый номер...' : 'Davlat raqami / F.I.Sh / kadastr raqami...',
+              detailsColumn: lang === 'ru' ? 'Текст запроса' : "So'rov matni",
+              detailsPlaceholder: lang === 'ru' ? 'Опишите, что необходимо проверить...' : 'Nimani tekshirish kerakligini yozing...',
+              responseColumn: lang === 'ru' ? 'Ответ' : 'Javob',
+              responsePlaceholder: lang === 'ru' ? 'Текст полученного ответа...' : 'Kelgan javob matni...',
+              resolveButton: lang === 'ru' ? 'Внести ответ' : 'Javobni kiritish',
+            }}
+          />
+        )}
+
+        {/* Panel: Ekspertiza */}
+        {activePanel === 'ekspertiza' && (
+          <RegistryPanel
+            lang={lang}
+            officer={user}
+            materials={materials}
+            apiPath="ekspertizas"
+            typeOptions={EKSPERTIZA_TYPES}
+            statusOptions={EKSPERTIZA_STATUSES}
+            openStatusValue="tayinlangan"
+            icon={<FlaskIcon />}
+            labels={{
+              title: lang === 'ru' ? 'Экспертизы' : 'Ekspertizalar',
+              addButton: lang === 'ru' ? 'Назначить экспертизу' : 'Ekspertiza tayinlash',
+              typeColumn: lang === 'ru' ? 'Вид экспертизы' : 'Ekspertiza turi',
+              subjectColumn: lang === 'ru' ? 'Объект исследования' : "Tekshirish ob'ekti",
+              subjectPlaceholder: lang === 'ru' ? 'Описание объекта/образца...' : "Ob'ekt/namuna tavsifi...",
+              detailsColumn: lang === 'ru' ? 'Вопросы эксперту' : 'Ekspertga savollar',
+              detailsPlaceholder: lang === 'ru' ? 'Какие вопросы поставлены перед экспертом...' : 'Ekspertga qanday savollar qo\'yilgan...',
+              responseColumn: lang === 'ru' ? 'Заключение' : 'Xulosa',
+              responsePlaceholder: lang === 'ru' ? 'Текст заключения эксперта...' : 'Ekspert xulosasi matni...',
+              resolveButton: lang === 'ru' ? 'Внести заключение' : 'Xulosani kiritish',
+            }}
+          />
+        )}
+
+        {/* Panel: Ta'qiq */}
+        {activePanel === 'taqiq' && (
+          <RegistryPanel
+            lang={lang}
+            officer={user}
+            materials={materials}
+            apiPath="taqiqlar"
+            typeOptions={TAQIQ_TYPES}
+            statusOptions={TAQIQ_STATUSES}
+            openStatusValue="amalda"
+            icon={<LockIcon />}
+            labels={{
+              title: lang === 'ru' ? "Наложенные та'кики (ограничения)" : "Qo'yilgan ta'qiqlar",
+              addButton: lang === 'ru' ? "Наложить та'кик" : "Ta'qiq qo'yish",
+              typeColumn: lang === 'ru' ? 'Объект' : "Ob'ekt turi",
+              subjectColumn: lang === 'ru' ? 'Описание объекта' : "Ob'ekt tavsifi",
+              subjectPlaceholder: lang === 'ru' ? 'Гос. номер / адрес / кадастровый номер...' : 'Davlat raqami / manzil / kadastr raqami...',
+              detailsColumn: lang === 'ru' ? 'Основание' : 'Asos',
+              detailsPlaceholder: lang === 'ru' ? 'Постановление, номер и дата...' : "Qaror, raqami va sanasi...",
+              responseColumn: lang === 'ru' ? 'Примечание к снятию' : "Bekor qilish izohi",
+              responsePlaceholder: lang === 'ru' ? 'Основание снятия ограничения...' : "Ta'qiqni bekor qilish asosi...",
+              resolveButton: lang === 'ru' ? "Снять та'кик" : "Ta'qiqni bekor qilish",
+            }}
+          />
         )}
 
         {/* Panel 6: Chat */}
