@@ -207,3 +207,15 @@ export const DocumentIcon = ({ className = 'h-4 w-4' }) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 3.75h6M9 8.25h1.5M6.75 3.75h6.879a1.5 1.5 0 011.06.44l3.622 3.62a1.5 1.5 0 01.439 1.061V18.75a1.5 1.5 0 01-1.5 1.5H6.75a1.5 1.5 0 01-1.5-1.5V5.25a1.5 1.5 0 011.5-1.5z" />
   </svg>
 );
+
+export const LockIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+  </svg>
+);
+
+export const FlaskIcon = ({ className = 'h-4 w-4' }) => (
+  <svg {...base} className={className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3v6.379a1.5 1.5 0 01-.44 1.06L4.5 15.25a2.25 2.25 0 001.591 3.841h11.818a2.25 2.25 0 001.591-3.841l-4.81-4.81a1.5 1.5 0 01-.44-1.061V3M8.25 3h7.5M7.5 14.25h9" />
+  </svg>
+);

@@ -14,12 +14,13 @@ from asgiref.sync import async_to_sync
 
 from .models import (
     Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage, Rating,
-    MaterialDocument
+    MaterialDocument, CaseRequest, Ekspertiza, Taqiq
 )
 from .serializers import (
     DepartmentSerializer, OfficerSerializer, MaterialSerializer, AppealStepSerializer,
     ApprovalRequestSerializer, AuditLogSerializer, ActiveVisitSerializer, SMSTemplateSerializer,
-    ChatMessageSerializer, RatingSerializer, MaterialDocumentSerializer
+    ChatMessageSerializer, RatingSerializer, MaterialDocumentSerializer,
+    CaseRequestSerializer, EkspertizaSerializer, TaqiqSerializer
 )
 from .deepseek import deepseek_json, deepseek_chat, DeepSeekError
 
@@ -307,6 +308,78 @@ class MaterialDocumentViewSet(viewsets.ModelViewSet):
             action_ru=f"Загружен документ \"{original_name}\" к материалу {material.material_id}",
             action_uz=f"{material.material_id} materialiga \"{original_name}\" hujjati yuklandi"
         )
+
+class RegistryViewSetMixin:
+    """Shared list/create/resolve behavior for the Zapros/Ekspertiza/Taqiq registries:
+    each is a small log of items optionally linked to a Material, opened by an
+    officer, and later resolved (a reply arrives / an expertise concludes / a
+    restriction is lifted)."""
+    resolved_status = None  # set on subclass
+    audit_open_ru = audit_open_uz = audit_resolve_ru = audit_resolve_uz = ''
+
+    def get_queryset(self):
+        qs = self.queryset.model.objects.all()
+        material_id = self.request.query_params.get('material')
+        if material_id:
+            qs = qs.filter(material_id=material_id)
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        officer = Officer.objects.filter(id=request.data.get('officer')).first()
+        instance = serializer.save(officer=officer, started_at=timezone.now())
+
+        AuditLog.objects.create(
+            time=timezone.now(),
+            user_name=officer.name_ru if officer else 'Следователь',
+            action_ru=self.audit_open_ru.format(instance=instance, type_display=instance.get_type_display()),
+            action_uz=self.audit_open_uz.format(instance=instance, type_display=instance.get_type_display()),
+        )
+        return Response(self.get_serializer(instance).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='resolve')
+    def resolve(self, request, pk=None):
+        instance = self.get_object()
+        instance.response_text = request.data.get('response_text', instance.response_text)
+        instance.status = request.data.get('status') or self.resolved_status
+        instance.resolved_at = timezone.now()
+        instance.save()
+
+        AuditLog.objects.create(
+            time=timezone.now(),
+            user_name=request.data.get('user_name', 'Следователь'),
+            action_ru=self.audit_resolve_ru.format(instance=instance),
+            action_uz=self.audit_resolve_uz.format(instance=instance),
+        )
+        return Response(self.get_serializer(instance).data)
+
+class CaseRequestViewSet(RegistryViewSetMixin, viewsets.ModelViewSet):
+    queryset = CaseRequest.objects.all()
+    serializer_class = CaseRequestSerializer
+    resolved_status = 'javob_kelgan'
+    audit_open_ru = "Направлен запрос ({type_display}) по материалу {instance.material_id}"
+    audit_open_uz = "{instance.material_id} materiali bo'yicha so'rov yuborildi ({instance.type})"
+    audit_resolve_ru = "Получен ответ на запрос по материалу {instance.material_id}"
+    audit_resolve_uz = "{instance.material_id} materiali bo'yicha so'rovga javob olindi"
+
+class EkspertizaViewSet(RegistryViewSetMixin, viewsets.ModelViewSet):
+    queryset = Ekspertiza.objects.all()
+    serializer_class = EkspertizaSerializer
+    resolved_status = 'yakunlangan'
+    audit_open_ru = "Назначена экспертиза ({type_display}) по материалу {instance.material_id}"
+    audit_open_uz = "{instance.material_id} materiali bo'yicha ekspertiza tayinlandi ({instance.type})"
+    audit_resolve_ru = "Завершена экспертиза по материалу {instance.material_id}"
+    audit_resolve_uz = "{instance.material_id} materiali bo'yicha ekspertiza yakunlandi"
+
+class TaqiqViewSet(RegistryViewSetMixin, viewsets.ModelViewSet):
+    queryset = Taqiq.objects.all()
+    serializer_class = TaqiqSerializer
+    resolved_status = 'bekor_qilingan'
+    audit_open_ru = "Наложен та'кик ({type_display}) по материалу {instance.material_id}"
+    audit_open_uz = "{instance.material_id} materiali bo'yicha ta'qiq qo'yildi ({instance.type})"
+    audit_resolve_ru = "Снят та'кик по материалу {instance.material_id}"
+    audit_resolve_uz = "{instance.material_id} materiali bo'yicha ta'qiq bekor qilindi"
 
 class ApprovalRequestViewSet(viewsets.ModelViewSet):
     queryset = ApprovalRequest.objects.all()
