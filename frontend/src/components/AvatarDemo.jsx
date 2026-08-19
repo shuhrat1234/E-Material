@@ -58,20 +58,25 @@ function AvatarDemo({ lang, onBack }) {
           </p>
         </div>
 
-        <div className="bg-black rounded-2xl overflow-hidden aspect-square flex items-center justify-center relative">
+        <div
+          className="rounded-2xl overflow-hidden aspect-square flex items-center justify-center relative bg-cover bg-center"
+          style={{ backgroundImage: 'url(/avatar-poster.jpg)' }}
+        >
           {videoUrl ? (
-            <video src={videoUrl} autoPlay controls className="w-full h-full object-contain" />
+            <video src={videoUrl} poster="/avatar-poster.jpg" autoPlay controls className="w-full h-full object-contain" />
           ) : loading ? (
-            <div className="text-white text-sm flex flex-col items-center gap-3 px-6 text-center">
+            <div className="absolute inset-0 bg-black/55 flex flex-col items-center justify-center gap-3 px-6 text-center">
               <span className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              {lang === 'ru' ? 'Готовлю ответ...' : 'Javob tayyorlanmoqda...'}
+              <span className="text-white text-sm">{lang === 'ru' ? 'Готовлю ответ...' : 'Javob tayyorlanmoqda...'}</span>
               <span className="text-white/50 text-[11px]">
                 {lang === 'ru' ? 'DeepSeek → озвучка → рендер видео (~10-30 сек)' : 'DeepSeek → ovoz → video render (~10-30 son)'}
               </span>
             </div>
           ) : (
-            <div className="text-white/40 text-sm">
-              {lang === 'ru' ? 'Задайте вопрос ниже' : 'Pastda savol bering'}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3 text-center">
+              <span className="text-white text-sm font-medium">
+                {lang === 'ru' ? 'Задайте вопрос ниже' : 'Pastda savol bering'}
+              </span>
             </div>
           )}
         </div>
