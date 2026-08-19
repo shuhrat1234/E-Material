@@ -4,7 +4,8 @@ import { API_BASE } from '../App';
 import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
-import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon, GearIcon, FlaskIcon, LockIcon } from './Icons';
+import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon, GearIcon, FlaskIcon, LockIcon, TrashIcon } from './Icons';
+import { useChatHistory } from '../hooks/useChatHistory';
 import Modal from './Modal';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
@@ -47,14 +48,13 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
   const MATERIALS_PAGE_SIZE = 20;
 
   // AI Chat States
-  const [aiChat, setAiChat] = useState([
-    {
-      sender: 'ai',
-      text: lang === 'ru' 
-        ? 'Приветствую! Я ваш интеллектуальный правовой ассистент.\n\nЯ могу помочь вам:\n- Проверить дело на коллизионность норм права.\n- Сформировать список необходимых следственных действий.\n- Подготовить проект постановления.'
-        : 'Assalomu alaykum! Men sizning intellektual huquqiy yordamchingizman.\n\nSizga yordam bera olaman:\n- Ishni qonunchilik normalariga muvofiqligini tekshirish.\n- Zaruriy tergov harakatlari ro\'yxatini tuzish.\n- Qaror loyihasini tayyorlash.'
-    }
-  ]);
+  const aiWelcomeMessage = () => ([{
+    sender: 'ai',
+    text: lang === 'ru'
+      ? 'Приветствую! Я ваш интеллектуальный правовой ассистент.\n\nЯ могу помочь вам:\n- Проверить дело на коллизионность норм права.\n- Сформировать список необходимых следственных действий.\n- Подготовить проект постановления.'
+      : 'Assalomu alaykum! Men sizning intellektual huquqiy yordamchingizman.\n\nSizga yordam bera olaman:\n- Ishni qonunchilik normalariga muvofiqligini tekshirish.\n- Zaruriy tergov harakatlari ro\'yxatini tuzish.\n- Qaror loyihasini tayyorlash.'
+  }]);
+  const [aiChat, setAiChat, clearAiChat] = useChatHistory(`ai_chat_${user?.id || 'default'}`, aiWelcomeMessage);
   const [aiInput, setAiInput] = useState('');
   const [aiThinking, setAiThinking] = useState(false);
   const [selectedCaseForAi, setSelectedCaseForAi] = useState(null);
@@ -1021,10 +1021,19 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Chat Column */}
             <div className="lg:col-span-2 bg-gov-surface rounded-2xl shadow-card p-5 flex flex-col h-[700px]">
-              <div className="border-b border-gov-border pb-3 mb-4">
+              <div className="border-b border-gov-border pb-3 mb-4 flex items-center justify-between">
                 <h3 className="font-semibold text-sm text-gov-text">
                   {lang === 'ru' ? 'AI Правовой Ассистент' : 'AI Huquqiy Yordamchi'}
                 </h3>
+                <button
+                  type="button"
+                  onClick={() => { clearAiChat(); setAiRecommendations([]); setAiDraftResolution(''); setSelectedCaseForAi(null); }}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-colors"
+                  title={lang === 'ru' ? 'Очистить чат' : 'Chatni tozalash'}
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                  {lang === 'ru' ? 'Очистить' : 'Tozalash'}
+                </button>
               </div>
 
               {/* Message History */}

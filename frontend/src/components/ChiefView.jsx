@@ -1502,7 +1502,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
         {/* Panel: AI Report */}
         {activePanel === 'ai-report' && (
-          <AiReportPanel lang={lang} />
+          <AiReportPanel lang={lang} officerId={user?.id} />
         )}
 
         {/* Panel 3: Staff Rating */}

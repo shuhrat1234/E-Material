@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
-import { SendIcon, MicIcon, SpeakerIcon, ChatBubbleIcon } from './Icons';
+import { SendIcon, MicIcon, SpeakerIcon, ChatBubbleIcon, TrashIcon } from './Icons';
+import { useChatHistory } from '../hooks/useChatHistory';
 
 const SpeechRecognitionAPI = typeof window !== 'undefined'
   ? (window.SpeechRecognition || window.webkitSpeechRecognition)
@@ -10,7 +11,7 @@ const speechSupported = !!SpeechRecognitionAPI;
 const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
 function CitizenAiChat({ lang, fullPage = false }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages, clearMessages] = useChatHistory('citizen_ai_chat', []);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [listening, setListening] = useState(false);
@@ -88,7 +89,7 @@ function CitizenAiChat({ lang, fullPage = false }) {
         <span className={`rounded-full bg-gov-primaryLight flex items-center justify-center text-gov-primary shrink-0 ${fullPage ? 'w-11 h-11' : 'w-9 h-9'}`}>
           <ChatBubbleIcon className={fullPage ? 'h-6 w-6' : 'h-5 w-5'} />
         </span>
-        <div className="text-left min-w-0">
+        <div className="text-left min-w-0 flex-1">
           <h3 className={`font-display font-semibold text-gov-text ${fullPage ? 'text-lg' : 'text-sm'}`}>
             {lang === 'ru' ? 'Задайте вопрос' : 'Savol bering'}
           </h3>
@@ -96,6 +97,17 @@ function CitizenAiChat({ lang, fullPage = false }) {
             {lang === 'ru' ? 'AI-помощник подскажет, что делать' : 'AI-yordamchi nima qilishni maslahat beradi'}
           </p>
         </div>
+        {messages.length > 0 && (
+          <button
+            type="button"
+            onClick={clearMessages}
+            className={`shrink-0 flex items-center gap-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-colors font-semibold ${fullPage ? 'px-4 py-2 text-sm' : 'px-3 py-1.5 text-xs'}`}
+            title={lang === 'ru' ? 'Очистить чат' : 'Chatni tozalash'}
+          >
+            <TrashIcon className={fullPage ? 'h-5 w-5' : 'h-3.5 w-3.5'} />
+            {lang === 'ru' ? 'Очистить' : 'Tozalash'}
+          </button>
+        )}
       </div>
 
       <div className={`flex-1 overflow-y-auto space-y-3 ${fullPage ? 'px-6 py-3' : 'px-6 py-4'}`}>

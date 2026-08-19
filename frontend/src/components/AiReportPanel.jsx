@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
-import { SendIcon, SparkleIcon } from './Icons';
+import { SendIcon, SparkleIcon, TrashIcon } from './Icons';
+import { useChatHistory } from '../hooks/useChatHistory';
 
-function AiReportPanel({ lang }) {
-  const [messages, setMessages] = useState([]);
+function AiReportPanel({ lang, officerId }) {
+  const [messages, setMessages, clearMessages] = useChatHistory(`ai_report_chat_${officerId || 'default'}`, []);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
@@ -58,7 +59,7 @@ function AiReportPanel({ lang }) {
         <span className="rounded-full bg-gov-primaryLight flex items-center justify-center text-gov-primary shrink-0 w-9 h-9">
           <SparkleIcon className="h-5 w-5" />
         </span>
-        <div className="text-left min-w-0">
+        <div className="text-left min-w-0 flex-1">
           <h3 className="font-display font-semibold text-gov-text text-sm">
             Aqlli hisobot
           </h3>
@@ -68,6 +69,17 @@ function AiReportPanel({ lang }) {
               : "Xodimlar statistikasi bo'yicha savol bering — AI haqiqiy ma'lumotlar bo'yicha hisoblaydi"}
           </p>
         </div>
+        {messages.length > 0 && (
+          <button
+            type="button"
+            onClick={clearMessages}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-colors"
+            title={lang === 'ru' ? 'Очистить чат' : "Chatni tozalash"}
+          >
+            <TrashIcon className="h-3.5 w-3.5" />
+            {lang === 'ru' ? 'Очистить' : 'Tozalash'}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 px-6 py-4">
