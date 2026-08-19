@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     DepartmentViewSet, OfficerViewSet, MaterialViewSet, MaterialDocumentViewSet, ApprovalRequestViewSet,
     AuditLogViewSet, ActiveVisitViewSet, SMSTemplateViewSet, DbOperationsViewSet, AiAssistantViewSet,
-    ChatMessageViewSet, login_view, check_material_status
+    ChatMessageViewSet, CaseRequestViewSet, EkspertizaViewSet, TaqiqViewSet, login_view, check_material_status
 )
 
 router = DefaultRouter()
@@ -16,6 +16,9 @@ router.register(r'audit-logs', AuditLogViewSet)
 router.register(r'visits', ActiveVisitViewSet)
 router.register(r'templates', SMSTemplateViewSet)
 router.register(r'chat/messages', ChatMessageViewSet)
+router.register(r'case-requests', CaseRequestViewSet)
+router.register(r'ekspertizas', EkspertizaViewSet)
+router.register(r'taqiqlar', TaqiqViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

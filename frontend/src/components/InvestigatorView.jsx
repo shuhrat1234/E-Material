@@ -4,7 +4,7 @@ import { API_BASE } from '../App';
 import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
-import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon, GearIcon } from './Icons';
+import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon, GearIcon, FlaskIcon, LockIcon } from './Icons';
 import Modal from './Modal';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
@@ -13,15 +13,17 @@ import Avatar from './ui/Avatar';
 import FilterPill from './ui/FilterPill';
 import Select from './ui/Select';
 import ExportButton from './ui/ExportButton';
+import RegistryPanel from './RegistryPanel';
 import { exportToExcel } from '../exportExcel';
 import { notify } from '../toastService';
 import { MATERIAL_TYPES, ALL_SOURCES } from '../materialTaxonomy';
+import { ZAPROS_TYPES, ZAPROS_STATUSES, EKSPERTIZA_TYPES, EKSPERTIZA_STATUSES, TAQIQ_TYPES, TAQIQ_STATUSES } from '../requestsTaxonomy';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
 
 function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onCloseSidebar }) {
-  const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ai, history
+  const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ai, history, zapros, ekspertiza, taqiq, chat
   const [materialsList, setMaterialsList] = useState(null); // { label, materials }
   const [officer, setOfficer] = useState(null);
   const [ratingsModalIsLike, setRatingsModalIsLike] = useState(null);
@@ -496,6 +498,25 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
             label={lang === 'ru' ? 'История' : 'Tarix'}
             active={activePanel === 'history'}
             onClick={() => setActivePanel('history')}
+          />
+          <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5 mt-2">{lang === 'ru' ? 'Реестры' : 'Reyestrlar'}</div>
+          <SidebarLink
+            icon={<SendIcon />}
+            label={lang === 'ru' ? 'Запрос' : "Zapros"}
+            active={activePanel === 'zapros'}
+            onClick={() => setActivePanel('zapros')}
+          />
+          <SidebarLink
+            icon={<FlaskIcon />}
+            label={lang === 'ru' ? 'Экспертиза' : 'Ekspertiza'}
+            active={activePanel === 'ekspertiza'}
+            onClick={() => setActivePanel('ekspertiza')}
+          />
+          <SidebarLink
+            icon={<LockIcon />}
+            label={lang === 'ru' ? "Та'кик" : "Ta'qiq"}
+            active={activePanel === 'taqiq'}
+            onClick={() => setActivePanel('taqiq')}
           />
           <SidebarLink
             icon={<ChatIcon />}
@@ -1131,6 +1152,84 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
               ))}
             </div>
           </div>
+        )}
+
+        {/* Panel: Zapros (GAI, Notarius, Kadastr, Soliq) */}
+        {activePanel === 'zapros' && (
+          <RegistryPanel
+            lang={lang}
+            officer={officer}
+            materials={materials}
+            apiPath="case-requests"
+            typeOptions={ZAPROS_TYPES}
+            statusOptions={ZAPROS_STATUSES}
+            openStatusValue="yuborilgan"
+            icon={<SendIcon />}
+            labels={{
+              title: lang === 'ru' ? 'Запросы во внешние органы' : "Tashqi organlarga so'rovlar",
+              addButton: lang === 'ru' ? 'Новый запрос' : "Yangi so'rov",
+              typeColumn: lang === 'ru' ? 'Орган' : 'Organ',
+              subjectColumn: lang === 'ru' ? 'Предмет запроса' : "So'rov predmeti",
+              subjectPlaceholder: lang === 'ru' ? 'Гос. номер / ФИО / кадастровый номер...' : 'Davlat raqami / F.I.Sh / kadastr raqami...',
+              detailsColumn: lang === 'ru' ? 'Текст запроса' : "So'rov matni",
+              detailsPlaceholder: lang === 'ru' ? 'Опишите, что необходимо проверить...' : 'Nimani tekshirish kerakligini yozing...',
+              responseColumn: lang === 'ru' ? 'Ответ' : 'Javob',
+              responsePlaceholder: lang === 'ru' ? 'Текст полученного ответа...' : 'Kelgan javob matni...',
+              resolveButton: lang === 'ru' ? 'Внести ответ' : 'Javobni kiritish',
+            }}
+          />
+        )}
+
+        {/* Panel: Ekspertiza */}
+        {activePanel === 'ekspertiza' && (
+          <RegistryPanel
+            lang={lang}
+            officer={officer}
+            materials={materials}
+            apiPath="ekspertizas"
+            typeOptions={EKSPERTIZA_TYPES}
+            statusOptions={EKSPERTIZA_STATUSES}
+            openStatusValue="tayinlangan"
+            icon={<FlaskIcon />}
+            labels={{
+              title: lang === 'ru' ? 'Экспертизы' : 'Ekspertizalar',
+              addButton: lang === 'ru' ? 'Назначить экспертизу' : 'Ekspertiza tayinlash',
+              typeColumn: lang === 'ru' ? 'Вид экспертизы' : 'Ekspertiza turi',
+              subjectColumn: lang === 'ru' ? 'Объект исследования' : "Tekshirish ob'ekti",
+              subjectPlaceholder: lang === 'ru' ? 'Описание объекта/образца...' : "Ob'ekt/namuna tavsifi...",
+              detailsColumn: lang === 'ru' ? 'Вопросы эксперту' : 'Ekspertga savollar',
+              detailsPlaceholder: lang === 'ru' ? 'Какие вопросы поставлены перед экспертом...' : 'Ekspertga qanday savollar qo\'yilgan...',
+              responseColumn: lang === 'ru' ? 'Заключение' : 'Xulosa',
+              responsePlaceholder: lang === 'ru' ? 'Текст заключения эксперта...' : 'Ekspert xulosasi matni...',
+              resolveButton: lang === 'ru' ? 'Внести заключение' : 'Xulosani kiritish',
+            }}
+          />
+        )}
+
+        {/* Panel: Ta'qiq */}
+        {activePanel === 'taqiq' && (
+          <RegistryPanel
+            lang={lang}
+            officer={officer}
+            materials={materials}
+            apiPath="taqiqlar"
+            typeOptions={TAQIQ_TYPES}
+            statusOptions={TAQIQ_STATUSES}
+            openStatusValue="amalda"
+            icon={<LockIcon />}
+            labels={{
+              title: lang === 'ru' ? "Наложенные та'кики (ограничения)" : "Qo'yilgan ta'qiqlar",
+              addButton: lang === 'ru' ? "Наложить та'кик" : "Ta'qiq qo'yish",
+              typeColumn: lang === 'ru' ? 'Объект' : "Ob'ekt turi",
+              subjectColumn: lang === 'ru' ? 'Описание объекта' : "Ob'ekt tavsifi",
+              subjectPlaceholder: lang === 'ru' ? 'Гос. номер / адрес / кадастровый номер...' : 'Davlat raqami / manzil / kadastr raqami...',
+              detailsColumn: lang === 'ru' ? 'Основание' : 'Asos',
+              detailsPlaceholder: lang === 'ru' ? 'Постановление, номер и дата...' : "Qaror, raqami va sanasi...",
+              responseColumn: lang === 'ru' ? 'Примечание к снятию' : "Bekor qilish izohi",
+              responsePlaceholder: lang === 'ru' ? 'Основание снятия ограничения...' : "Ta'qiqni bekor qilish asosi...",
+              resolveButton: lang === 'ru' ? "Снять та'кик" : "Ta'qiqni bekor qilish",
+            }}
+          />
         )}
 
         {/* Panel 5: Chat */}

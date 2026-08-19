@@ -153,6 +153,95 @@ class ChatMessage(models.Model):
     def __str__(self):
         return f"{self.sender_name}: {self.text[:30]}"
 
+class CaseRequest(models.Model):
+    """Zapros — inquiries sent to external agencies (GAI, Notarius, Kadastr, Soliq)."""
+    TYPE_CHOICES = [
+        ('gai', 'ГАИ (БДДА)'),
+        ('notarius', 'Нотариус'),
+        ('kadastr', 'Кадастр'),
+        ('soliq', 'Налоговая'),
+    ]
+    STATUS_CHOICES = [
+        ('yuborilgan', 'Отправлен'),
+        ('javob_kelgan', 'Ответ получен'),
+        ('rad_etilgan', 'Отклонён'),
+    ]
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='requests', null=True, blank=True)
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    subject = models.CharField(max_length=255)
+    details = models.TextField(blank=True, default='')
+    response_text = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='yuborilgan')
+    officer = models.ForeignKey(Officer, on_delete=models.SET_NULL, related_name='requests', null=True, blank=True)
+    started_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"{self.get_type_display()} - {self.subject}"
+
+
+class Ekspertiza(models.Model):
+    """Court expertise orders (sud-tibbiy, sud-biologik, sud-xatshunoslik, sud-texnik, DNK)."""
+    TYPE_CHOICES = [
+        ('sud_tibbiy', 'Судебно-медицинская'),
+        ('sud_biologik', 'Судебно-биологическая'),
+        ('sud_xatshunoslik', 'Судебно-почерковедческая'),
+        ('sud_texnik', 'Судебно-техническая'),
+        ('sud_dnk', 'Судебная ДНК'),
+    ]
+    STATUS_CHOICES = [
+        ('tayinlangan', 'Назначена'),
+        ('jarayonda', 'В процессе'),
+        ('yakunlangan', 'Завершена'),
+    ]
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='ekspertizas', null=True, blank=True)
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    subject = models.CharField(max_length=255)
+    details = models.TextField(blank=True, default='')
+    response_text = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='tayinlangan')
+    officer = models.ForeignKey(Officer, on_delete=models.SET_NULL, related_name='ekspertizas', null=True, blank=True)
+    started_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"{self.get_type_display()} - {self.subject}"
+
+
+class Taqiq(models.Model):
+    """Ta'qiq — restrictions/seizures placed on a car, property, or housing."""
+    TYPE_CHOICES = [
+        ('mashina', 'Автомашина'),
+        ('mol_mulk', 'Имущество'),
+        ('uy_joy', 'Жилое помещение'),
+    ]
+    STATUS_CHOICES = [
+        ('amalda', 'Действует'),
+        ('bekor_qilingan', 'Снят'),
+    ]
+    material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='taqiqlar', null=True, blank=True)
+    type = models.CharField(max_length=30, choices=TYPE_CHOICES)
+    subject = models.CharField(max_length=255)
+    details = models.TextField(blank=True, default='')
+    response_text = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='amalda')
+    officer = models.ForeignKey(Officer, on_delete=models.SET_NULL, related_name='taqiqlar', null=True, blank=True)
+    started_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"{self.get_type_display()} - {self.subject}"
+
+
 class MaterialDocument(models.Model):
     material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name='documents')
     file = models.FileField(upload_to='material_docs/')

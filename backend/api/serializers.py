@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate, ChatMessage, Rating,
-    MaterialDocument
+    MaterialDocument, CaseRequest, Ekspertiza, Taqiq
 )
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -46,6 +46,24 @@ class MaterialDocumentSerializer(serializers.ModelSerializer):
             url = obj.file.url
             return request.build_absolute_uri(url) if request else url
         return None
+
+class CaseRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaseRequest
+        fields = '__all__'
+        read_only_fields = ['started_at', 'resolved_at']
+
+class EkspertizaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ekspertiza
+        fields = '__all__'
+        read_only_fields = ['started_at', 'resolved_at']
+
+class TaqiqSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Taqiq
+        fields = '__all__'
+        read_only_fields = ['started_at', 'resolved_at']
 
 class ApprovalRequestSerializer(serializers.ModelSerializer):
     class Meta:

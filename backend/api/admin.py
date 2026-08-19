@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate
+from .models import (
+    Department, Officer, Material, AppealStep, ApprovalRequest, AuditLog, ActiveVisit, SMSTemplate,
+    CaseRequest, Ekspertiza, Taqiq
+)
 
 
 # ---------- Officer inline inside User admin ----------
@@ -78,3 +81,21 @@ class ActiveVisitAdmin(admin.ModelAdmin):
 class SMSTemplateAdmin(admin.ModelAdmin):
     list_display = ('template_id', 'type', 'trigger_ru')
     search_fields = ('template_id', 'trigger_ru', 'trigger_uz')
+
+@admin.register(CaseRequest)
+class CaseRequestAdmin(admin.ModelAdmin):
+    list_display = ('id', 'type', 'subject', 'material', 'status', 'started_at')
+    list_filter = ('type', 'status')
+    search_fields = ('subject', 'material__id')
+
+@admin.register(Ekspertiza)
+class EkspertizaAdmin(admin.ModelAdmin):
+    list_display = ('id', 'type', 'subject', 'material', 'status', 'started_at')
+    list_filter = ('type', 'status')
+    search_fields = ('subject', 'material__id')
+
+@admin.register(Taqiq)
+class TaqiqAdmin(admin.ModelAdmin):
+    list_display = ('id', 'type', 'subject', 'material', 'status', 'started_at')
+    list_filter = ('type', 'status')
+    search_fields = ('subject', 'material__id')
