@@ -22,7 +22,7 @@ function AiReportPanel({ lang, officerId }) {
       ]
     : [
         "Karimov Sanjar avgust oyida nechta ish ko'rdi?",
-        "Shu oyda barcha sledovatellarni solishtir",
+        "Shu oyda barcha hodimlarni solishtir",
         "Shu oyda muddati buzilgan materiallar nechta?",
       ];
 
