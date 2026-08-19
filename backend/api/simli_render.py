@@ -34,25 +34,31 @@ def _cleanup_old_videos(out_dir: str):
 
 
 # Simli renders at a fixed 512x512 — there's no resolution/quality knob on
-# SimliConfig. FileRenderer's own h264 encode also uses whatever ffmpeg's
-# defaults are (no explicit bitrate/CRF), which looks soft/blocky once
-# displayed at the much larger size the kiosk card uses. _finalize_video
-# re-encodes once with a real CRF and upscales with Lanczos resampling —
-# still bounded by the 512x512 source detail, but visibly cleaner than a
-# raw browser upscale of the compressed original.
+# SimliConfig, and its own h264 encode uses whatever ffmpeg's defaults are
+# (no explicit bitrate/CRF), which looks soft/blocky once displayed at the
+# much larger size the kiosk card uses. _finalize_video re-encodes once
+# with a real CRF, upscales with Lanczos resampling, and unsharp-masks each
+# frame — still bounded by the 512x512 source detail (no amount of this
+# invents pixels Simli never sent), but visibly cleaner than a raw browser
+# upscale of the compressed original. Tried Simli's `artalk` model as an
+# alternative to `fasttalk` hoping for a sharper source — visually
+# identical, not worth the switch.
 _OUTPUT_SIZE = 768
-_VIDEO_CRF = '18'  # x264: lower = higher quality; 18 is visually near-lossless
+_VIDEO_CRF = '16'  # x264: lower = higher quality; 16 is visually lossless
+_VIDEO_PRESET = 'slow'  # slower = better quality per bit at the same CRF
+_SHARPEN = {'radius': 1.5, 'percent': 180, 'threshold': 1}  # PIL UnsharpMask
 
 
 def _finalize_video(path: str):
-    """Re-encodes `path` in place: upscales video (Lanczos) to
-    _OUTPUT_SIZE, re-encodes h264 at _VIDEO_CRF, and writes `moov` up front
-    (movflags=faststart) so browsers can start playing progressively —
-    FileRenderer writes it at the end by default, which silently prevents
-    the video track from ever rendering in a browser (audio still played,
-    since it's buffered separately, which is what made this so confusing
-    to spot)."""
+    """Re-encodes `path` in place: upscales video (Lanczos + unsharp mask)
+    to _OUTPUT_SIZE, re-encodes h264 at _VIDEO_CRF, and writes `moov` up
+    front (movflags=faststart) so browsers can start playing progressively
+    — FileRenderer writes it at the end by default, which silently
+    prevents the video track from ever rendering in a browser (audio still
+    played, since it's buffered separately, which is what made this so
+    confusing to spot)."""
     import av
+    from PIL import Image, ImageFilter
 
     tmp_path = path + '.final.mp4'
     in_container = av.open(path)
@@ -66,7 +72,7 @@ def _finalize_video(path: str):
         out_video.width = _OUTPUT_SIZE
         out_video.height = _OUTPUT_SIZE
         out_video.pix_fmt = 'yuv420p'
-        out_video.options = {'crf': _VIDEO_CRF, 'preset': 'fast'}
+        out_video.options = {'crf': _VIDEO_CRF, 'preset': _VIDEO_PRESET}
 
         out_audio = None
         if in_container.streams.audio:
@@ -75,12 +81,14 @@ def _finalize_video(path: str):
 
         for frame in in_container.decode(video=0, audio=0 if out_audio else None):
             if isinstance(frame, av.VideoFrame):
-                # Leave pts/time_base untouched — they're inherited from a
-                # single continuous decode so they're already valid and
-                # monotonic; overwriting them (even copying from the source
-                # frame post-reformat) has reliably produced EINVAL here.
-                resized = frame.reformat(width=_OUTPUT_SIZE, height=_OUTPUT_SIZE, interpolation=av.video.reformatter.Interpolation.LANCZOS)
-                for packet in out_video.encode(resized):
+                # PIL's resize + UnsharpMask visibly outperforms av's own
+                # Lanczos reformat() alone — plain upscale still looks soft.
+                # Frames built via from_image() carry no pts of their own,
+                # which is fine here: encode() just assigns them in call
+                # order, same as any from-scratch encode.
+                img = frame.to_image().resize((_OUTPUT_SIZE, _OUTPUT_SIZE), Image.LANCZOS)
+                img = img.filter(ImageFilter.UnsharpMask(**_SHARPEN))
+                for packet in out_video.encode(av.VideoFrame.from_image(img)):
                     out_container.mux(packet)
             elif out_audio is not None:
                 for packet in out_audio.encode(frame):
