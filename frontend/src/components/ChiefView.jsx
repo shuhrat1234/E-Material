@@ -47,6 +47,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const { textColor, gridColor } = chartTheme(isDark);
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ratings, approvals, users
   const [materialsList, setMaterialsList] = useState(null); // { label, materials }
+  const [materialsListSearch, setMaterialsListSearch] = useState('');
   const [officers, setOfficers] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [approvalRequests, setApprovalRequests] = useState([]);
@@ -426,6 +427,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
   const openMaterialsList = (label, materials) => {
     if (!materials || materials.length === 0) return;
+    setMaterialsListSearch('');
     setMaterialsList({ label, materials });
   };
 
@@ -779,7 +781,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
           <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5 mt-2">{lang === 'ru' ? 'Реестры' : 'Reyestrlar'}</div>
           <SidebarLink
             icon={<SendIcon />}
-            label={lang === 'ru' ? 'Запрос' : 'Zapros'}
+            label={lang === 'ru' ? 'Запрос' : "So'rovnoma"}
             active={activePanel === 'zapros'}
             onClick={() => setActivePanel('zapros')}
           />
@@ -2021,37 +2023,81 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
         )}
       </div>
 
-      {materialsList && (
-        <Modal onClose={() => setMaterialsList(null)} maxWidth="max-w-lg">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
-              <h3 className="font-semibold text-base text-gov-text">
-                {lang === 'ru' ? 'Срок:' : 'Muddat:'} {materialsList.label} · {materialsList.materials.length}
-              </h3>
-              <button onClick={() => setMaterialsList(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+      {materialsList && (() => {
+        const q = materialsListSearch.trim().toLowerCase();
+        const visibleMaterials = !q ? materialsList.materials : materialsList.materials.filter(m => {
+          const off = officers.find(o => o.id === m.officer);
+          const offName = off ? `${off.name_ru} ${off.name_uz}` : '';
+          return [m.id, m.citizen_name, m.citizen_phone, offName].some(v => (v || '').toLowerCase().includes(q));
+        });
+        const exportList = () => exportToExcel(
+          lang === 'ru' ? 'materialy' : 'materiallar',
+          ['ID', lang === 'ru' ? 'Исполнитель' : 'Ijrochi', lang === 'ru' ? 'Заявитель' : 'Murojaatchi', lang === 'ru' ? 'Телефон' : 'Telefon', lang === 'ru' ? 'Содержание' : 'Mazmuni', lang === 'ru' ? 'Дата регистрации' : 'Ro\'yxatga olingan sana', lang === 'ru' ? 'Срок' : 'Muddat', lang === 'ru' ? 'Статус' : 'Holat'],
+          visibleMaterials.map(m => {
+            const off = officers.find(o => o.id === m.officer);
+            return [
+              m.id,
+              off ? (lang === 'ru' ? off.name_ru : off.name_uz) : '',
+              m.citizen_name,
+              m.citizen_phone,
+              lang === 'ru' ? m.title_ru : m.title_uz,
+              formatDate(m.registered_at),
+              formatDate(m.deadline),
+              getStatusText(m.status),
+            ];
+          })
+        );
+
+        return (
+          <Modal onClose={() => setMaterialsList(null)} maxWidth="max-w-lg">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
+                <h3 className="font-semibold text-base text-gov-text">
+                  {lang === 'ru' ? 'Срок:' : 'Muddat:'} {materialsList.label} · {visibleMaterials.length}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <ExportButton lang={lang} onClick={exportList} />
+                  <button onClick={() => setMaterialsList(null)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+                </div>
+              </div>
+              <div className="relative mb-3">
+                <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gov-muted" />
+                <input
+                  type="text"
+                  value={materialsListSearch}
+                  onChange={e => setMaterialsListSearch(e.target.value)}
+                  placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
+                  className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-gov-surface focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+                />
+              </div>
+              <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+                {visibleMaterials.length === 0 && (
+                  <p className="text-center py-8 text-gov-muted text-xs font-semibold">
+                    {lang === 'ru' ? 'Ничего не найдено' : 'Hech narsa topilmadi'}
+                  </p>
+                )}
+                {visibleMaterials.map(m => {
+                  const off = officers.find(o => o.id === m.officer);
+                  return (
+                    <button
+                      key={m.id}
+                      onClick={() => { onViewDetails(m.id); setMaterialsList(null); }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gov-light transition-colors flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-gov-primary">{m.id}</p>
+                        <p className="text-xs text-gov-text truncate">{m.citizen_name}</p>
+                        <p className="text-[10px] text-gov-muted truncate">{off ? (lang === 'ru' ? off.name_ru : off.name_uz) : ''}</p>
+                      </div>
+                      <EyeIcon className="h-4 w-4 text-gov-muted shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div className="space-y-1 max-h-[60vh] overflow-y-auto">
-              {materialsList.materials.map(m => {
-                const off = officers.find(o => o.id === m.officer);
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => { onViewDetails(m.id); setMaterialsList(null); }}
-                    className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-gov-light transition-colors flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-gov-primary">{m.id}</p>
-                      <p className="text-xs text-gov-text truncate">{m.citizen_name}</p>
-                      <p className="text-[10px] text-gov-muted truncate">{off ? (lang === 'ru' ? off.name_ru : off.name_uz) : ''}</p>
-                    </div>
-                    <EyeIcon className="h-4 w-4 text-gov-muted shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
 
       {ratingsModal && (
         <Modal onClose={() => setRatingsModal(null)} maxWidth="max-w-lg">

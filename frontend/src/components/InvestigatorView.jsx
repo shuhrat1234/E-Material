@@ -502,7 +502,7 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
           <div className="text-[9px] font-bold text-gov-muted uppercase tracking-widest px-3 py-1.5 mt-2">{lang === 'ru' ? 'Реестры' : 'Reyestrlar'}</div>
           <SidebarLink
             icon={<SendIcon />}
-            label={lang === 'ru' ? 'Запрос' : "Zapros"}
+            label={lang === 'ru' ? 'Запрос' : "So'rovnoma"}
             active={activePanel === 'zapros'}
             onClick={() => setActivePanel('zapros')}
           />
