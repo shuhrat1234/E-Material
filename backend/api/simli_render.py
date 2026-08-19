@@ -33,26 +33,63 @@ def _cleanup_old_videos(out_dir: str):
         pass
 
 
-def _remux_faststart(path: str):
-    """PyAV/FileRenderer writes the mp4 with its `moov` atom (metadata:
-    duration, seek index, codec info) at the END of the file, after all the
-    audio/video data. That's fine for a player that has the whole file, but
-    browsers streaming it progressively need `moov` up front to start
-    decoding at all — without this, video silently never renders even
-    though the (separately buffered) audio track plays. Remux losslessly
-    (no re-encode) with `movflags=faststart` to move it to the front."""
+# Simli renders at a fixed 512x512 — there's no resolution/quality knob on
+# SimliConfig. FileRenderer's own h264 encode also uses whatever ffmpeg's
+# defaults are (no explicit bitrate/CRF), which looks soft/blocky once
+# displayed at the much larger size the kiosk card uses. _finalize_video
+# re-encodes once with a real CRF and upscales with Lanczos resampling —
+# still bounded by the 512x512 source detail, but visibly cleaner than a
+# raw browser upscale of the compressed original.
+_OUTPUT_SIZE = 768
+_VIDEO_CRF = '18'  # x264: lower = higher quality; 18 is visually near-lossless
+
+
+def _finalize_video(path: str):
+    """Re-encodes `path` in place: upscales video (Lanczos) to
+    _OUTPUT_SIZE, re-encodes h264 at _VIDEO_CRF, and writes `moov` up front
+    (movflags=faststart) so browsers can start playing progressively —
+    FileRenderer writes it at the end by default, which silently prevents
+    the video track from ever rendering in a browser (audio still played,
+    since it's buffered separately, which is what made this so confusing
+    to spot)."""
     import av
 
-    tmp_path = path + '.faststart.mp4'
+    tmp_path = path + '.final.mp4'
     in_container = av.open(path)
     out_container = av.open(tmp_path, 'w', format='mp4', options={'movflags': 'faststart'})
     try:
-        stream_map = {stream: out_container.add_stream_from_template(stream) for stream in in_container.streams}
-        for packet in in_container.demux():
-            if packet.dts is None:
-                continue
-            packet.stream = stream_map[packet.stream]
+        # A plain int rate (not the source's raw fractional average_rate,
+        # e.g. 1770/71) — Simli's odd native frame rate combined with a
+        # custom CRF/preset made libx264 reject the encoded packets
+        # (mux() raised EINVAL) until this was pinned to a clean value.
+        out_video = out_container.add_stream('h264', rate=25)
+        out_video.width = _OUTPUT_SIZE
+        out_video.height = _OUTPUT_SIZE
+        out_video.pix_fmt = 'yuv420p'
+        out_video.options = {'crf': _VIDEO_CRF, 'preset': 'fast'}
+
+        out_audio = None
+        if in_container.streams.audio:
+            in_audio = in_container.streams.audio[0]
+            out_audio = out_container.add_stream('aac', rate=in_audio.sample_rate)
+
+        for frame in in_container.decode(video=0, audio=0 if out_audio else None):
+            if isinstance(frame, av.VideoFrame):
+                # Leave pts/time_base untouched — they're inherited from a
+                # single continuous decode so they're already valid and
+                # monotonic; overwriting them (even copying from the source
+                # frame post-reformat) has reliably produced EINVAL here.
+                resized = frame.reformat(width=_OUTPUT_SIZE, height=_OUTPUT_SIZE, interpolation=av.video.reformatter.Interpolation.LANCZOS)
+                for packet in out_video.encode(resized):
+                    out_container.mux(packet)
+            elif out_audio is not None:
+                for packet in out_audio.encode(frame):
+                    out_container.mux(packet)
+        for packet in out_video.encode():
             out_container.mux(packet)
+        if out_audio is not None:
+            for packet in out_audio.encode():
+                out_container.mux(packet)
     finally:
         out_container.close()
         in_container.close()
@@ -116,6 +153,6 @@ def render_avatar_video(pcm16_audio: bytes) -> str:
 
     _cleanup_old_videos(out_dir)
     asyncio.run(_render_async(pcm16_audio, out_path))
-    _remux_faststart(out_path)
+    _finalize_video(out_path)
 
     return f'avatar_videos/{filename}'

@@ -60,7 +60,7 @@ function AvatarDemo({ lang, onBack }) {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-sm aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-neutral-900">
+      <div className="relative h-[92vh] max-h-[1000px] max-w-[92vw] aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-neutral-900">
         {!idleFailed ? (
           <video
             ref={videoRef}
@@ -98,9 +98,6 @@ function AvatarDemo({ lang, onBack }) {
           <h2 className="text-white font-display font-bold text-sm uppercase tracking-widest drop-shadow">
             AI Avatar
           </h2>
-          <p className="text-white/60 text-[10px] mt-0.5">
-            {lang === 'ru' ? 'DeepSeek + Silero + Simli' : 'DeepSeek + Silero + Simli'}
-          </p>
         </div>
 
         <div className="absolute bottom-0 inset-x-0 z-10 px-3 pb-3 space-y-1.5">
