@@ -16,19 +16,29 @@ async def _render_async(pcm16_audio: bytes, out_path: str):
     # Imported lazily so a missing/broken simli-ai install only breaks the
     # avatar demo endpoint, not the whole app.
     from simli import SimliClient, SimliConfig
-    from simli.renderers import FileRenderer
+    # The installed simli-ai package doesn't re-export from
+    # simli.renderers.__init__ (unlike the README example) — import the
+    # submodule directly.
+    from simli.renderers.renderers import FileRenderer
 
     try:
         async with SimliClient(
-            SimliConfig(
-                apiKey=settings.SIMLI_API_KEY,
+            api_key=settings.SIMLI_API_KEY,
+            config=SimliConfig(
                 faceId=settings.SIMLI_FACE_ID,
                 maxSessionLength=60,
-                maxIdleTime=30,
-            )
+                # Simli keeps rendering idle avatar footage for this long
+                # after the audio ends before closing the session — a low
+                # value keeps the output clip close to the actual answer
+                # length instead of padding it with dead air.
+                maxIdleTime=3,
+            ),
         ) as connection:
             await connection.send(pcm16_audio)
-            await FileRenderer(connection, filename=out_path).render()
+            # FileRenderer defaults to a "vorbis" audio codec, which this
+            # ffmpeg build refuses as experimental; aac is standard, always
+            # available, and the natural choice for an mp4 container anyway.
+            await FileRenderer(connection, filename=out_path, audioCodec='aac').render()
     except Exception as e:
         raise SimliError(f'Simli render failed: {e}')
 
