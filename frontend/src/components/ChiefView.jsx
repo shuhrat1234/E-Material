@@ -10,10 +10,11 @@ import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
 import CrimeMapPanel from './CrimeMapPanel';
+import AiReportPanel from './AiReportPanel';
 import CrimeMapMini from './CrimeMapMini';
 import { CATEGORICAL, SEQUENTIAL, chartTheme } from '../chartColors';
 import { useSettings } from '../settingsContext';
-import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon, MapIcon } from './Icons';
+import { DashboardIcon, FolderIcon, UsersIcon, ApprovalIcon, KeyIcon, ChatIcon, EyeIcon, EyeOffIcon, ClockIcon, TrendUpIcon, CloseIcon, ThumbUpIcon, ThumbDownIcon, SendIcon, SearchIcon, GearIcon, MapIcon, SparkleIcon } from './Icons';
 import Card, { CardHeader } from './ui/Card';
 import StatCard from './ui/StatCard';
 import SidebarLink from './ui/SidebarLink';
@@ -749,6 +750,12 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             onClick={() => setActivePanel('map')}
           />
           <SidebarLink
+            icon={<SparkleIcon />}
+            label="Aqlli hisobot"
+            active={activePanel === 'ai-report'}
+            onClick={() => setActivePanel('ai-report')}
+          />
+          <SidebarLink
             icon={<UsersIcon />}
             label={lang === 'ru' ? 'Рейтинг сотрудников' : 'Xodimlar reytingi'}
             active={activePanel === 'ratings'}
@@ -1470,6 +1477,11 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             </h3>
             <CrimeMapPanel materials={materials} lang={lang} onOpenMaterialsList={openMaterialsList} />
           </div>
+        )}
+
+        {/* Panel: AI Report */}
+        {activePanel === 'ai-report' && (
+          <AiReportPanel lang={lang} />
         )}
 
         {/* Panel 3: Staff Rating */}

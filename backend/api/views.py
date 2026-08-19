@@ -648,6 +648,129 @@ class AiAssistantViewSet(viewsets.ViewSet):
 
         return Response({'reply': reply})
 
+    @action(detail=False, methods=['post'], url_path='report')
+    def report(self, request):
+        query = (request.data.get('query') or '').strip()
+        lang = request.data.get('lang', 'ru')
+
+        if not query:
+            return Response({'error': 'No query provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        officers = list(Officer.objects.filter(role='investigator').values('id', 'name_ru', 'name_uz'))
+        officer_lines = "\n".join(f"{o['id']}: {o['name_ru']} / {o['name_uz']}" for o in officers)
+        today = timezone.localdate().isoformat()
+
+        parse_system_prompt = (
+            "Ты — модуль-парсер вопросов для аналитической системы «Е-Материал» (учёт дел следователей "
+            "Олмазорского района). Начальник отдела задаёт вопрос о статистике материалов (дел). Тебе дан "
+            "список следователей и сегодняшняя дата. Разбери вопрос в JSON со следующими полями:\n"
+            '- "officer_ids": массив id сотрудников из списка (пусто, если вопрос про всех сотрудников сразу '
+            'или конкретный сотрудник не указан)\n'
+            '- "date_from": дата "YYYY-MM-DD" или null\n'
+            '- "date_to": дата "YYYY-MM-DD" или null\n'
+            '- "status_filter": один из "изучаемый", "закрыт_в_срок", "срок_приближается", "срок_нарушен", либо null\n'
+            '- "type_filter": один из "ariza", "bildirgi", "sud_ajrimi", "boshqa", либо null\n'
+            '- "group_by": "officer" (сравнение/разбивка по сотрудникам), "status", "type", "mahalla" или "none"\n'
+            '- "unrecognized": true, если вопрос вообще не относится к статистике материалов/сотрудников этой системы\n\n'
+            "Относительные периоды (текущий месяц, прошлая неделя, август и т.п.) считай от сегодняшней даты. "
+            "Если сотрудник назван частично, с опечаткой или в другой транслитерации — найди наиболее похожего "
+            "по списку. Если явно спрашивают сравнение или про всех сотрудников — group_by = \"officer\", "
+            "officer_ids оставь пустым. Отвечай только JSON, без пояснений и без markdown."
+        )
+        parse_user_content = (
+            f"Сегодняшняя дата: {today}\n\nСписок сотрудников (id: ФИО рус / ФИО узб):\n{officer_lines}\n\n"
+            f"Вопрос начальника: {query}"
+        )
+
+        try:
+            parsed = deepseek_json([
+                {'role': 'system', 'content': parse_system_prompt},
+                {'role': 'user', 'content': parse_user_content},
+            ])
+        except DeepSeekError:
+            return Response({'answer': (
+                "AI-hisobot vaqtincha mavjud emas (internet yo'q yoki xizmat band). Keyinroq urinib ko'ring."
+                if lang == 'uz' else
+                'AI-отчёт временно недоступен (нет интернета или сервис перегружен). Попробуйте позже.'
+            )})
+
+        if parsed.get('unrecognized'):
+            return Response({'answer': (
+                "Bu savolni tushunolmadim. Hodim ismi va davrni (masalan, \"avgust\") ko'rsatib qayta so'rang."
+                if lang == 'uz' else
+                'Не удалось понять вопрос. Уточните имя сотрудника и период (например, «август»).'
+            )})
+
+        officer_ids = [oid for oid in (parsed.get('officer_ids') or []) if oid]
+        date_from = parsed.get('date_from') or None
+        date_to = parsed.get('date_to') or None
+        status_filter = parsed.get('status_filter') or None
+        type_filter = parsed.get('type_filter') or None
+        group_by = parsed.get('group_by') or 'none'
+
+        qs = Material.objects.all()
+        if officer_ids:
+            qs = qs.filter(officer_id__in=officer_ids)
+        if date_from:
+            qs = qs.filter(registered_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(registered_at__date__lte=date_to)
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if type_filter:
+            qs = qs.filter(material_type=type_filter)
+
+        total = qs.count()
+        rows = []
+        officer_map = {o['id']: o for o in officers}
+        if group_by == 'officer':
+            counts = qs.values('officer_id').annotate(n=Count('id')).order_by('-n')
+            for c in counts:
+                o = officer_map.get(c['officer_id'])
+                label = o['name_ru'] if o else (c['officer_id'] or 'Без исполнителя')
+                rows.append({'label': label, 'count': c['n']})
+        elif group_by == 'status':
+            counts = qs.values('status').annotate(n=Count('id')).order_by('-n')
+            rows = [{'label': c['status'], 'count': c['n']} for c in counts]
+        elif group_by == 'type':
+            counts = qs.values('material_type').annotate(n=Count('id')).order_by('-n')
+            rows = [{'label': c['material_type'], 'count': c['n']} for c in counts]
+        elif group_by == 'mahalla':
+            counts = qs.values('mahalla').annotate(n=Count('id')).order_by('-n')
+            rows = [{'label': c['mahalla'] or 'Без маҳалла', 'count': c['n']} for c in counts]
+
+        data_lines = [f"Итого: {total}"]
+        for r in rows[:30]:
+            data_lines.append(f"{r['label']}: {r['count']}")
+        data_summary = "\n".join(data_lines)
+
+        period_desc = f"{date_from or '...'} — {date_to or today}" if (date_from or date_to) else "за всё время"
+
+        lang_name = 'русском языке' if lang == 'ru' else "o'zbek tilida"
+        phrase_system_prompt = (
+            "Ты — аналитический AI-помощник начальника отдела в системе «Е-Материал». Тебе дан вопрос "
+            "начальника и уже точно посчитанные данные из базы. Сформулируй краткий деловой ответ "
+            "(2-5 предложений), используя ТОЛЬКО переданные цифры — ничего не придумывай и не меняй числа. "
+            "Если данных нет (итого = 0), так и скажи. "
+            f"Отвечай на {lang_name}, обычным текстом без markdown."
+        )
+        phrase_user_content = f"Вопрос начальника: {query}\n\nПериод: {period_desc}\n\nДанные:\n{data_summary}"
+
+        try:
+            answer = deepseek_chat([
+                {'role': 'system', 'content': phrase_system_prompt},
+                {'role': 'user', 'content': phrase_user_content},
+            ], temperature=0.2)
+        except DeepSeekError:
+            answer = data_summary
+
+        return Response({
+            'answer': answer,
+            'total': total,
+            'rows': rows,
+            'period': period_desc,
+        })
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

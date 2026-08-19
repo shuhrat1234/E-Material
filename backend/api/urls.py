@@ -22,6 +22,7 @@ urlpatterns = [
     path('db/reset/', DbOperationsViewSet.as_view({'post': 'reset_db'})),
     path('ai/chat/', AiAssistantViewSet.as_view({'post': 'chat'})),
     path('ai/citizen-chat/', AiAssistantViewSet.as_view({'post': 'citizen_chat'})),
+    path('ai/report/', AiAssistantViewSet.as_view({'post': 'report'})),
     path('auth/login/', login_view),
     path('public/check-status/', check_material_status),
 ]
