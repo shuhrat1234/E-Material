@@ -1,15 +1,63 @@
 import asyncio
 import logging
 import os
+import time
 import uuid
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# Each answer renders a new mp4 under MEDIA_ROOT/avatar_videos and nothing
+# ever deletes them on its own — on a live demo that gets used repeatedly
+# this would quietly fill the disk. Sweep out anything older than this on
+# every render instead of needing a separate cron job.
+_MAX_VIDEO_AGE_SECONDS = 30 * 60
+
 
 class SimliError(Exception):
     pass
+
+
+def _cleanup_old_videos(out_dir: str):
+    cutoff = time.time() - _MAX_VIDEO_AGE_SECONDS
+    try:
+        for name in os.listdir(out_dir):
+            path = os.path.join(out_dir, name)
+            try:
+                if os.path.isfile(path) and os.path.getmtime(path) < cutoff:
+                    os.remove(path)
+            except OSError:
+                pass  # another request may be reading/writing it right now
+    except OSError:
+        pass
+
+
+def _remux_faststart(path: str):
+    """PyAV/FileRenderer writes the mp4 with its `moov` atom (metadata:
+    duration, seek index, codec info) at the END of the file, after all the
+    audio/video data. That's fine for a player that has the whole file, but
+    browsers streaming it progressively need `moov` up front to start
+    decoding at all — without this, video silently never renders even
+    though the (separately buffered) audio track plays. Remux losslessly
+    (no re-encode) with `movflags=faststart` to move it to the front."""
+    import av
+
+    tmp_path = path + '.faststart.mp4'
+    in_container = av.open(path)
+    out_container = av.open(tmp_path, 'w', format='mp4', options={'movflags': 'faststart'})
+    try:
+        stream_map = {stream: out_container.add_stream_from_template(stream) for stream in in_container.streams}
+        for packet in in_container.demux():
+            if packet.dts is None:
+                continue
+            packet.stream = stream_map[packet.stream]
+            out_container.mux(packet)
+    finally:
+        out_container.close()
+        in_container.close()
+
+    os.replace(tmp_path, path)
 
 
 async def _render_async(pcm16_audio: bytes, out_path: str):
@@ -66,6 +114,8 @@ def render_avatar_video(pcm16_audio: bytes) -> str:
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, filename)
 
+    _cleanup_old_videos(out_dir)
     asyncio.run(_render_async(pcm16_audio, out_path))
+    _remux_faststart(out_path)
 
     return f'avatar_videos/{filename}'
