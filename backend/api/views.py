@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.utils import timezone
+from django.conf import settings
 import datetime
 import mimetypes
 from django.db import transaction, IntegrityError
@@ -23,6 +24,8 @@ from .serializers import (
     CaseRequestSerializer, EkspertizaSerializer, TaqiqSerializer
 )
 from .deepseek import deepseek_json, deepseek_chat, DeepSeekError
+from .silero_tts import synthesize_pcm16, TtsError
+from .simli_render import render_avatar_video, SimliError
 
 def parse_difficulty(value):
     try:
@@ -842,6 +845,43 @@ class AiAssistantViewSet(viewsets.ViewSet):
             'total': total,
             'rows': rows,
             'period': period_desc,
+        })
+
+    @action(detail=False, methods=['post'], url_path='avatar-session')
+    def avatar_session(self, request):
+        query = (request.data.get('query') or '').strip()
+
+        if not query:
+            return Response({'error': 'No query provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        system_prompt = (
+            "Sen Olmazor tumani IIB oldida turgan xushmuomala AI-yordamchisan. "
+            "Fuqarolarga oddiy tilda javob ber: 2-4 ta qisqa gap, chunki javobing ovozli aytiladi. "
+            "Faqat o'zbek tilida, lotin alifbosida, markdown yoki ro'yxatlarsiz javob ber."
+        )
+        try:
+            answer_text = deepseek_chat([
+                {'role': 'system', 'content': system_prompt},
+                {'role': 'user', 'content': query},
+            ], temperature=0.4)
+        except DeepSeekError:
+            answer_text = "Kechirasiz, AI xizmati vaqtincha ishlamayapti (internet yo'q yoki xizmat band)."
+
+        try:
+            pcm16_audio = synthesize_pcm16(answer_text)
+        except TtsError as e:
+            return Response({'error': f'TTS xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+
+        try:
+            video_rel_path = render_avatar_video(pcm16_audio)
+        except SimliError as e:
+            return Response({'error': str(e), 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+
+        video_url = request.build_absolute_uri(settings.MEDIA_URL + video_rel_path)
+
+        return Response({
+            'answer_text': answer_text,
+            'video_url': video_url,
         })
 
 

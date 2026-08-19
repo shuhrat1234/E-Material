@@ -17,6 +17,11 @@ function AiKioskView({ lang }) {
       <div className="flex-1 min-h-0">
         <CitizenAiChat lang={lang} fullPage />
       </div>
+      <div className="text-center mt-2 shrink-0">
+        <a href="/avatar-demo" className="text-[11px] font-semibold text-gov-muted hover:text-gov-primary transition-colors">
+          {lang === 'ru' ? 'Попробовать говорящего аватара →' : "Gapiruvchi avatarni sinab ko'rish →"}
+        </a>
+      </div>
     </div>
   );
 }

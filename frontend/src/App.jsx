@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import MaterialStatusPage from './components/MaterialStatusPage';
+import AvatarDemo from './components/AvatarDemo';
 import CitizenView from './components/CitizenView';
 import AiKioskView from './components/AiKioskView';
 import RegistratorView from './components/RegistratorView';
@@ -123,6 +124,10 @@ function App() {
     // instead of retyping the ID.
     const initialMaterialId = new URLSearchParams(window.location.search).get('id') || '';
     return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate('/')} initialMaterialId={initialMaterialId} />;
+  }
+
+  if (route.startsWith('/avatar-demo')) {
+    return <AvatarDemo lang={lang} onBack={() => navigate('/')} />;
   }
 
   const handleLogin = (selectedUser) => {

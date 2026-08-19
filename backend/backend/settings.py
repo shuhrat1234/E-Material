@@ -109,3 +109,7 @@ REST_FRAMEWORK = {
 DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com'
 DEEPSEEK_MODEL = 'deepseek-v4-flash'
+
+# Simli talking-avatar demo (/api/avatar/session/). Get these at app.simli.com.
+SIMLI_API_KEY = os.environ.get('SIMLI_API_KEY', '')
+SIMLI_FACE_ID = os.environ.get('SIMLI_FACE_ID', '')
