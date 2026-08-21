@@ -5,8 +5,8 @@ import { useEffect } from 'react';
 // why it's safe to ship in frontend code the way D-ID's own embed snippet
 // does, unlike SIMLI_API_KEY/DEEPSEEK_API_KEY which must stay server-side.
 // "full" mode renders into the given target div instead of a floating bubble.
-const DID_AGENT_ID = 'v2_agt_S-I1KRRQ';
-const DID_CLIENT_KEY = 'ck_Bb3-FeLA8GD44ucuyfG9Z';
+const DID_AGENT_ID = 'v2_agt_dvOyfwCx';
+const DID_CLIENT_KEY = 'ck_GtHqoX3XGz_ddDZLwMltM';
 const DID_TARGET_ID = 'did-agent-target';
 
 function DidAgentWidget({ className = '' }) {
