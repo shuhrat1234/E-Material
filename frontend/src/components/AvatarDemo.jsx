@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
 import { SendIcon, CloseIcon } from './Icons';
+import DidAgentWidget from './DidAgentWidget';
 
 const IDLE_SRC = '/avatar-idle.mp4';
 
@@ -60,6 +61,11 @@ function AvatarDemo({ lang, onBack }) {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 flex items-center justify-center p-4">
+      {/* D-ID's hosted agent — a separate, fully client-side alternative to
+          the DeepSeek+Silero+Simli pipeline below. Mounts its own floating
+          widget (bottom-right by default), independent of this card. */}
+      <DidAgentWidget />
+
       <div className="relative h-[92vh] max-h-[1000px] max-w-[92vw] aspect-[9/16] rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-neutral-900">
         {!idleFailed ? (
           <video
