@@ -4,33 +4,32 @@ import { useEffect } from 'react';
 // client key is domain-restricted (tqtb-olmazor.uz) on D-ID's side, which is
 // why it's safe to ship in frontend code the way D-ID's own embed snippet
 // does, unlike SIMLI_API_KEY/DEEPSEEK_API_KEY which must stay server-side.
+// "full" mode renders into the given target div instead of a floating bubble.
 const DID_AGENT_ID = 'v2_agt_S-I1KRRQ';
 const DID_CLIENT_KEY = 'ck_Bb3-FeLA8GD44ucuyfG9Z';
+const DID_TARGET_ID = 'did-agent-target';
 
-function DidAgentWidget() {
+function DidAgentWidget({ className = '' }) {
   useEffect(() => {
     const script = document.createElement('script');
     script.type = 'module';
     script.src = 'https://agent.d-id.com/v2/index.js';
-    script.dataset.mode = 'fabio';
+    script.dataset.mode = 'full';
     script.dataset.clientKey = DID_CLIENT_KEY;
     script.dataset.agentId = DID_AGENT_ID;
     script.dataset.name = 'did-agent';
     script.dataset.monitor = 'true';
-    script.dataset.orientation = 'horizontal';
-    script.dataset.position = 'right';
-    script.dataset.openMode = 'expanded';
+    script.dataset.targetId = DID_TARGET_ID;
     document.body.appendChild(script);
 
     return () => {
       script.remove();
-      // The widget script mounts its own floating UI outside React's tree —
-      // remove whatever it added so it doesn't linger after navigating away.
-      document.querySelectorAll('[data-name="did-agent"], #did-container, did-agent').forEach(el => el.remove());
+      const target = document.getElementById(DID_TARGET_ID);
+      if (target) target.innerHTML = '';
     };
   }, []);
 
-  return null;
+  return <div id={DID_TARGET_ID} className={className} />;
 }
 
 export default DidAgentWidget;
