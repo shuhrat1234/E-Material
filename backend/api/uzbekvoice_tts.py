@@ -45,8 +45,13 @@ def synthesize_uzbekvoice_audio_url(text: str, model: str = None) -> str:
     )
 
     try:
-        ctx = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=30, context=ctx) as response:
+        try:
+            ctx = ssl.create_default_context()
+            resp = urllib.request.urlopen(req, timeout=30, context=ctx)
+        except Exception:
+            ctx = ssl._create_unverified_context()
+            resp = urllib.request.urlopen(req, timeout=30, context=ctx)
+        with resp as response:
             resp_data = json.loads(response.read().decode('utf-8'))
     except Exception as e:
         logger.error('UzbekVoice TTS API call failed: %s', e)
@@ -68,8 +73,13 @@ def synthesize_pcm16(text: str, target_rate: int = 16000, model: str = None) -> 
     audio_url = synthesize_uzbekvoice_audio_url(text, model=model)
 
     try:
-        ctx = ssl.create_default_context()
-        with urllib.request.urlopen(audio_url, timeout=30, context=ctx) as r:
+        try:
+            ctx = ssl.create_default_context()
+            resp = urllib.request.urlopen(audio_url, timeout=30, context=ctx)
+        except Exception:
+            ctx = ssl._create_unverified_context()
+            resp = urllib.request.urlopen(audio_url, timeout=30, context=ctx)
+        with resp as r:
             wav_bytes = r.read()
     except Exception as e:
         logger.error('Failed to download audio from UzbekVoice CDN: %s', e)
