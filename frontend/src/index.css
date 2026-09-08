@@ -261,3 +261,17 @@ html, body {
   border-bottom-color: rgba(15, 23, 42, 0.94) !important;
 }
 
+/* Remove browser default focus outline box on active/focused map polygons & SVG elements */
+.leaflet-container :focus,
+.leaflet-container path:focus,
+.leaflet-container svg:focus,
+.leaflet-interactive:focus,
+path.leaflet-interactive:focus,
+svg.leaflet-zoom-animated path:focus,
+.leaflet-pane path:focus {
+  outline: none !important;
+  outline-style: none !important;
+  box-shadow: none !important;
+}
+
+

@@ -417,43 +417,43 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   return (
     <div className="space-y-4">
       {/* 1. Executive KPI Stats Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3">
         {/* District Total */}
-        <div className="bg-gov-surface border border-gov-border rounded-xl p-3 shadow-sm flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gov-primary/10 text-gov-primary flex items-center justify-center shrink-0">
-            <MapIcon className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-medium text-gov-muted block truncate">
+        <div className="bg-gov-surface border border-gov-border rounded-xl p-2.5 sm:p-3 shadow-sm flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gov-primary/10 text-gov-primary flex items-center justify-center shrink-0">
+              <MapIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <span className="text-xs sm:text-[11px] font-semibold sm:font-medium text-gov-muted whitespace-nowrap">
               {lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'}
             </span>
-            <span className="text-xl font-extrabold text-gov-text tracking-tight">
-              {districtMetrics.totalMaterials}
-            </span>
           </div>
+          <span className="text-lg sm:text-xl font-extrabold text-gov-text tracking-tight shrink-0 sm:ml-auto">
+            {districtMetrics.totalMaterials}
+          </span>
         </div>
 
         {/* Qizil Hududlar (Red Zones) */}
         <button
           type="button"
           onClick={() => setZoneFilter(prev => (prev === 'red' ? 'all' : 'red'))}
-          className={`text-left border rounded-xl p-3 shadow-sm transition-all duration-200 flex items-center gap-3 ${
+          className={`text-left border rounded-xl p-2.5 sm:p-3 shadow-sm transition-all duration-200 flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 min-w-0 ${
             zoneFilter === 'red'
               ? 'bg-red-500/15 border-red-500 ring-2 ring-red-500/30'
               : 'bg-gov-surface border-gov-border hover:border-red-400'
           }`}
         >
-          <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
-            <span className="w-3.5 h-3.5 rounded-full bg-red-500 animate-pulse" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-medium text-red-600 dark:text-red-400 block truncate">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+              <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-red-500 animate-pulse" />
+            </div>
+            <span className="text-xs sm:text-[11px] font-semibold sm:font-medium text-red-600 dark:text-red-400 whitespace-nowrap">
               {lang === 'ru' ? 'Красная зона' : 'Qizil hudud'}
             </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold text-gov-text">{districtMetrics.redCount}</span>
-              <span className="text-[10px] text-gov-muted">{lang === 'ru' ? 'махаллей' : 'mahalla'}</span>
-            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0 sm:ml-auto">
+            <span className="text-lg sm:text-xl font-extrabold text-gov-text">{districtMetrics.redCount}</span>
+            <span className="text-[10px] text-gov-muted whitespace-nowrap">{lang === 'ru' ? 'махалля' : 'mahalla'}</span>
           </div>
         </button>
 
@@ -461,23 +461,23 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         <button
           type="button"
           onClick={() => setZoneFilter(prev => (prev === 'yellow' ? 'all' : 'yellow'))}
-          className={`text-left border rounded-xl p-3 shadow-sm transition-all duration-200 flex items-center gap-3 ${
+          className={`text-left border rounded-xl p-2.5 sm:p-3 shadow-sm transition-all duration-200 flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 min-w-0 ${
             zoneFilter === 'yellow'
               ? 'bg-amber-500/15 border-amber-500 ring-2 ring-amber-500/30'
               : 'bg-gov-surface border-gov-border hover:border-amber-400'
           }`}
         >
-          <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <span className="w-3.5 h-3.5 rounded-full bg-amber-500" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 block truncate">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-amber-500" />
+            </div>
+            <span className="text-xs sm:text-[11px] font-semibold sm:font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">
               {lang === 'ru' ? 'Жёлтая зона' : 'Sariq hudud'}
             </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold text-gov-text">{districtMetrics.yellowCount}</span>
-              <span className="text-[10px] text-gov-muted">{lang === 'ru' ? 'махаллей' : 'mahalla'}</span>
-            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0 sm:ml-auto">
+            <span className="text-lg sm:text-xl font-extrabold text-gov-text">{districtMetrics.yellowCount}</span>
+            <span className="text-[10px] text-gov-muted whitespace-nowrap">{lang === 'ru' ? 'махалля' : 'mahalla'}</span>
           </div>
         </button>
 
@@ -485,23 +485,23 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         <button
           type="button"
           onClick={() => setZoneFilter(prev => (prev === 'green' ? 'all' : 'green'))}
-          className={`text-left border rounded-xl p-3 shadow-sm transition-all duration-200 flex items-center gap-3 ${
+          className={`text-left border rounded-xl p-2.5 sm:p-3 shadow-sm transition-all duration-200 flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 min-w-0 ${
             zoneFilter === 'green'
               ? 'bg-emerald-500/15 border-emerald-500 ring-2 ring-emerald-500/30'
               : 'bg-gov-surface border-gov-border hover:border-emerald-400'
           }`}
         >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 block truncate">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-emerald-500" />
+            </div>
+            <span className="text-xs sm:text-[11px] font-semibold sm:font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
               {lang === 'ru' ? 'Зелёная зона' : 'Yashil hudud'}
             </span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold text-gov-text">{districtMetrics.greenCount}</span>
-              <span className="text-[10px] text-gov-muted">{lang === 'ru' ? 'xavfsiz' : 'tinch'}</span>
-            </div>
+          </div>
+          <div className="flex items-baseline gap-1 shrink-0 sm:ml-auto">
+            <span className="text-lg sm:text-xl font-extrabold text-gov-text">{districtMetrics.greenCount}</span>
+            <span className="text-[10px] text-gov-muted whitespace-nowrap">{lang === 'ru' ? 'xavfsiz' : 'tinch'}</span>
           </div>
         </button>
 
@@ -510,22 +510,24 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
           <button
             type="button"
             onClick={() => handleSelectMahalla(districtMetrics.hotspot.mahalla.id)}
-            className="col-span-2 sm:col-span-1 bg-gov-surface border border-gov-border hover:border-gov-primary rounded-xl p-3 shadow-sm transition-all duration-200 text-left flex items-center gap-3 group"
+            className="sm:col-span-2 md:col-span-1 bg-gov-surface border border-gov-border hover:border-gov-primary rounded-xl p-2.5 sm:p-3 shadow-sm transition-all duration-200 text-left flex items-center justify-between sm:justify-start gap-2.5 sm:gap-3 group min-w-0"
           >
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <span className="text-xs font-black">#1</span>
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <span className="text-xs font-black">#1</span>
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] sm:text-[11px] font-medium text-gov-muted block whitespace-nowrap">
+                  {lang === 'ru' ? 'Главный очаг' : 'Asosiy o\'choq'}
+                </span>
+                <span className="text-xs font-bold text-gov-text block whitespace-nowrap truncate group-hover:text-gov-primary">
+                  {shortName(lang === 'ru' ? districtMetrics.hotspot.mahalla.name_ru : districtMetrics.hotspot.mahalla.name_uz)}
+                </span>
+              </div>
             </div>
-            <div className="min-w-0">
-              <span className="text-[11px] font-medium text-gov-muted block truncate">
-                {lang === 'ru' ? 'Главный очаг' : 'Asosiy o\'choq'}
-              </span>
-              <span className="text-xs font-bold text-gov-text block truncate group-hover:text-gov-primary">
-                {shortName(lang === 'ru' ? districtMetrics.hotspot.mahalla.name_ru : districtMetrics.hotspot.mahalla.name_uz)}
-              </span>
-              <span className="text-[10px] font-semibold text-rose-500">
-                {districtMetrics.hotspot.count} {lang === 'ru' ? 'дел' : 'ta ish'}
-              </span>
-            </div>
+            <span className="text-[11px] font-bold text-rose-500 whitespace-nowrap shrink-0 sm:ml-auto">
+              {districtMetrics.hotspot.count} {lang === 'ru' ? 'дел' : 'ta ish'}
+            </span>
           </button>
         )}
       </div>
@@ -544,7 +546,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
                 setSearchFocused(true);
               }}
               onFocus={() => setSearchFocused(true)}
-              placeholder={lang === 'ru' ? 'Поиск махалли в Олмазарском районе...' : 'Olmazor tumani bo\'yicha mahalla qidirish...'}
+              placeholder={lang === 'ru' ? 'Поиск махалли...' : 'Mahalla qidirish...'}
               className="w-full pl-10 pr-9 py-2.5 text-xs rounded-xl bg-gov-light border border-gov-border text-gov-text placeholder-gov-muted focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all shadow-inner"
             />
             {searchQuery && (
