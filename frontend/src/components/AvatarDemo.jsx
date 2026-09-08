@@ -200,7 +200,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 flex flex-col justify-between overflow-hidden select-none font-sans">
-      {/* Background Avatar Video: Perfectly framed, seamless loop */}
+      {/* Background Avatar Video: Perfectly framed, seamless loop, crystal-clear face */}
       <div className="absolute inset-0 z-0 bg-neutral-900 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
@@ -211,11 +211,11 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover object-[50%_20%] sm:object-[50%_25%] transition-all duration-500"
+          className="w-full h-full object-cover object-[50%_18%] sm:object-[50%_22%] contrast-[1.05] brightness-[1.02] saturate-[1.04] transition-all duration-300"
         />
 
-        {/* Soft contrast gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-black/60 pointer-events-none" />
+        {/* Only bottom gradient behind controls — face and body remain 100% clear and bright */}
+        <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
       </div>
 
       {/* Top Header Bar */}
@@ -231,7 +231,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       </div>
 
       {/* Bottom Interactive Area */}
-      <div className="relative z-20 w-full max-w-3xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
+      <div className="relative z-20 w-full max-w-4xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
         {!inCall ? (
           /* Initial Screen - Minimal button only */
           <div className="text-center my-auto py-8">
@@ -248,20 +248,20 @@ function AvatarDemo({ lang = 'uz', onBack }) {
             </button>
           </div>
         ) : (
-          /* Active Call Dialog - Messages from sides */
+          /* Active Call Dialog - Messages aligned to the RIGHT CORNER */
           <div className="w-full space-y-2.5">
-            {/* User Question - Coming from RIGHT side */}
+            {/* User Question - RIGHT corner */}
             {lastQuestion && (
               <div className="flex justify-end w-full animate-fadeIn">
-                <div className="max-w-[80%] sm:max-w-[70%] bg-blue-600/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-lg border border-blue-400/30 backdrop-blur-md">
+                <div className="max-w-[85%] sm:max-w-[70%] md:max-w-[460px] bg-blue-600/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-lg border border-blue-400/30 backdrop-blur-md">
                   {lastQuestion}
                 </div>
               </div>
             )}
 
-            {/* Answer Box - Coming from LEFT side */}
-            <div className="flex justify-start w-full animate-fadeIn">
-              <div className="max-w-[85%] sm:max-w-[75%] bg-black/70 backdrop-blur-xl border border-white/15 rounded-2xl rounded-tl-xs p-3.5 text-white shadow-2xl space-y-1.5">
+            {/* Answer Box - RIGHT corner */}
+            <div className="flex justify-end w-full animate-fadeIn">
+              <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[480px] bg-black/75 backdrop-blur-xl border border-white/20 rounded-2xl rounded-br-xs p-3.5 sm:p-4 text-white shadow-2xl space-y-1.5 text-left">
                 <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
