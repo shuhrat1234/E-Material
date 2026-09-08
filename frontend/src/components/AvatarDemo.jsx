@@ -226,19 +226,76 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       </div>
 
       {/* Top Header Bar */}
-      <div className="relative z-20 flex items-center justify-between p-4 sm:p-6">
+      <div className="relative z-20 flex items-center justify-between p-4 sm:p-6 pointer-events-none">
         <button
           type="button"
           onClick={() => { endCall(); onBack(); }}
-          className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10 shadow-lg"
+          className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10 shadow-lg pointer-events-auto"
           title="Orqaga"
         >
           <CloseIcon className="h-5 w-5" />
         </button>
       </div>
 
+      {/* TOP-RIGHT CORNER: Active Conversation Dialog */}
+      {inCall && (
+        <div className="fixed top-5 right-5 sm:top-6 sm:right-6 z-30 max-w-[340px] sm:max-w-[420px] w-full flex flex-col items-end gap-2.5 pointer-events-auto">
+          {/* User Question */}
+          {lastQuestion && (
+            <div className="flex justify-end w-full animate-fadeIn">
+              <div className="max-w-[85%] bg-blue-600/95 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-xl border border-blue-400/30 backdrop-blur-md">
+                {lastQuestion}
+              </div>
+            </div>
+          )}
+
+          {/* AI Answer Box - In TOP RIGHT CORNER */}
+          <div className="flex justify-end w-full animate-fadeIn">
+            <div className="w-full bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl rounded-tr-xs p-3.5 sm:p-4 text-white shadow-2xl space-y-2 text-left">
+              <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  Jasur (AI Tergovchi)
+                </span>
+                {isSpeaking && (
+                  <span className="text-emerald-400 text-[10px] lowercase font-medium">● gapirmoqda</span>
+                )}
+              </div>
+
+              {loading ? (
+                <div className="flex items-center gap-2 py-1 text-white/70 text-xs sm:text-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
+                  <span className="text-xs text-white/60 ml-1">
+                    Jasur javob tayyorlamoqda...
+                  </span>
+                </div>
+              ) : (
+                <p className="text-xs sm:text-sm leading-relaxed text-white/95 font-medium">
+                  {answerText || GREETING_TEXT}
+                </p>
+              )}
+
+              {error && (
+                <p className="text-xs text-rose-400 pt-0.5">{error}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* BOTTOM-LEFT CORNER: Official IIB Emblem Badge (Covers D-ID logo watermark) */}
+      <div className="fixed bottom-5 left-5 sm:bottom-6 sm:left-6 z-20 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-neutral-900/90 backdrop-blur-xl border border-white/20 shadow-2xl pointer-events-none select-none">
+        <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-7 h-7 object-contain drop-shadow" />
+        <div className="text-left">
+          <div className="text-[11px] font-bold text-white tracking-wider leading-tight">OLMAZOR TUMANI IIB</div>
+          <div className="text-[9px] text-blue-300 font-medium leading-none">Ichki ishlar bo'limi</div>
+        </div>
+      </div>
+
       {/* Bottom Interactive Area */}
-      <div className="relative z-20 w-full max-w-4xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
+      <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
         {!inCall ? (
           /* Initial Screen - Minimal button only */
           <div className="text-center my-auto py-8">
@@ -255,50 +312,8 @@ function AvatarDemo({ lang = 'uz', onBack }) {
             </button>
           </div>
         ) : (
-          /* Active Call Dialog - Messages aligned to the RIGHT CORNER */
+          /* Active Call Dialog - Suggestions & Controls at bottom */
           <div className="w-full space-y-2.5">
-            {/* User Question - RIGHT corner */}
-            {lastQuestion && (
-              <div className="flex justify-end w-full animate-fadeIn">
-                <div className="max-w-[85%] sm:max-w-[70%] md:max-w-[460px] bg-blue-600/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-lg border border-blue-400/30 backdrop-blur-md">
-                  {lastQuestion}
-                </div>
-              </div>
-            )}
-
-            {/* Answer Box - RIGHT corner */}
-            <div className="flex justify-end w-full animate-fadeIn">
-              <div className="max-w-[85%] sm:max-w-[75%] md:max-w-[480px] bg-black/75 backdrop-blur-xl border border-white/20 rounded-2xl rounded-br-xs p-3.5 sm:p-4 text-white shadow-2xl space-y-1.5 text-left">
-                <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                    Jasur (AI Tergovchi)
-                  </span>
-                  {isSpeaking && (
-                    <span className="text-emerald-400 text-[10px] lowercase font-medium">● gapirmoqda</span>
-                  )}
-                </div>
-
-                {loading ? (
-                  <div className="flex items-center gap-2 py-1 text-white/70 text-xs sm:text-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.3s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
-                    <span className="text-xs text-white/60 ml-1">
-                      Jasur javob tayyorlamoqda...
-                    </span>
-                  </div>
-                ) : (
-                  <p className="text-xs sm:text-sm leading-relaxed text-white/95 font-medium">
-                    {answerText || GREETING_TEXT}
-                  </p>
-                )}
-
-                {error && (
-                  <p className="text-xs text-rose-400 pt-0.5">{error}</p>
-                )}
-              </div>
-            </div>
 
             {/* Suggestions */}
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
