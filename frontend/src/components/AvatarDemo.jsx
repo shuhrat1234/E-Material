@@ -4,6 +4,10 @@ import { API_BASE } from '../App';
 import { CloseIcon, SendIcon } from './Icons';
 
 const GREETING_TEXT = "Assalomu alaykum! Men Olmazor tumani ichki ishlar bo'limi sun'iy intellekt yordamchisiman. Sizga qanday yordam bera olaman?";
+const GREETING_VIDEO = '/officer-talking.mp4';
+const GREETING_AUDIO = '/greeting-jasur.wav';
+const IDLE_VIDEO = '/officer-idle.mp4';
+const TALKING_VIDEO = '/officer-talking.mp4';
 
 const SUGGESTIONS = [
   "Ariza topshirish tartibi qanday?",
@@ -14,7 +18,7 @@ const SUGGESTIONS = [
 
 function AvatarDemo({ lang = 'uz', onBack }) {
   const [inCall, setInCall] = useState(false);
-  const [streamReady, setStreamReady] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(IDLE_VIDEO);
   const [query, setQuery] = useState('');
   const [lastQuestion, setLastQuestion] = useState('');
   const [answerText, setAnswerText] = useState('');
@@ -23,8 +27,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState('');
 
-  const streamInfoRef = useRef(null);
-  const peerConnectionRef = useRef(null);
+  const audioRef = useRef(null);
   const recognitionRef = useRef(null);
   const videoRef = useRef(null);
 
@@ -62,111 +65,70 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     }
 
     return () => {
-      cleanupStream();
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
     };
   }, [lang]);
 
-  const cleanupStream = () => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.abort(); } catch (e) {}
+  const playSpeech = (audioUrl, onFinish) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
     }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-    if (streamInfoRef.current) {
-      const { id, session_id } = streamInfoRef.current;
-      axios.post(`${API_BASE}/avatar/stream-close/`, { stream_id: id, session_id }).catch(() => {});
-      streamInfoRef.current = null;
-    }
-  };
 
-  const startCall = async () => {
-    setInCall(true);
-    setLoading(true);
-    setError('');
-    setAnswerText(GREETING_TEXT);
-    setLastQuestion('');
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
 
-    try {
-      // 1. Create WebRTC stream on D-ID
-      const startRes = await axios.post(`${API_BASE}/avatar/stream-start/`);
-      const stream = startRes.data;
-      streamInfoRef.current = stream;
-
-      // 2. Setup RTCPeerConnection
-      const pc = new RTCPeerConnection({
-        iceServers: stream.ice_servers || [{ urls: ['stun:stun.l.google.com:19302'] }]
-      });
-      peerConnectionRef.current = pc;
-
-      pc.ontrack = (event) => {
-        if (videoRef.current && event.streams && event.streams[0]) {
-          videoRef.current.srcObject = event.streams[0];
-          setStreamReady(true);
-        }
-      };
-
-      pc.onicecandidate = (event) => {
-        if (event.candidate && streamInfoRef.current) {
-          axios.post(`${API_BASE}/avatar/stream-ice/`, {
-            stream_id: streamInfoRef.current.id,
-            session_id: streamInfoRef.current.session_id,
-            candidate: event.candidate.candidate,
-            sdpMid: event.candidate.sdpMid,
-            sdpMLineIndex: event.candidate.sdpMLineIndex,
-          }).catch(() => {});
-        }
-      };
-
-      // 3. Set remote offer & send local answer
-      await pc.setRemoteDescription(new RTCSessionDescription(stream.offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      await axios.post(`${API_BASE}/avatar/stream-sdp/`, {
-        stream_id: stream.id,
-        session_id: stream.session_id,
-        answer: answer,
-      });
-
-      // 4. Initial greeting with UzbekVoice Jasur voice + D-ID lip sync
-      setTimeout(() => {
-        sendGreeting(stream.id, stream.session_id);
-      }, 800);
-
-    } catch (err) {
-      console.error('Failed to start avatar stream:', err);
-      setError("Aloqa o'rnatishda xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
-      setLoading(false);
-    }
-  };
-
-  const sendGreeting = async (streamId, sessionId) => {
-    try {
+    audio.onplay = () => {
       setIsSpeaking(true);
-      await axios.post(`${API_BASE}/avatar/stream-talk/`, {
-        stream_id: streamId,
-        session_id: sessionId,
-        text: GREETING_TEXT,
-      });
-    } catch (err) {
-      console.warn('Greeting talk error:', err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setIsSpeaking(false), 5000);
-    }
+      // Switch video to talking state (mouth moving)
+      setVideoSrc(TALKING_VIDEO);
+    };
+
+    audio.onended = () => {
+      setIsSpeaking(false);
+      // Switch video back to idle (mouth closed)
+      setVideoSrc(IDLE_VIDEO);
+      if (onFinish) onFinish();
+    };
+
+    audio.onerror = (err) => {
+      console.warn('Audio playback error:', err);
+      setIsSpeaking(false);
+      setVideoSrc(IDLE_VIDEO);
+    };
+
+    audio.play().catch(e => {
+      console.warn('Audio autoplay prevented:', e);
+      setIsSpeaking(false);
+      setVideoSrc(IDLE_VIDEO);
+    });
+  };
+
+  const startCall = () => {
+    setInCall(true);
+    setError('');
+    setLastQuestion('');
+    setAnswerText(GREETING_TEXT);
+
+    // Play greeting in Jasur's voice with talking video
+    playSpeech(GREETING_AUDIO);
   };
 
   const endCall = () => {
-    cleanupStream();
     setInCall(false);
-    setStreamReady(false);
     setIsSpeaking(false);
     setIsListening(false);
     setLoading(false);
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
+    setVideoSrc(IDLE_VIDEO);
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch (e) {}
     }
   };
 
@@ -179,6 +141,11 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     if (isListening) {
       recognitionRef.current.stop();
     } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        setIsSpeaking(false);
+        setVideoSrc(IDLE_VIDEO);
+      }
       try {
         recognitionRef.current.start();
       } catch (e) {
@@ -189,27 +156,40 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
   const sendQuery = async (textToSend) => {
     const q = (textToSend || query).trim();
-    if (!q || loading || !streamInfoRef.current) return;
+    if (!q || loading) return;
 
     setLastQuestion(q);
     setQuery('');
     setLoading(true);
     setError('');
 
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsSpeaking(false);
+      setVideoSrc(IDLE_VIDEO);
+    }
+
     try {
-      setIsSpeaking(true);
-      const res = await axios.post(`${API_BASE}/avatar/stream-talk/`, {
-        stream_id: streamInfoRef.current.id,
-        session_id: streamInfoRef.current.session_id,
-        query: q,
-      });
-      setAnswerText(res.data.answer_text || '');
+      const res = await axios.post(`${API_BASE}/avatar/session/`, { query: q, lang });
+      const text = res.data.answer_text || '';
+      const audioUrl = res.data.audio_url;
+
+      setAnswerText(text);
+
+      if (audioUrl) {
+        playSpeech(audioUrl);
+      } else {
+        // Fallback to tts endpoint
+        const ttsRes = await axios.post(`${API_BASE}/ai/tts/`, { text, model: 'jasur' });
+        if (ttsRes.data.audio_url) {
+          playSpeech(ttsRes.data.audio_url);
+        }
+      }
     } catch (err) {
-      console.error('Stream talk query error:', err);
-      setError(err.response?.data?.error || "Javob olishda xatolik yuz berdi.");
+      console.error('Avatar session query error:', err);
+      setError("Javob olishda xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
     } finally {
       setLoading(false);
-      setTimeout(() => setIsSpeaking(false), 6000);
     }
   };
 
@@ -220,24 +200,20 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 flex flex-col justify-between overflow-hidden select-none font-sans">
-      {/* Background Avatar Video: WebRTC stream when inCall, Idle loop when idle */}
+      {/* Background Avatar Video: Perfectly framed, seamless loop */}
       <div className="absolute inset-0 z-0 bg-neutral-900 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
-          src={!inCall ? "/officer-idle.mp4" : undefined}
+          key={videoSrc}
+          src={videoSrc}
           poster="/officer-poster.png"
           autoPlay
-          loop={!inCall}
-          muted={!inCall}
+          loop
+          muted
           playsInline
-          className={`w-full h-full object-cover object-center transition-transform duration-700 ${
-            isSpeaking ? 'scale-[1.02] brightness-105' : 'scale-100 brightness-100'
-          }`}
+          className="w-full h-full object-cover object-[50%_20%] sm:object-[50%_25%] transition-all duration-500"
         />
-        {/* Subtle speaking pulse glow */}
-        {isSpeaking && (
-          <div className="absolute inset-0 ring-4 ring-inset ring-blue-500/25 pointer-events-none animate-pulse transition-opacity" />
-        )}
+
         {/* Soft contrast gradient */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/15 to-black/60 pointer-events-none" />
       </div>
@@ -255,14 +231,12 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
         {/* Live Badge */}
         <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-lg">
-          <span className={`w-2.5 h-2.5 rounded-full ${isSpeaking ? 'bg-blue-400 animate-ping' : streamReady ? 'bg-emerald-400' : inCall ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+          <span className={`w-2.5 h-2.5 rounded-full ${isSpeaking ? 'bg-blue-400 animate-ping' : inCall ? 'bg-emerald-400' : 'bg-amber-400'}`} />
           <span>
             {isSpeaking
               ? 'Jasur gapirmoqda (UzbekVoice.ai)'
-              : streamReady
-              ? 'Jonli aloqada (D-ID + UzbekVoice)'
               : inCall
-              ? 'Ulanmoqda...'
+              ? 'Jonli aloqada • Olmazor IIB'
               : 'AI Tergovchi • Olmazor IIB'}
           </span>
         </div>
@@ -288,10 +262,10 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           <div className="text-center space-y-4">
             <div className="space-y-1 drop-shadow-md">
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                AI Tergovchi (Jonli Lab Harakati)
+                AI Tergovchi (Ovoz: Jasur)
               </h2>
               <p className="text-xs sm:text-sm text-white/85 font-medium">
-                Ovoz: Jasur (UzbekVoice.ai) • Real-vaqtda Lip-sync
+                UzbekVoice.ai • Real vaqtda muloqot
               </p>
             </div>
 
@@ -335,7 +309,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
                   <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
                   <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" />
                   <span className="text-xs text-white/60 ml-2">
-                    Jasur ovoz tayyorlamoqda...
+                    Jasur javob tayyorlamoqda...
                   </span>
                 </div>
               ) : (
