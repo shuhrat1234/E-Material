@@ -850,6 +850,28 @@ class AiAssistantViewSet(viewsets.ViewSet):
             'period': period_desc,
         })
 
+_PRECOMPUTED_ANSWERS = {
+    'ariza': {
+        'answer_text': "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik xizmati xonasiga shaxsan murojaat qilishingiz mumkin. O'zingiz bilan pasportingizni olishni unutmang.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/1e92872c-68af-458c-98a6-3de8fd768090.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213235Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=93f52f74c0cbeda362f1f699a5fb0717fb9d61b1ec0ec6425e13c253168ece53',
+    },
+    'pasport': {
+        'answer_text': "Pasport yo'qolganda darhol hududiy IIB migratsiya va fuqarolikni rasmiylashtirish bo'limiga ariza bering. Sizga vaqtinchalik ma'lumotnoma rasmiylashtirib beriladi.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/7efb1e80-4254-4d27-82f7-95e3a2b5f0e9.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213238Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=eb02811de95326ba9d2c87988edff9d55b27b6557afda310f71c6a7ba48dddbe',
+    },
+    'murojaat': {
+        'answer_text': "Murojaatingiz holatini bilish uchun IIB navbatchilik qismiga qo'ng'iroq qilib, arizangiz raqamini aytsangiz, mas'ul tergovchi haqida ma'lumot beriladi.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/33fa8908-77ef-4311-9237-2170e86320bc.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213241Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=15407ec59347cf12df359d2117009a19d19651309a954f6c451cfbcc4aee42e2',
+    },
+    'qabul': {
+        'answer_text': "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/8d7314bc-5b65-400d-9f37-7ec26911f6d4.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213244Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=8832572594b1ae453aa7417130e0854f8693df90ed838f5957c858cd27626136',
+    },
+}
+
+_AVATAR_CACHE = {}
+
+
     @action(detail=False, methods=['post'], url_path='avatar-session')
     def avatar_session(self, request):
         query = (request.data.get('query') or '').strip()
@@ -857,39 +879,44 @@ class AiAssistantViewSet(viewsets.ViewSet):
         if not query:
             return Response({'error': 'No query provided'}, status=status.HTTP_400_BAD_REQUEST)
 
+        q_lower = query.lower()
+
+        # 1. Instant check for cached or common queries (0.005s instant response!)
+        if q_lower in _AVATAR_CACHE:
+            return Response(_AVATAR_CACHE[q_lower])
+
+        for key, precomputed in _PRECOMPUTED_ANSWERS.items():
+            if key in q_lower:
+                _AVATAR_CACHE[q_lower] = precomputed
+                return Response(precomputed)
+
+        # 2. Fast DeepSeek generation (max_tokens=60, timeout=3)
         system_prompt = (
-            "Sen Olmazor tumani IIB oldida turgan xushmuomala AI-yordamchisan. "
-            "Fuqarolarga oddiy tilda javob ber: 2-3 ta qisqa gap, chunki javobing ovozli aytiladi. "
-            "Faqat o'zbek tilida, lotin alifbosida, markdown yoki ro'yxatlarsiz javob ber."
+            "Sen Olmazor tumani IIB AI-yordamchisisan. "
+            "1-2 ta juda qisqa gapda aniq javob ber. "
+            "Faqat o'zbek tilida, lotin alifbosida, ro'yxatsiz javob ber."
         )
         try:
             answer_text = deepseek_chat([
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': query},
-            ], temperature=0.3, timeout=5)
+            ], temperature=0.2, timeout=3, max_tokens=60)
         except Exception:
-            q_lower = query.lower()
-            if 'ariza' in q_lower:
-                answer_text = "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik bilan ishlash bo'limiga murojaat qilishingiz mumkin. O'zingiz bilan pasportingiz bo'lishi lozim."
-            elif 'pasport' in q_lower:
-                answer_text = "Pasport yo'qolganda darhol hududiy IIB migratsiya bo'limiga ariza bilan murojaat qiling va ma'lumotnoma oling."
-            elif 'holat' in q_lower or 'tekshir' in q_lower:
-                answer_text = "Murojaatingiz holatini IIB qabulxonasidan yoki tergovchining xizmat telefon raqami orqali ro'yxatga olingan raqamingizni aytib bilib olishingiz mumkin."
-            elif 'qabul' in q_lower:
-                answer_text = "Tergovchi qabuliga yozilish uchun IIB navbatchilik xizmati yoki 102 qisqa raqami orqali murojaat qilishingiz mumkin."
-            else:
-                answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga bevosita murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
+            answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
 
+        # 3. Synthesize Jasur audio
         audio_url = None
         try:
             audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
         except Exception as e:
             logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
 
-        return Response({
+        result = {
             'answer_text': answer_text,
             'audio_url': audio_url,
-        })
+        }
+        _AVATAR_CACHE[q_lower] = result
+        return Response(result)
 
     @action(detail=False, methods=['post'], url_path='tts')
     def tts(self, request):

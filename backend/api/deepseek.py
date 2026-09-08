@@ -7,7 +7,7 @@ class DeepSeekError(Exception):
     pass
 
 
-def deepseek_chat(messages, json_mode=False, temperature=0.3, timeout=30):
+def deepseek_chat(messages, json_mode=False, temperature=0.3, timeout=30, max_tokens=None):
     """Call DeepSeek's OpenAI-compatible chat completions endpoint.
 
     Requires internet access to api.deepseek.com — raises DeepSeekError on
@@ -24,6 +24,8 @@ def deepseek_chat(messages, json_mode=False, temperature=0.3, timeout=30):
         'messages': messages,
         'temperature': temperature,
     }
+    if max_tokens:
+        payload['max_tokens'] = max_tokens
     if json_mode:
         payload['response_format'] = {'type': 'json_object'}
 
