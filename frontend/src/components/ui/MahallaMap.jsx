@@ -16,6 +16,14 @@ function MapViewController({ focusLocation, resetTrigger, bounds }) {
   const map = useMap();
 
   useEffect(() => {
+    // Force Leaflet to recalculate dimensions after DOM layout settles
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  useEffect(() => {
     if (!focusLocation) return;
     const lat = Array.isArray(focusLocation) ? focusLocation[0] : focusLocation.lat;
     const lon = Array.isArray(focusLocation) ? focusLocation[1] : focusLocation.lon;
@@ -29,7 +37,7 @@ function MapViewController({ focusLocation, resetTrigger, bounds }) {
   }, [focusLocation, map]);
 
   useEffect(() => {
-    if (resetTrigger === undefined || resetTrigger === null) return;
+    if (!resetTrigger) return;
     map.flyToBounds(bounds, {
       padding: [20, 20],
       duration: 1.0,
@@ -95,7 +103,7 @@ function MahallaMap({
   const boundaryBorderColor = mapType === 'satellite' ? '#38bdf8' : (isDark ? '#5598e7' : '#2563eb');
 
   return (
-    <div className={`relative isolate rounded-xl overflow-hidden border border-gov-border ${className}`} style={{ height }}>
+    <div className={`relative isolate rounded-xl overflow-hidden border border-gov-border w-full min-w-0 ${className}`} style={{ height, minHeight: height }}>
       <MapContainer
         bounds={bounds}
         maxBounds={bounds}

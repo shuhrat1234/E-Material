@@ -643,11 +643,11 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
       </div>
 
       {/* 3. Main Map & Analytics Side Panel */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
         {/* Map Container Column */}
-        <div className="flex-1 w-full min-w-0 relative">
+        <div className="lg:col-span-7 xl:col-span-8 w-full min-w-0 relative">
           {/* Floating Map Controls Toolbar */}
-          <div className="absolute top-3 right-3 z-[400] flex items-center gap-1.5 bg-gov-surface/90 backdrop-blur-md border border-gov-border p-1.5 rounded-xl shadow-lg">
+          <div className="absolute top-3 right-3 z-[400] flex flex-wrap items-center gap-1.5 bg-gov-surface/95 backdrop-blur-md border border-gov-border p-1.5 rounded-xl shadow-lg max-w-[calc(100%-24px)]">
             {/* Basemap Switcher */}
             <div className="flex items-center gap-1 border-r border-gov-border pr-1.5">
               <button
@@ -775,7 +775,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         </div>
 
         {/* Analytical Side Panel Column */}
-        <div className="w-full lg:w-88 shrink-0" ref={detailsRef}>
+        <div className="lg:col-span-5 xl:col-span-4 w-full" ref={detailsRef}>
           <Card className="h-full">
             {/* State A: When No Mahalla is Selected -> District Overview & Hotspots Leaderboard */}
             {!selectedStats ? (
