@@ -185,7 +185,13 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     if (audioRef.current) {
       audioRef.current.pause();
       setIsSpeaking(false);
-      setVideoSrc(IDLE_VIDEO);
+      if (talkingVideoRef.current) {
+        talkingVideoRef.current.pause();
+        talkingVideoRef.current.currentTime = 0;
+      }
+      if (idleVideoRef.current) {
+        idleVideoRef.current.play().catch(() => {});
+      }
     }
 
     try {
