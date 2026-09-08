@@ -30,6 +30,27 @@ from .silero_tts import synthesize_pcm16 as silero_synthesize, TtsError
 from .uzbekvoice_tts import synthesize_pcm16 as uzbekvoice_synthesize, synthesize_uzbekvoice_audio_url, UzbekVoiceTtsError
 from .simli_render import render_avatar_video, SimliError
 
+_PRECOMPUTED_ANSWERS = {
+    'ariza': {
+        'answer_text': "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik xizmati xonasiga shaxsan murojaat qilishingiz mumkin. O'zingiz bilan pasportingizni olishni unutmang.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/1e92872c-68af-458c-98a6-3de8fd768090.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213235Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=93f52f74c0cbeda362f1f699a5fb0717fb9d61b1ec0ec6425e13c253168ece53',
+    },
+    'pasport': {
+        'answer_text': "Pasport yo'qolganda darhol hududiy IIB migratsiya va fuqarolikni rasmiylashtirish bo'limiga ariza bering. Sizga vaqtinchalik ma'lumotnoma rasmiylashtirib beriladi.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/7efb1e80-4254-4d27-82f7-95e3a2b5f0e9.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213238Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=eb02811de95326ba9d2c87988edff9d55b27b6557afda310f71c6a7ba48dddbe',
+    },
+    'murojaat': {
+        'answer_text': "Murojaatingiz holatini bilish uchun IIB navbatchilik qismiga qo'ng'iroq qilib, arizangiz raqamini aytsangiz, mas'ul tergovchi haqida ma'lumot beriladi.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/33fa8908-77ef-4311-9237-2170e86320bc.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213241Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=15407ec59347cf12df359d2117009a19d19651309a954f6c451cfbcc4aee42e2',
+    },
+    'qabul': {
+        'answer_text': "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
+        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/8d7314bc-5b65-400d-9f37-7ec26911f6d4.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213244Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=8832572594b1ae453aa7417130e0854f8693df90ed838f5957c858cd27626136',
+    },
+}
+
+_AVATAR_CACHE = {}
+
 def parse_difficulty(value):
     try:
         parsed = int(value)
@@ -849,28 +870,6 @@ class AiAssistantViewSet(viewsets.ViewSet):
             'rows': rows,
             'period': period_desc,
         })
-
-_PRECOMPUTED_ANSWERS = {
-    'ariza': {
-        'answer_text': "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik xizmati xonasiga shaxsan murojaat qilishingiz mumkin. O'zingiz bilan pasportingizni olishni unutmang.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/1e92872c-68af-458c-98a6-3de8fd768090.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213235Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=93f52f74c0cbeda362f1f699a5fb0717fb9d61b1ec0ec6425e13c253168ece53',
-    },
-    'pasport': {
-        'answer_text': "Pasport yo'qolganda darhol hududiy IIB migratsiya va fuqarolikni rasmiylashtirish bo'limiga ariza bering. Sizga vaqtinchalik ma'lumotnoma rasmiylashtirib beriladi.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/7efb1e80-4254-4d27-82f7-95e3a2b5f0e9.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213238Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=eb02811de95326ba9d2c87988edff9d55b27b6557afda310f71c6a7ba48dddbe',
-    },
-    'murojaat': {
-        'answer_text': "Murojaatingiz holatini bilish uchun IIB navbatchilik qismiga qo'ng'iroq qilib, arizangiz raqamini aytsangiz, mas'ul tergovchi haqida ma'lumot beriladi.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/33fa8908-77ef-4311-9237-2170e86320bc.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213241Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=15407ec59347cf12df359d2117009a19d19651309a954f6c451cfbcc4aee42e2',
-    },
-    'qabul': {
-        'answer_text': "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/8d7314bc-5b65-400d-9f37-7ec26911f6d4.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213244Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=8832572594b1ae453aa7417130e0854f8693df90ed838f5957c858cd27626136',
-    },
-}
-
-_AVATAR_CACHE = {}
-
 
     @action(detail=False, methods=['post'], url_path='avatar-session')
     def avatar_session(self, request):
