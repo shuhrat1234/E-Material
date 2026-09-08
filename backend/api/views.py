@@ -859,40 +859,36 @@ class AiAssistantViewSet(viewsets.ViewSet):
 
         system_prompt = (
             "Sen Olmazor tumani IIB oldida turgan xushmuomala AI-yordamchisan. "
-            "Fuqarolarga oddiy tilda javob ber: 2-4 ta qisqa gap, chunki javobing ovozli aytiladi. "
+            "Fuqarolarga oddiy tilda javob ber: 2-3 ta qisqa gap, chunki javobing ovozli aytiladi. "
             "Faqat o'zbek tilida, lotin alifbosida, markdown yoki ro'yxatlarsiz javob ber."
         )
         try:
             answer_text = deepseek_chat([
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': query},
-            ], temperature=0.4)
-        except DeepSeekError:
-            answer_text = "Kechirasiz, AI xizmati vaqtincha ishlamayapti (internet yo'q yoki xizmat band)."
+            ], temperature=0.3, timeout=5)
+        except Exception:
+            q_lower = query.lower()
+            if 'ariza' in q_lower:
+                answer_text = "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik bilan ishlash bo'limiga murojaat qilishingiz mumkin. O'zingiz bilan pasportingiz bo'lishi lozim."
+            elif 'pasport' in q_lower:
+                answer_text = "Pasport yo'qolganda darhol hududiy IIB migratsiya bo'limiga ariza bilan murojaat qiling va ma'lumotnoma oling."
+            elif 'holat' in q_lower or 'tekshir' in q_lower:
+                answer_text = "Murojaatingiz holatini IIB qabulxonasidan yoki tergovchining xizmat telefon raqami orqali ro'yxatga olingan raqamingizni aytib bilib olishingiz mumkin."
+            elif 'qabul' in q_lower:
+                answer_text = "Tergovchi qabuliga yozilish uchun IIB navbatchilik xizmati yoki 102 qisqa raqami orqali murojaat qilishingiz mumkin."
+            else:
+                answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga bevosita murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
 
         audio_url = None
-        pcm16_audio = None
         try:
-            pcm16_audio = uzbekvoice_synthesize(answer_text, model='jasur')
             audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
         except Exception as e:
-            try:
-                pcm16_audio = silero_synthesize(answer_text)
-            except TtsError as err:
-                return Response({'error': f'TTS xatosi: {err}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
-
-        video_url = None
-        if pcm16_audio:
-            try:
-                video_rel_path = render_avatar_video(pcm16_audio)
-                video_url = request.build_absolute_uri(settings.MEDIA_URL + video_rel_path)
-            except SimliError:
-                pass
+            logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
 
         return Response({
             'answer_text': answer_text,
             'audio_url': audio_url,
-            'video_url': video_url,
         })
 
     @action(detail=False, methods=['post'], url_path='tts')

@@ -244,22 +244,11 @@ function AvatarDemo({ lang = 'uz', onBack }) {
         <div className="w-10" />
       </div>
 
-      {/* Center Waveform when speaking */}
-      {isSpeaking && (
-        <div className="relative z-20 flex items-center justify-center gap-1.5 my-auto pointer-events-none">
-          <div className="w-1.5 h-8 bg-blue-400/90 rounded-full animate-pulse [animation-duration:600ms]" />
-          <div className="w-1.5 h-14 bg-blue-300/90 rounded-full animate-pulse [animation-duration:400ms]" />
-          <div className="w-1.5 h-20 bg-white rounded-full animate-pulse [animation-duration:500ms]" />
-          <div className="w-1.5 h-14 bg-blue-300/90 rounded-full animate-pulse [animation-duration:450ms]" />
-          <div className="w-1.5 h-8 bg-blue-400/90 rounded-full animate-pulse [animation-duration:650ms]" />
-        </div>
-      )}
-
       {/* Bottom Interactive Area */}
-      <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-6 sm:pb-8 flex flex-col items-center">
+      <div className="relative z-20 w-full max-w-3xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
         {!inCall ? (
           /* Initial Screen */
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 my-auto py-8">
             <div className="space-y-1 drop-shadow-md">
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 AI Tergovchi (Ovoz: Jasur)
@@ -282,45 +271,49 @@ function AvatarDemo({ lang = 'uz', onBack }) {
             </button>
           </div>
         ) : (
-          /* Active Call Dialog */
-          <div className="w-full space-y-3">
-            {/* User Question */}
+          /* Active Call Dialog - Messages from sides */
+          <div className="w-full space-y-2.5">
+            {/* User Question - Coming from RIGHT side */}
             {lastQuestion && (
-              <div className="ml-auto max-w-[85%] w-fit bg-blue-600/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-br-sm backdrop-blur-md shadow-lg border border-blue-400/30">
-                {lastQuestion}
+              <div className="flex justify-end w-full animate-fadeIn">
+                <div className="max-w-[80%] sm:max-w-[70%] bg-blue-600/90 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-lg border border-blue-400/30 backdrop-blur-md">
+                  {lastQuestion}
+                </div>
               </div>
             )}
 
-            {/* Answer / Captions Box */}
-            <div className="bg-black/60 backdrop-blur-xl border border-white/15 rounded-2xl p-4 text-white shadow-2xl space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  Jasur (AI Tergovchi)
-                </span>
-                {isSpeaking && (
-                  <span className="text-emerald-400 text-[10px]">● Gapirmoqda</span>
+            {/* Answer Box - Coming from LEFT side */}
+            <div className="flex justify-start w-full animate-fadeIn">
+              <div className="max-w-[85%] sm:max-w-[75%] bg-black/70 backdrop-blur-xl border border-white/15 rounded-2xl rounded-tl-xs p-3.5 text-white shadow-2xl space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                    Jasur (AI Tergovchi)
+                  </span>
+                  {isSpeaking && (
+                    <span className="text-emerald-400 text-[10px] lowercase font-medium">● gapirmoqda</span>
+                  )}
+                </div>
+
+                {loading ? (
+                  <div className="flex items-center gap-2 py-1 text-white/70 text-xs sm:text-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
+                    <span className="text-xs text-white/60 ml-1">
+                      Jasur javob tayyorlamoqda...
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-xs sm:text-sm leading-relaxed text-white/95 font-medium">
+                    {answerText || GREETING_TEXT}
+                  </p>
+                )}
+
+                {error && (
+                  <p className="text-xs text-rose-400 pt-0.5">{error}</p>
                 )}
               </div>
-
-              {loading ? (
-                <div className="flex items-center gap-2 py-2 text-white/70 text-sm">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" />
-                  <span className="text-xs text-white/60 ml-2">
-                    Jasur javob tayyorlamoqda...
-                  </span>
-                </div>
-              ) : (
-                <p className="text-sm sm:text-base leading-relaxed text-white/95 font-medium">
-                  {answerText || GREETING_TEXT}
-                </p>
-              )}
-
-              {error && (
-                <p className="text-xs text-rose-400 pt-1">{error}</p>
-              )}
             </div>
 
             {/* Suggestions */}
