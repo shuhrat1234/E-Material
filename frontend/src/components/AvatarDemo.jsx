@@ -18,7 +18,6 @@ const SUGGESTIONS = [
 
 function AvatarDemo({ lang = 'uz', onBack }) {
   const [inCall, setInCall] = useState(false);
-  const [videoSrc, setVideoSrc] = useState(IDLE_VIDEO);
   const [query, setQuery] = useState('');
   const [lastQuestion, setLastQuestion] = useState('');
   const [answerText, setAnswerText] = useState('');
@@ -29,7 +28,8 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
   const audioRef = useRef(null);
   const recognitionRef = useRef(null);
-  const videoRef = useRef(null);
+  const idleVideoRef = useRef(null);
+  const talkingVideoRef = useRef(null);
 
   // Setup SpeechRecognition
   useEffect(() => {
@@ -82,29 +82,39 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     const audio = new Audio(audioUrl);
     audioRef.current = audio;
 
+    const talkingVid = talkingVideoRef.current;
+    const idleVid = idleVideoRef.current;
+
     audio.onplay = () => {
       setIsSpeaking(true);
-      // Switch video to talking state (mouth moving)
-      setVideoSrc(TALKING_VIDEO);
+      if (talkingVid) {
+        talkingVid.currentTime = 0;
+        talkingVid.play().catch(() => {});
+      }
     };
 
     audio.onended = () => {
       setIsSpeaking(false);
-      // Switch video back to idle (mouth closed)
-      setVideoSrc(IDLE_VIDEO);
+      if (talkingVid) {
+        talkingVid.pause();
+        talkingVid.currentTime = 0;
+      }
+      if (idleVid) {
+        idleVid.play().catch(() => {});
+      }
       if (onFinish) onFinish();
     };
 
     audio.onerror = (err) => {
       console.warn('Audio playback error:', err);
       setIsSpeaking(false);
-      setVideoSrc(IDLE_VIDEO);
+      if (talkingVid) talkingVid.pause();
     };
 
     audio.play().catch(e => {
       console.warn('Audio autoplay prevented:', e);
       setIsSpeaking(false);
-      setVideoSrc(IDLE_VIDEO);
+      if (talkingVid) talkingVid.pause();
     });
   };
 
@@ -123,7 +133,13 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     setIsSpeaking(false);
     setIsListening(false);
     setLoading(false);
-    setVideoSrc(IDLE_VIDEO);
+    if (talkingVideoRef.current) {
+      talkingVideoRef.current.pause();
+      talkingVideoRef.current.currentTime = 0;
+    }
+    if (idleVideoRef.current) {
+      idleVideoRef.current.play().catch(() => {});
+    }
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -144,7 +160,10 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       if (audioRef.current) {
         audioRef.current.pause();
         setIsSpeaking(false);
-        setVideoSrc(IDLE_VIDEO);
+        if (talkingVideoRef.current) {
+          talkingVideoRef.current.pause();
+          talkingVideoRef.current.currentTime = 0;
+        }
       }
       try {
         recognitionRef.current.start();
@@ -208,17 +227,30 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           style={{ backgroundImage: `url('/officer-poster.png')` }}
         />
 
-        {/* Crisp, natural distance avatar video */}
+        {/* Idle Video (Breathing, calm eyes) */}
         <video
-          ref={videoRef}
-          key={videoSrc}
-          src={videoSrc}
+          ref={idleVideoRef}
+          src={IDLE_VIDEO}
           poster="/officer-poster.png"
           autoPlay
           loop
           muted
           playsInline
-          className="relative z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-all duration-300 drop-shadow-2xl"
+          className={`relative z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
+            isSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        />
+
+        {/* Talking Video (Lip-synced with Jasur voice) */}
+        <video
+          ref={talkingVideoRef}
+          src={TALKING_VIDEO}
+          loop
+          muted
+          playsInline
+          className={`absolute z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
+            isSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
         />
 
         {/* Subtle bottom gradient behind controls only */}
@@ -285,12 +317,13 @@ function AvatarDemo({ lang = 'uz', onBack }) {
         </div>
       )}
 
-      {/* BOTTOM-LEFT CORNER: Official IIB Emblem Badge (Covers D-ID logo watermark) */}
-      <div className="fixed bottom-5 left-5 sm:bottom-6 sm:left-6 z-20 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-neutral-900/90 backdrop-blur-xl border border-white/20 shadow-2xl pointer-events-none select-none">
-        <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-7 h-7 object-contain drop-shadow" />
+      {/* BOTTOM-LEFT CORNER: Official IIB Badge (Enlarged to 100% cover D-ID logo watermark) */}
+      <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-30 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-neutral-950/95 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-none select-none min-w-[240px] sm:min-w-[270px]">
+        <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-10 h-10 object-contain drop-shadow shrink-0" />
         <div className="text-left">
-          <div className="text-[11px] font-bold text-white tracking-wider leading-tight">OLMAZOR TUMANI IIB</div>
-          <div className="text-[9px] text-blue-300 font-medium leading-none">Ichki ishlar bo'limi</div>
+          <div className="text-[12px] sm:text-[13px] font-bold text-white tracking-wider leading-tight">OLMAZOR TUMANI IIB</div>
+          <div className="text-[10px] sm:text-[11px] text-blue-300 font-medium leading-tight">Ichki ishlar bo'limi</div>
+          <div className="text-[9px] text-white/50 tracking-tight mt-0.5">Rasmiy AI xizmati</div>
         </div>
       </div>
 
