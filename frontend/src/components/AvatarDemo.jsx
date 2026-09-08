@@ -223,41 +223,18 @@ function AvatarDemo({ lang = 'uz', onBack }) {
         <button
           type="button"
           onClick={() => { endCall(); onBack(); }}
-          className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10"
+          className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10 shadow-lg"
           title="Orqaga"
         >
           <CloseIcon className="h-5 w-5" />
         </button>
-
-        {/* Live Badge */}
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/15 text-white text-xs font-medium shadow-lg">
-          <span className={`w-2.5 h-2.5 rounded-full ${isSpeaking ? 'bg-blue-400 animate-ping' : inCall ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-          <span>
-            {isSpeaking
-              ? 'Jasur gapirmoqda (UzbekVoice.ai)'
-              : inCall
-              ? 'Jonli aloqada • Olmazor IIB'
-              : 'AI Tergovchi • Olmazor IIB'}
-          </span>
-        </div>
-
-        <div className="w-10" />
       </div>
 
       {/* Bottom Interactive Area */}
       <div className="relative z-20 w-full max-w-3xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
         {!inCall ? (
-          /* Initial Screen */
-          <div className="text-center space-y-4 my-auto py-8">
-            <div className="space-y-1 drop-shadow-md">
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                AI Tergovchi (Ovoz: Jasur)
-              </h2>
-              <p className="text-xs sm:text-sm text-white/85 font-medium">
-                UzbekVoice.ai • Real vaqtda muloqot
-              </p>
-            </div>
-
+          /* Initial Screen - Minimal button only */
+          <div className="text-center my-auto py-8">
             <button
               type="button"
               onClick={startCall}
