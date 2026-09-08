@@ -117,3 +117,7 @@ SIMLI_FACE_ID = os.environ.get('SIMLI_FACE_ID', '')
 # UzbekVoice.ai TTS settings (Jasur / Shoira models)
 UZBEKVOICE_API_KEY = os.environ.get('UZBEKVOICE_API_KEY', '5b9118bc-3676-4ab0-b500-026b3a6372b1:c504ec5b-d67a-4e85-a935-ed2e21e9d08e')
 UZBEKVOICE_MODEL = os.environ.get('UZBEKVOICE_MODEL', 'jasur')
+
+# D-ID API settings
+DID_API_KEY = os.environ.get('DID_API_KEY', 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d')
+DID_AGENT_ID = 'v2_agt_dvOyfwCx'
