@@ -531,11 +531,11 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
       </div>
 
       {/* 2. Interactive Search & Multi-Filters Toolbar */}
-      <div className="bg-gov-surface border border-gov-border rounded-xl p-3 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        {/* Left: Smart Search Input with autocomplete */}
-        <div className="relative flex-1 max-w-md" ref={searchContainerRef}>
+      <div className="bg-gov-surface border border-gov-border rounded-xl p-3 shadow-sm space-y-2.5">
+        {/* Full-width Search Input */}
+        <div className="relative w-full" ref={searchContainerRef}>
           <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gov-muted pointer-events-none" />
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gov-muted pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
@@ -545,13 +545,13 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
               }}
               onFocus={() => setSearchFocused(true)}
               placeholder={lang === 'ru' ? 'Поиск махалли в Олмазарском районе...' : 'Olmazor tumani bo\'yicha mahalla qidirish...'}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg bg-gov-light border border-gov-border text-gov-text placeholder-gov-muted focus:outline-none focus:ring-2 focus:ring-gov-primary/40"
+              className="w-full pl-10 pr-9 py-2.5 text-xs rounded-xl bg-gov-light border border-gov-border text-gov-text placeholder-gov-muted focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all shadow-inner"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gov-muted hover:text-gov-text p-0.5"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gov-muted hover:text-gov-text p-1 rounded-full hover:bg-gov-border/40 transition-colors"
               >
                 <CloseIcon className="h-3.5 w-3.5" />
               </button>
@@ -566,9 +566,9 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
                   key={mahalla.id}
                   type="button"
                   onClick={() => handleSelectMahalla(mahalla.id)}
-                  className="w-full px-3 py-2 text-left text-xs flex items-center justify-between hover:bg-gov-light transition-colors border-b border-gov-border/40 last:border-0"
+                  className="w-full px-3.5 py-2.5 text-left text-xs flex items-center justify-between hover:bg-gov-light transition-colors border-b border-gov-border/40 last:border-0"
                 >
-                  <div className="flex items-center gap-2 truncate">
+                  <div className="flex items-center gap-2.5 truncate">
                     <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${zone.dotClass}`} />
                     <span className="font-semibold text-gov-text truncate">
                       {lang === 'ru' ? mahalla.name_ru : mahalla.name_uz}
@@ -588,55 +588,57 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
           )}
         </div>
 
-        {/* Right: Quick Multi-Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Document Type Filter */}
-          <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
-            <button
-              type="button"
-              onClick={() => setTypeFilter('all')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
-                typeFilter === 'all' ? 'bg-gov-surface text-gov-text shadow-sm' : 'text-gov-muted hover:text-gov-text'
-              }`}
-            >
-              {lang === 'ru' ? 'Все типы' : 'Barchasi'}
-            </button>
-            {MATERIAL_TYPES.map(t => (
+        {/* Quick Multi-Filter Pills */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gov-border/50">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Document Type Filter */}
+            <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
               <button
-                key={t.value}
                 type="button"
-                onClick={() => setTypeFilter(t.value)}
-                className={`px-2.5 py-1 rounded-md font-medium transition-all ${
-                  typeFilter === t.value ? 'bg-gov-surface text-gov-primary font-bold shadow-sm' : 'text-gov-muted hover:text-gov-text'
+                onClick={() => setTypeFilter('all')}
+                className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                  typeFilter === 'all' ? 'bg-gov-surface text-gov-text shadow-sm' : 'text-gov-muted hover:text-gov-text'
                 }`}
               >
-                {lang === 'ru' ? t.ru : t.uz}
+                {lang === 'ru' ? 'Все типы' : 'Barchasi'}
               </button>
-            ))}
-          </div>
+              {MATERIAL_TYPES.map(t => (
+                <button
+                  key={t.value}
+                  type="button"
+                  onClick={() => setTypeFilter(t.value)}
+                  className={`px-3 py-1 rounded-md font-semibold transition-all ${
+                    typeFilter === t.value ? 'bg-gov-surface text-gov-primary font-bold shadow-sm' : 'text-gov-muted hover:text-gov-text'
+                  }`}
+                >
+                  {lang === 'ru' ? t.ru : t.uz}
+                </button>
+              ))}
+            </div>
 
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1.5 text-xs rounded-lg bg-gov-light border border-gov-border text-gov-text focus:outline-none font-medium cursor-pointer"
-          >
-            <option value="all">{lang === 'ru' ? 'Все статусы' : 'Barcha holatlar'}</option>
-            <option value="active">{lang === 'ru' ? 'В работе' : 'Ijroda'}</option>
-            <option value="overdue">{lang === 'ru' ? 'Просроченные' : 'Muddati o\'tgan'}</option>
-            <option value="warning">{lang === 'ru' ? 'Срок приближается' : 'Muddati yaqin'}</option>
-            <option value="closed">{lang === 'ru' ? 'Исполнено' : 'Yopilgan'}</option>
-          </select>
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-1.5 text-xs rounded-lg bg-gov-light border border-gov-border text-gov-text focus:outline-none font-medium cursor-pointer"
+            >
+              <option value="all">{lang === 'ru' ? 'Все статусы' : 'Barcha holatlar'}</option>
+              <option value="active">{lang === 'ru' ? 'В работе' : 'Ijroda'}</option>
+              <option value="overdue">{lang === 'ru' ? 'Просроченные' : 'Muddati o\'tgan'}</option>
+              <option value="warning">{lang === 'ru' ? 'Срок приближается' : 'Muddati yaqin'}</option>
+              <option value="closed">{lang === 'ru' ? 'Исполнено' : 'Yopilgan'}</option>
+            </select>
+          </div>
 
           {/* Reset Filters / Clear Selection */}
           {(zoneFilter !== 'all' || typeFilter !== 'all' || statusFilter !== 'all' || selectedId || searchQuery) && (
             <button
               type="button"
               onClick={handleResetView}
-              className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-gov-light text-gov-danger hover:bg-gov-dangerLight border border-gov-border transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gov-light text-gov-danger hover:bg-gov-dangerLight border border-gov-border transition-colors flex items-center gap-1.5 ml-auto"
             >
               <CloseIcon className="h-3 w-3" />
-              <span>{lang === 'ru' ? 'Сброс' : 'Tozalash'}</span>
+              <span>{lang === 'ru' ? 'Сбросить фильтры' : 'Filtrlarni tozalash'}</span>
             </button>
           )}
         </div>
