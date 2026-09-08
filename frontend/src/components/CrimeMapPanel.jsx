@@ -645,91 +645,105 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
       {/* 3. Main Map & Analytics Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
         {/* Map Container Column */}
-        <div className="lg:col-span-7 xl:col-span-8 w-full min-w-0 relative">
-          {/* Floating Map Controls Toolbar */}
-          <div className="absolute top-3 right-3 z-[400] flex flex-wrap items-center gap-1.5 bg-gov-surface/95 backdrop-blur-md border border-gov-border p-1.5 rounded-xl shadow-lg max-w-[calc(100%-24px)]">
-            {/* Basemap Switcher */}
-            <div className="flex items-center gap-1 border-r border-gov-border pr-1.5">
-              <button
-                type="button"
-                onClick={() => setMapType('carto')}
-                title={lang === 'ru' ? 'Минималистичная карта' : 'Oddiy xarita'}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${
-                  mapType === 'carto' ? 'bg-gov-primary text-white shadow-sm' : 'text-gov-muted hover:text-gov-text hover:bg-gov-light'
-                }`}
-              >
-                {lang === 'ru' ? 'Карта' : 'Oddiy'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapType('streets')}
-                title={lang === 'ru' ? 'Улицы и дома' : 'Ko\'chalar va binolar'}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${
-                  mapType === 'streets' ? 'bg-gov-primary text-white shadow-sm' : 'text-gov-muted hover:text-gov-text hover:bg-gov-light'
-                }`}
-              >
-                {lang === 'ru' ? 'Улицы' : 'Ko\'chalar'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMapType('satellite')}
-                title={lang === 'ru' ? 'Спутниковые снимки' : 'Sun\'iy yo\'ldosh tasviri'}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${
-                  mapType === 'satellite' ? 'bg-gov-primary text-white shadow-sm' : 'text-gov-muted hover:text-gov-text hover:bg-gov-light'
-                }`}
-              >
-                {lang === 'ru' ? 'Спутник' : 'Sputnik'}
-              </button>
+        <div className="lg:col-span-7 xl:col-span-8 w-full min-w-0">
+          {/* Integrated Map Controls Header Bar (non-floating, responsive, never overlaps modals) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2 mb-2.5 rounded-xl bg-gov-surface border border-gov-border shadow-sm">
+            {/* Left: View Mode & Basemap Switchers */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* View Mode: Zones vs Bubbles */}
+              <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('zones')}
+                  title={lang === 'ru' ? 'Зонирование (полигоны)' : 'Hududlar (poligonlar)'}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    viewMode === 'zones'
+                      ? 'bg-gov-primary text-white shadow-sm'
+                      : 'text-gov-muted hover:text-gov-text'
+                  }`}
+                >
+                  {lang === 'ru' ? 'Зоны' : 'Zonalar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('bubbles')}
+                  title={lang === 'ru' ? 'Очаги преступлений (круги)' : 'O\'choqlar (doiralar)'}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    viewMode === 'bubbles'
+                      ? 'bg-gov-primary text-white shadow-sm'
+                      : 'text-gov-muted hover:text-gov-text'
+                  }`}
+                >
+                  {lang === 'ru' ? 'Очаги' : 'O\'choqlar'}
+                </button>
+              </div>
+
+              {/* Basemap Switcher */}
+              <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
+                <button
+                  type="button"
+                  onClick={() => setMapType('carto')}
+                  title={lang === 'ru' ? 'Минималистичная карта' : 'Oddiy xarita'}
+                  className={`px-2 py-1 rounded-md font-medium transition-all ${
+                    mapType === 'carto'
+                      ? 'bg-gov-surface text-gov-text font-bold shadow-sm'
+                      : 'text-gov-muted hover:text-gov-text'
+                  }`}
+                >
+                  {lang === 'ru' ? 'Карта' : 'Oddiy'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapType('streets')}
+                  title={lang === 'ru' ? 'Улицы и дома' : 'Ko\'chalar va binolar'}
+                  className={`px-2 py-1 rounded-md font-medium transition-all ${
+                    mapType === 'streets'
+                      ? 'bg-gov-surface text-gov-text font-bold shadow-sm'
+                      : 'text-gov-muted hover:text-gov-text'
+                  }`}
+                >
+                  {lang === 'ru' ? 'Улицы' : 'Ko\'chalar'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapType('satellite')}
+                  title={lang === 'ru' ? 'Спутниковые снимки' : 'Sun\'iy yo\'ldosh tasviri'}
+                  className={`px-2 py-1 rounded-md font-medium transition-all ${
+                    mapType === 'satellite'
+                      ? 'bg-gov-surface text-gov-text font-bold shadow-sm'
+                      : 'text-gov-muted hover:text-gov-text'
+                  }`}
+                >
+                  {lang === 'ru' ? 'Спутник' : 'Sputnik'}
+                </button>
+              </div>
             </div>
 
-            {/* View Mode Toggle: Zones vs Hotspot Bubbles */}
-            <div className="flex items-center gap-1 border-r border-gov-border pr-1.5">
+            {/* Right: Labels Toggle & Reset */}
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setViewMode('zones')}
-                title={lang === 'ru' ? 'Зонирование (полигоны)' : 'Hududlar (poligonlar)'}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${
-                  viewMode === 'zones' ? 'bg-gov-primary text-white shadow-sm' : 'text-gov-muted hover:text-gov-text hover:bg-gov-light'
-                }`}
+                onClick={() => setLabelMode(prev => (prev === 'badges' ? 'simple' : (prev === 'simple' ? 'none' : 'badges')))}
+                title={lang === 'ru' ? 'Переключить подписи махаллей' : 'Yozuvlarni almashtirish'}
+                className="px-2.5 py-1 text-xs font-semibold text-gov-text bg-gov-light hover:bg-gov-border/60 border border-gov-border rounded-lg transition-colors flex items-center gap-1.5"
               >
-                {lang === 'ru' ? 'Зоны' : 'Zonalar'}
+                <EyeIcon className="h-3.5 w-3.5 text-gov-primary" />
+                <span>
+                  {labelMode === 'badges'
+                    ? (lang === 'ru' ? 'Бейджи' : 'Nishon')
+                    : (labelMode === 'simple' ? (lang === 'ru' ? 'Имена' : 'Nomlar') : (lang === 'ru' ? 'Скрыто' : 'Yopiq'))}
+                </span>
               </button>
+
               <button
                 type="button"
-                onClick={() => setViewMode('bubbles')}
-                title={lang === 'ru' ? 'Очаги преступлений (круги)' : 'O\'choqlar (doiralar)'}
-                className={`px-2 py-1 text-[11px] font-semibold rounded-lg transition-all ${
-                  viewMode === 'bubbles' ? 'bg-gov-primary text-white shadow-sm' : 'text-gov-muted hover:text-gov-text hover:bg-gov-light'
-                }`}
+                onClick={handleResetView}
+                title={lang === 'ru' ? 'Вернуть весь район' : 'Butun tumanni ko\'rsatish'}
+                className="p-1.5 text-gov-muted hover:text-gov-text bg-gov-light hover:bg-gov-border/60 border border-gov-border rounded-lg transition-colors"
               >
-                {lang === 'ru' ? 'Очаги' : 'O\'choqlar'}
+                <MapIcon className="h-3.5 w-3.5" />
               </button>
             </div>
-
-            {/* Labels Toggle */}
-            <button
-              type="button"
-              onClick={() => setLabelMode(prev => (prev === 'badges' ? 'simple' : (prev === 'simple' ? 'none' : 'badges')))}
-              title={lang === 'ru' ? 'Переключить подписи махаллей' : 'Yozuvlarni almashtirish'}
-              className="px-2 py-1 text-[11px] font-medium text-gov-text hover:bg-gov-light rounded-lg transition-colors flex items-center gap-1"
-            >
-              <EyeIcon className="h-3.5 w-3.5 text-gov-primary" />
-              <span>
-                {labelMode === 'badges'
-                  ? (lang === 'ru' ? 'Бейджи' : 'Nishon')
-                  : (labelMode === 'simple' ? (lang === 'ru' ? 'Имена' : 'Nomlar') : (lang === 'ru' ? 'Скрыто' : 'Yopiq'))}
-              </span>
-            </button>
-
-            {/* Reset View Button */}
-            <button
-              type="button"
-              onClick={handleResetView}
-              title={lang === 'ru' ? 'Вернуть весь район' : 'Butun tumanni ko\'rsatish'}
-              className="p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-colors"
-            >
-              <MapIcon className="h-3.5 w-3.5" />
-            </button>
           </div>
 
           {/* Interactive Leaflet Map */}

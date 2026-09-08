@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-function Modal({ onClose, children, maxWidth = 'max-w-xl', zIndex = 'z-[110]' }) {
+function Modal({ onClose, children, maxWidth = 'max-w-xl', zIndex = 'z-[1000]' }) {
   const panelRef = useRef(null);
 
   useEffect(() => {
