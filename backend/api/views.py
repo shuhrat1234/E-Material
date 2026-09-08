@@ -24,7 +24,8 @@ from .serializers import (
     CaseRequestSerializer, EkspertizaSerializer, TaqiqSerializer
 )
 from .deepseek import deepseek_json, deepseek_chat, DeepSeekError
-from .silero_tts import synthesize_pcm16, TtsError
+from .silero_tts import synthesize_pcm16 as silero_synthesize, TtsError
+from .uzbekvoice_tts import synthesize_pcm16 as uzbekvoice_synthesize, synthesize_uzbekvoice_audio_url, UzbekVoiceTtsError
 from .simli_render import render_avatar_video, SimliError
 
 def parse_difficulty(value):
@@ -867,22 +868,42 @@ class AiAssistantViewSet(viewsets.ViewSet):
         except DeepSeekError:
             answer_text = "Kechirasiz, AI xizmati vaqtincha ishlamayapti (internet yo'q yoki xizmat band)."
 
+        audio_url = None
+        pcm16_audio = None
         try:
-            pcm16_audio = synthesize_pcm16(answer_text)
-        except TtsError as e:
-            return Response({'error': f'TTS xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+            pcm16_audio = uzbekvoice_synthesize(answer_text, model='jasur')
+            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
+        except Exception as e:
+            try:
+                pcm16_audio = silero_synthesize(answer_text)
+            except TtsError as err:
+                return Response({'error': f'TTS xatosi: {err}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
 
-        try:
-            video_rel_path = render_avatar_video(pcm16_audio)
-        except SimliError as e:
-            return Response({'error': str(e), 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
-
-        video_url = request.build_absolute_uri(settings.MEDIA_URL + video_rel_path)
+        video_url = None
+        if pcm16_audio:
+            try:
+                video_rel_path = render_avatar_video(pcm16_audio)
+                video_url = request.build_absolute_uri(settings.MEDIA_URL + video_rel_path)
+            except SimliError:
+                pass
 
         return Response({
             'answer_text': answer_text,
+            'audio_url': audio_url,
             'video_url': video_url,
         })
+
+    @action(detail=False, methods=['post'], url_path='tts')
+    def tts(self, request):
+        text = (request.data.get('text') or '').strip()
+        model = request.data.get('model') or 'jasur'
+        if not text:
+            return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            audio_url = synthesize_uzbekvoice_audio_url(text, model=model)
+            return Response({'audio_url': audio_url, 'model': model})
+        except UzbekVoiceTtsError as e:
+            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
 @api_view(['POST'])
