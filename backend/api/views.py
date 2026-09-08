@@ -914,7 +914,15 @@ class AiAssistantViewSet(viewsets.ViewSet):
         headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}
         source_url = 'https://create-images-results.d-id.com/google-oauth2|110311975034953084852/upl_pO6Jq5zFeIupuh99Zcgdw/image.png'
         try:
-            resp = requests.post('https://api.d-id.com/talks/streams', headers=headers, json={'source_url': source_url}, timeout=15)
+            resp = requests.post(
+                'https://api.d-id.com/talks/streams',
+                headers=headers,
+                json={
+                    'source_url': source_url,
+                    'config': {'stitch': True}
+                },
+                timeout=15
+            )
             return Response(resp.json(), status=resp.status_code)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)

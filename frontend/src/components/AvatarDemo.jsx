@@ -221,7 +221,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
   return (
     <div className="fixed inset-0 bg-neutral-950 flex flex-col justify-between overflow-hidden select-none font-sans">
       {/* Background Avatar Video: WebRTC stream when inCall, Idle loop when idle */}
-      <div className="absolute inset-0 z-0 bg-neutral-900">
+      <div className="absolute inset-0 z-0 bg-neutral-900 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
           src={!inCall ? "/officer-idle.mp4" : undefined}
@@ -230,7 +230,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           loop={!inCall}
           muted={!inCall}
           playsInline
-          className={`w-full h-full object-cover object-top transition-transform duration-700 ${
+          className={`w-full h-full object-cover object-center transition-transform duration-700 ${
             isSpeaking ? 'scale-[1.02] brightness-105' : 'scale-100 brightness-100'
           }`}
         />
