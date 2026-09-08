@@ -200,8 +200,15 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
   return (
     <div className="fixed inset-0 bg-neutral-950 flex flex-col justify-between overflow-hidden select-none font-sans">
-      {/* Background Avatar Video: Perfectly framed, seamless loop, crystal-clear face */}
-      <div className="absolute inset-0 z-0 bg-neutral-900 flex items-center justify-center overflow-hidden">
+      {/* Background Avatar Video: Natural portrait distance, sharp and uncropped */}
+      <div className="absolute inset-0 z-0 bg-[#b8b3af] flex items-center justify-center overflow-hidden">
+        {/* Seamless blurred background extension */}
+        <div
+          className="absolute inset-0 bg-cover bg-center filter blur-2xl scale-110 opacity-70 pointer-events-none"
+          style={{ backgroundImage: `url('/officer-poster.png')` }}
+        />
+
+        {/* Crisp, natural distance avatar video */}
         <video
           ref={videoRef}
           key={videoSrc}
@@ -211,11 +218,11 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           loop
           muted
           playsInline
-          className="w-full h-full object-cover object-[50%_18%] sm:object-[50%_22%] contrast-[1.05] brightness-[1.02] saturate-[1.04] transition-all duration-300"
+          className="relative z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-all duration-300 drop-shadow-2xl"
         />
 
-        {/* Only bottom gradient behind controls — face and body remain 100% clear and bright */}
-        <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+        {/* Subtle bottom gradient behind controls only */}
+        <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none z-10" />
       </div>
 
       {/* Top Header Bar */}
