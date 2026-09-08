@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.conf import settings
 import datetime
 import mimetypes
+import base64
+import requests
 from django.db import transaction, IntegrityError
 from django.db.models import Q, Count
 from django.contrib.auth import authenticate
@@ -903,6 +905,146 @@ class AiAssistantViewSet(viewsets.ViewSet):
             audio_url = synthesize_uzbekvoice_audio_url(text, model=model)
             return Response({'audio_url': audio_url, 'model': model})
         except UzbekVoiceTtsError as e:
+            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @action(detail=False, methods=['post'], url_path='stream-start')
+    def stream_start(self, request):
+        key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
+        b64 = base64.b64encode(key.encode('utf-8')).decode('utf-8')
+        headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}
+        source_url = 'https://create-images-results.d-id.com/google-oauth2|110311975034953084852/upl_pO6Jq5zFeIupuh99Zcgdw/image.png'
+        try:
+            resp = requests.post('https://api.d-id.com/talks/streams', headers=headers, json={'source_url': source_url}, timeout=15)
+            return Response(resp.json(), status=resp.status_code)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @action(detail=False, methods=['post'], url_path='stream-sdp')
+    def stream_sdp(self, request):
+        stream_id = request.data.get('stream_id')
+        session_id = request.data.get('session_id')
+        answer = request.data.get('answer')
+        if not stream_id or not answer:
+            return Response({'error': 'stream_id and answer required'}, status=status.HTTP_400_BAD_REQUEST)
+        key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
+        b64 = base64.b64encode(key.encode('utf-8')).decode('utf-8')
+        headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}
+        try:
+            resp = requests.post(
+                f'https://api.d-id.com/talks/streams/{stream_id}/sdp',
+                headers=headers,
+                json={'answer': answer, 'session_id': session_id},
+                timeout=15
+            )
+            return Response(resp.json() if resp.text else {}, status=resp.status_code)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @action(detail=False, methods=['post'], url_path='stream-ice')
+    def stream_ice(self, request):
+        stream_id = request.data.get('stream_id')
+        session_id = request.data.get('session_id')
+        candidate = request.data.get('candidate')
+        sdp_mid = request.data.get('sdpMid')
+        sdp_mline_index = request.data.get('sdpMLineIndex')
+        if not stream_id or not candidate:
+            return Response({'error': 'stream_id and candidate required'}, status=status.HTTP_400_BAD_REQUEST)
+        key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
+        b64 = base64.b64encode(key.encode('utf-8')).decode('utf-8')
+        headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}
+        try:
+            resp = requests.post(
+                f'https://api.d-id.com/talks/streams/{stream_id}/ice',
+                headers=headers,
+                json={
+                    'candidate': candidate,
+                    'sdpMid': sdp_mid,
+                    'sdpMLineIndex': sdp_mline_index,
+                    'session_id': session_id,
+                },
+                timeout=10
+            )
+            return Response(resp.json() if resp.text else {}, status=resp.status_code)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @action(detail=False, methods=['post'], url_path='stream-talk')
+    def stream_talk(self, request):
+        stream_id = request.data.get('stream_id')
+        session_id = request.data.get('session_id')
+        query = (request.data.get('query') or '').strip()
+        custom_text = (request.data.get('text') or '').strip()
+
+        if not stream_id:
+            return Response({'error': 'stream_id required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        answer_text = custom_text
+        if not answer_text and query:
+            system_prompt = (
+                "Sen Olmazor tumani IIB oldida turgan xushmuomala AI-yordamchisan. "
+                "Fuqarolarga oddiy tilda javob ber: 2-3 ta qisqa gap, chunki javobing ovozli aytiladi. "
+                "Faqat o'zbek tilida, lotin alifbosida, markdown yoki ro'yxatlarsiz javob ber."
+            )
+            try:
+                answer_text = deepseek_chat([
+                    {'role': 'system', 'content': system_prompt},
+                    {'role': 'user', 'content': query},
+                ], temperature=0.4)
+            except DeepSeekError:
+                answer_text = "Kechirasiz, AI xizmati vaqtincha ishlamayapti (internet yo'q yoki xizmat band)."
+
+        if not answer_text:
+            return Response({'error': 'No text or query provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Synthesize audio via UzbekVoice.ai (Jasur voice!)
+        try:
+            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
+        except Exception as e:
+            return Response({'error': f'UzbekVoice xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+
+        # 2. Feed UzbekVoice Jasur audio directly into D-ID stream for real-time lip sync
+        key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
+        b64 = base64.b64encode(key.encode('utf-8')).decode('utf-8')
+        headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}
+        try:
+            did_resp = requests.post(
+                f'https://api.d-id.com/talks/streams/{stream_id}',
+                headers=headers,
+                json={
+                    'script': {
+                        'type': 'audio',
+                        'audio_url': audio_url,
+                    },
+                    'session_id': session_id,
+                },
+                timeout=15
+            )
+            return Response({
+                'answer_text': answer_text,
+                'audio_url': audio_url,
+                'did_response': did_resp.json() if did_resp.text else {},
+            })
+        except Exception as e:
+            return Response({'error': f'D-ID stream xatosi: {e}', 'answer_text': answer_text, 'audio_url': audio_url}, status=status.HTTP_502_BAD_GATEWAY)
+
+    @action(detail=False, methods=['post'], url_path='stream-close')
+    def stream_close(self, request):
+        stream_id = request.data.get('stream_id')
+        session_id = request.data.get('session_id')
+        if not stream_id:
+            return Response({'error': 'stream_id required'}, status=status.HTTP_400_BAD_REQUEST)
+        key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
+        b64 = base64.b64encode(key.encode('utf-8')).decode('utf-8')
+        headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}
+        try:
+            requests.delete(
+                f'https://api.d-id.com/talks/streams/{stream_id}',
+                headers=headers,
+                json={'session_id': session_id},
+                timeout=10
+            )
+            return Response({'status': 'closed'})
+        except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
 
