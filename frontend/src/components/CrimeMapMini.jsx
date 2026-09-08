@@ -72,36 +72,39 @@ function CrimeMapMini({ materials, lang, onOpen }) {
       onClick={onOpen}
       className="w-full text-left bg-gov-surface rounded-2xl shadow-card hover:shadow-card-hover border border-gov-border/80 transition-all overflow-hidden group"
     >
-      <div className="flex items-center justify-between px-5 pt-4 pb-2.5">
-        <div>
-          <h5 className="font-bold text-sm text-gov-text flex items-center gap-2">
-            <MapIcon className="h-4 w-4 text-gov-primary" />
-            {lang === 'ru' ? 'Карта преступлений района' : 'Hudud jinoyatlar xaritasi'}
+      <div className="p-3.5 sm:px-5 sm:pt-4 sm:pb-3 space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <h5 className="font-bold text-xs sm:text-sm text-gov-text flex items-center gap-1.5 whitespace-nowrap min-w-0">
+            <MapIcon className="h-4 w-4 text-gov-primary shrink-0" />
+            <span className="whitespace-nowrap">{lang === 'ru' ? 'Карта преступлений района' : 'Hudud jinoyatlar xaritasi'}</span>
           </h5>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              {zoneCounts.red} {lang === 'ru' ? 'красных' : 'qizil'}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              {zoneCounts.yellow} {lang === 'ru' ? 'жёлтых' : 'sariq'}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              {zoneCounts.green} {lang === 'ru' ? 'зелёных' : 'yashil'}
-            </span>
-          </div>
+
+          <span className="text-[11px] sm:text-xs font-bold text-gov-primary bg-gov-primaryLight px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg group-hover:bg-gov-primary group-hover:text-white transition-all shrink-0 whitespace-nowrap">
+            <span className="hidden sm:inline">{lang === 'ru' ? 'Открыть карту →' : 'Xaritani ochish →'}</span>
+            <span className="sm:hidden">{lang === 'ru' ? 'Открыть →' : 'Ochish →'}</span>
+          </span>
         </div>
 
-        <span className="text-xs font-bold text-gov-primary bg-gov-primaryLight px-2.5 py-1 rounded-lg group-hover:bg-gov-primary group-hover:text-white transition-all shrink-0">
-          {lang === 'ru' ? 'Открыть карту →' : 'Xaritani ochish →'}
-        </span>
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+            {zoneCounts.red} {lang === 'ru' ? 'красных' : 'qizil'}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+            {zoneCounts.yellow} {lang === 'ru' ? 'жёлтых' : 'sariq'}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            {zoneCounts.green} {lang === 'ru' ? 'зелёных' : 'yashil'}
+          </span>
+        </div>
       </div>
 
-      <div className="px-3 pb-3">
+      <div className="px-2.5 pb-2.5 sm:px-3 sm:pb-3">
         <MahallaMap
           height="220px"
+          mapType="streets"
           overlayLayers={overlayLayers}
           scrollWheelZoom={false}
           dragging={false}

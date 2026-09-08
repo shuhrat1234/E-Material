@@ -55,43 +55,45 @@ function StatCard({ icon, tone = 'primary', value, label, delta, caption, trend,
   return (
     <Tag
       onClick={onClick}
-      className={`group relative bg-gov-surface rounded-2xl shadow-card hover:shadow-card-hover transition-shadow p-5 pt-[1.15rem] text-left overflow-hidden w-full ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''} ${className}`}
+      className={`group relative bg-gov-surface rounded-2xl shadow-card hover:shadow-card-hover transition-shadow p-3 sm:p-5 pt-3 sm:pt-[1.15rem] text-left overflow-hidden w-full ${onClick ? 'cursor-pointer active:scale-[0.98]' : ''} ${className}`}
     >
       <span
         className="absolute top-0 left-0 right-0 h-[3px] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500"
         style={{ backgroundColor: toneVarValue }}
       />
-      <div className="flex items-center justify-between mb-3 gap-2">
-        <p className="text-sm font-medium text-gov-muted min-w-0">{label}</p>
+      <div className="flex items-center justify-between mb-1.5 sm:mb-3 gap-1.5 sm:gap-2">
+        <p className="text-[11px] sm:text-sm font-medium text-gov-muted whitespace-nowrap truncate min-w-0 leading-tight sm:leading-snug" title={label}>
+          {label}
+        </p>
         {icon && (
-          <span className="relative w-9 h-9 shrink-0" style={{ animation: 'badgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
+          <span className="relative w-6 h-6 sm:w-9 sm:h-9 shrink-0 ml-1" style={{ animation: 'badgePop 0.45s cubic-bezier(0.34,1.56,0.64,1)' }}>
             {shouldPulse && (
               <span className={`absolute inset-0 rounded-full animate-ping opacity-40 ${PULSE_TONES[tone] || PULSE_TONES.primary}`} />
             )}
             <span
-              className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 ${ICON_TONES[tone] || ICON_TONES.primary}`}
+              className={`relative w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 [&>svg]:h-3 [&>svg]:w-3 sm:[&>svg]:h-4 sm:[&>svg]:w-4 ${ICON_TONES[tone] || ICON_TONES.primary}`}
             >
               {icon}
             </span>
           </span>
         )}
       </div>
-      <div className="flex items-end justify-between gap-3 flex-wrap">
+      <div className="flex items-end justify-between gap-1.5 sm:gap-3 flex-wrap">
         <div className="min-w-0">
-          <p className={`text-[26px] leading-none font-bold tracking-tight truncate ${valueColorClass}`}>{value}</p>
+          <p className={`text-xl sm:text-[26px] leading-none font-bold tracking-tight truncate ${valueColorClass}`}>{value}</p>
           {(delta !== undefined && delta !== null) || caption ? (
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-1 sm:gap-2 mt-1.5 sm:mt-3">
               {delta !== undefined && delta !== null && (
-                <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-gov-muted whitespace-nowrap">
+                <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-semibold text-gov-muted whitespace-nowrap">
                   {up ? '▲' : '▼'} {Math.abs(delta)}%
                 </span>
               )}
-              {caption && <span className="text-xs text-gov-muted whitespace-nowrap">{caption}</span>}
+              {caption && <span className="text-[10px] sm:text-xs text-gov-muted whitespace-nowrap">{caption}</span>}
             </div>
           ) : null}
         </div>
         {trend && trend.length > 1 && (
-          <span className="shrink-0">
+          <span className="shrink-0 scale-90 sm:scale-100 origin-right">
             <Sparkline data={trend} color={toneVarValue} />
           </span>
         )}

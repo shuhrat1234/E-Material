@@ -966,7 +966,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <StatCard icon={<UsersIcon />} tone="cyan" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} onClick={() => setActivePanel('ratings')} />
               <StatCard icon={<ApprovalIcon />} tone="warning" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} onClick={() => setActivePanel('approvals')} />
-              <StatCard icon={<TrendUpIcon />} tone="info" value={`${total > 0 ? Math.round((closedCount / total) * 100) : 0}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} onClick={() => goToMaterials('closed')} />
+              <StatCard icon={<TrendUpIcon />} tone="info" value={`${total > 0 ? Math.round((closedCount / total) * 100) : 0}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} className="col-span-2 sm:col-span-1" onClick={() => goToMaterials('closed')} />
             </div>
 
             {/* Hero chart + type breakdown, one row */}
