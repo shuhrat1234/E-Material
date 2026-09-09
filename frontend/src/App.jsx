@@ -290,6 +290,7 @@ function App() {
           caseId={selectedCaseId}
           lang={lang}
           user={user}
+          onSelectCase={(newId) => setSelectedCaseId(newId)}
           onClose={() => setSelectedCaseId(null)}
         />
       )}

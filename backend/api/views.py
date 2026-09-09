@@ -242,6 +242,29 @@ class MaterialViewSet(viewsets.ModelViewSet):
         
         return Response(MaterialSerializer(new_material).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=False, methods=['get'], url_path='citizen-materials')
+    def citizen_materials(self, request):
+        phone = (request.query_params.get('phone') or '').strip()
+        name = (request.query_params.get('name') or '').strip()
+        exclude_id = (request.query_params.get('exclude_id') or '').strip()
+
+        q = Q()
+        digits = ''.join(c for c in phone if c.isdigit())
+        if len(digits) >= 7:
+            suffix = digits[-9:] if len(digits) >= 9 else digits
+            q |= Q(citizen_phone__icontains=suffix)
+        if len(name) >= 3:
+            q |= Q(citizen_name__icontains=name)
+
+        if not q:
+            return Response([])
+
+        qs = Material.objects.filter(q)
+        if exclude_id:
+            qs = qs.exclude(id=exclude_id)
+
+        return Response(MaterialSerializer(qs.order_by('-registered_at'), many=True).data)
+
     @action(detail=True, methods=['post'])
     def reassign(self, request, pk=None):
         material = self.get_object()

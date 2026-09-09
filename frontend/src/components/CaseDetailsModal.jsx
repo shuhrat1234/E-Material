@@ -8,9 +8,10 @@ import Select from './ui/Select';
 import { notify } from '../toastService';
 import { confirm } from '../confirmService';
 import { getMaterialTypeLabel, getSourceLabel } from '../materialTaxonomy';
+import { findCitizenMaterials } from '../citizenUtils';
 
-function CaseDetailsModal({ caseId, lang, user, onClose }) {
-  const [activeTab, setActiveTab] = useState('info'); // info, timeline, documents
+function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
+  const [activeTab, setActiveTab] = useState('info'); // info, timeline, documents, citizenCases
   const [caseItem, setCaseItem] = useState(null);
   const [officer, setOfficer] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +22,8 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [qrDocId, setQrDocId] = useState(null);
+  const [citizenMaterials, setCitizenMaterials] = useState([]);
+  const [loadingCitizenMaterials, setLoadingCitizenMaterials] = useState(false);
 
   const fetchCaseDetails = () => {
     if (!caseId) return;
@@ -51,6 +54,28 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
       .then(res => setDocuments(res.data))
       .catch(err => console.error('Failed to load documents', err));
   };
+
+  useEffect(() => {
+    if (!caseItem) {
+      setCitizenMaterials([]);
+      return;
+    }
+    setLoadingCitizenMaterials(true);
+    axios.get(`${API_BASE}/materials/`)
+      .then(res => {
+        const matches = findCitizenMaterials(res.data, {
+          name: caseItem.citizen_name,
+          phone: caseItem.citizen_phone,
+          excludeId: caseItem.id,
+        });
+        setCitizenMaterials(matches);
+        setLoadingCitizenMaterials(false);
+      })
+      .catch(err => {
+        console.error('Failed to load citizen materials', err);
+        setLoadingCitizenMaterials(false);
+      });
+  }, [caseItem?.id, caseItem?.citizen_name, caseItem?.citizen_phone]);
 
   useEffect(() => {
     setLoading(true);
@@ -202,6 +227,21 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-gov-primary">{caseItem.id}</span>
+              {citizenMaterials.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('citizenCases')}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                  title={lang === 'ru' ? 'Посмотреть все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rish'}
+                >
+                  <span>🔁</span>
+                  <span>
+                    {lang === 'ru'
+                      ? `Повторный заявитель (всего: ${citizenMaterials.length + 1})`
+                      : `Takroriy murojaat (jami: ${citizenMaterials.length + 1} ta)`}
+                  </span>
+                </button>
+              )}
             </div>
             <p className="text-xs text-gov-text font-semibold">{caseItem.citizen_name}</p>
             <p className="text-[10px] text-gov-muted font-medium">{caseItem.citizen_phone}</p>
@@ -237,6 +277,20 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
             {documents.length > 0 && (
               <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-gov-primaryLight text-gov-primary text-[9px] font-bold inline-flex items-center justify-center">
                 {documents.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('citizenCases')}
+            className={`pb-2.5 px-4 -mb-[1px] border-b-2 transition-all flex items-center gap-1.5 ${
+              activeTab === 'citizenCases' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
+            }`}
+          >
+            <span>🔁</span>
+            <span>{lang === 'ru' ? 'Обращения гражданина' : 'Fuqaro murojaatlari'}</span>
+            {citizenMaterials.length > 0 && (
+              <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-amber-500/20 text-amber-800 text-[9px] font-bold inline-flex items-center justify-center">
+                {citizenMaterials.length + 1}
               </span>
             )}
           </button>
@@ -296,6 +350,57 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                   <p className="text-gov-muted leading-relaxed bg-gov-light/45 p-3 border border-gov-border rounded whitespace-pre-line">
                     {caseItem.citizen_notification_text}
                   </p>
+                </div>
+              )}
+
+              {/* Repeat citizen alert in Info tab */}
+              {citizenMaterials.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-gov-border">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                      <span>🔁</span>
+                      <span>
+                        {lang === 'ru'
+                          ? `Другие обращения этого гражданина (${citizenMaterials.length})`
+                          : `Ushbu fuqaroning boshqa murojaatlari (${citizenMaterials.length} ta)`}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('citizenCases')}
+                      className="text-[11px] font-bold text-gov-primary hover:underline flex items-center gap-1"
+                    >
+                      <span>{lang === 'ru' ? 'Все материалы' : 'Barchasi'}</span>
+                      <span>→</span>
+                    </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {citizenMaterials.slice(0, 3).map(cm => (
+                      <div
+                        key={cm.id}
+                        onClick={() => {
+                          if (onSelectCase) onSelectCase(cm.id);
+                        }}
+                        className="p-2.5 bg-gov-light/60 border border-gov-border hover:border-gov-primary/50 rounded-lg cursor-pointer transition-all flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gov-primary text-xs">{cm.id}</span>
+                            <span className="text-[10px] text-gov-muted font-mono">{formatDate(cm.registered_at)}</span>
+                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold ${getStatusBadge(cm.status)}`}>
+                              {getStatusText(cm.status)}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gov-text font-medium truncate mt-0.5" title={lang === 'ru' ? cm.title_ru : cm.title_uz}>
+                            {lang === 'ru' ? cm.title_ru : cm.title_uz}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-bold text-gov-primary px-2 py-1 bg-gov-surface border border-gov-border rounded shrink-0">
+                          {lang === 'ru' ? 'Открыть' : 'Ochish'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -374,7 +479,7 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                 </button>
               </form>
             </div>
-          ) : (
+          ) : activeTab === 'documents' ? (
             /* Documents Tab */
             <div className="space-y-4 text-xs">
               <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gov-border rounded-xl text-gov-muted hover:text-gov-primary hover:border-gov-primary/40 hover:bg-gov-primaryLight/30 transition-colors cursor-pointer font-semibold">
@@ -441,6 +546,113 @@ function CaseDetailsModal({ caseId, lang, user, onClose }) {
                   ))}
                 </div>
               )}
+            </div>
+          ) : (
+            /* Citizen Cases Tab */
+            <div className="space-y-4 text-xs">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-gov-text text-sm flex items-center gap-1.5">
+                    <span>🔁</span>
+                    <span>{caseItem.citizen_name}</span>
+                  </h4>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-800 border border-amber-500/30">
+                    {lang === 'ru'
+                      ? `Всего обращений: ${citizenMaterials.length + 1}`
+                      : `Jami murojaatlar: ${citizenMaterials.length + 1} ta`}
+                  </span>
+                </div>
+                <p className="text-gov-muted text-[11px]">
+                  {lang === 'ru'
+                    ? `Номер телефона: ${caseItem.citizen_phone || 'не указан'}`
+                    : `Telefon raqami: ${caseItem.citizen_phone || 'ko\'rsatilmagan'}`}
+                </p>
+              </div>
+
+              {/* Current material */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gov-muted">
+                  {lang === 'ru' ? 'Текущий открытый материал' : 'Hozirgi ochilgan material'}
+                </p>
+                <div className="p-3 bg-gov-primaryLight/30 border border-gov-primary/40 rounded-xl space-y-1.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-gov-primary text-xs">{caseItem.id}</span>
+                      <span className="text-[10px] text-gov-muted font-mono">{formatDate(caseItem.registered_at)}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none ${getStatusBadge(caseItem.status)}`}>
+                      {getStatusText(caseItem.status)}
+                    </span>
+                  </div>
+                  <p className="text-gov-text font-medium text-[11px]">
+                    {lang === 'ru' ? caseItem.title_ru : caseItem.title_uz}
+                  </p>
+                  <span className="inline-block text-[9px] font-bold text-gov-primary bg-gov-surface border border-gov-primary/30 px-2 py-0.5 rounded">
+                    {lang === 'ru' ? 'Текущий просмотр' : 'Joriy ko\'rilmoqda'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Other materials */}
+              <div className="space-y-2 pt-2 border-t border-gov-border">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-gov-muted">
+                  {lang === 'ru'
+                    ? `Другие обращения этого гражданина (${citizenMaterials.length})`
+                    : `Ushbu fuqaroning boshqa murojaatlari (${citizenMaterials.length} ta)`}
+                </p>
+
+                {citizenMaterials.length === 0 ? (
+                  <div className="text-center py-6 text-gov-muted space-y-1 bg-gov-light/30 border border-gov-border rounded-xl">
+                    <p className="font-semibold text-xs">
+                      {lang === 'ru'
+                        ? 'Других обращений от этого гражданина не найдено'
+                        : 'Ushbu fuqarodan boshqa murojaatlar topilmadi'}
+                    </p>
+                    <p className="text-[11px]">
+                      {lang === 'ru'
+                        ? 'Все зарегистрированные в системе материалы этого заявителя отображаются здесь.'
+                        : 'Ushbu fuqaroning tizimdagi barcha materiallari shu yerda ko\'rsatiladi.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {citizenMaterials.map(cm => (
+                      <div
+                        key={cm.id}
+                        className="p-3 bg-gov-surface border border-gov-border rounded-xl space-y-2 hover:border-gov-primary/50 transition-all text-left shadow-sm"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gov-primary text-xs">{cm.id}</span>
+                            <span className="text-[10px] text-gov-muted font-mono">{formatDate(cm.registered_at)}</span>
+                          </div>
+                          <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none ${getStatusBadge(cm.status)}`}>
+                            {getStatusText(cm.status)}
+                          </span>
+                        </div>
+                        <p className="text-gov-text font-medium text-[11px] leading-relaxed" title={lang === 'ru' ? cm.title_ru : cm.title_uz}>
+                          {lang === 'ru' ? cm.title_ru : cm.title_uz}
+                        </p>
+                        <div className="flex items-center justify-between pt-2 border-t border-gov-border/60 text-[10px] text-gov-muted">
+                          <span>
+                            {lang === 'ru' ? 'Срок: ' : 'Muddat: '}
+                            <strong className="font-mono text-gov-text">{formatDate(cm.deadline)}</strong>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onSelectCase) onSelectCase(cm.id);
+                            }}
+                            className="px-3 py-1 bg-gov-primary text-white hover:bg-blue-700 rounded text-[10px] font-semibold transition-colors shadow-sm"
+                          >
+                            {lang === 'ru' ? 'Открыть дело →' : 'Materialni ochish →'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

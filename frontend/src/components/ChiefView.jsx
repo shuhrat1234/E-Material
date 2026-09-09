@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { API_BASE } from '../App';
 import {
@@ -31,6 +31,7 @@ import { confirm } from '../confirmService';
 import { notify } from '../toastService';
 import { MATERIAL_TYPES, ALL_SOURCES } from '../materialTaxonomy';
 import { ZAPROS_TYPES, ZAPROS_STATUSES, EKSPERTIZA_TYPES, EKSPERTIZA_STATUSES, TAQIQ_TYPES, TAQIQ_STATUSES } from '../requestsTaxonomy';
+import { buildCitizenRepeatIndex } from '../citizenUtils';
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement,
@@ -97,6 +98,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const [quickStatusGroup, setQuickStatusGroup] = useState(''); // '', 'new', 'active', 'closed', 'overdue' — set by dashboard stat-card clicks
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState(''); // '' | 'closest'
+  const [onlyRepeatFilter, setOnlyRepeatFilter] = useState(false);
   const [materialsPage, setMaterialsPage] = useState(1);
   const MATERIALS_PAGE_SIZE = 20;
   const [smsModalCaseId, setSmsModalCaseId] = useState(null);
@@ -305,7 +307,13 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     return true;
   };
 
+  // Index citizen appeals to track repeat appellants
+  const citizenRepeatIndex = useMemo(() => {
+    return buildCitizenRepeatIndex(materials);
+  }, [materials]);
+
   const filteredMaterials = materials.filter(c => {
+    if (onlyRepeatFilter && !citizenRepeatIndex.isRepeat(c)) return false;
     if (!matchesNonDateFilters(c)) return false;
     if (statusFilter && c.status !== statusFilter) return false;
     if (quickStatusGroup === 'new') {
@@ -347,7 +355,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
   useEffect(() => {
     setMaterialsPage(1);
-  }, [searchQuery, dateRange, monthFilter, difficulty, materialType, sourceFrom, officerFilter, statusFilter, quickStatusGroup, sortOrder]);
+  }, [searchQuery, dateRange, monthFilter, difficulty, materialType, sourceFrom, officerFilter, statusFilter, quickStatusGroup, sortOrder, onlyRepeatFilter]);
 
   useEffect(() => {
     if (materialsPage > materialsPageCount) setMaterialsPage(materialsPageCount);
@@ -939,9 +947,26 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                 { value: 'closest', label: lang === 'ru' ? 'Ближайший срок' : 'Yaqin muddat' },
               ]}
             />
-            {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || officerFilter || statusFilter || quickStatusGroup || sortOrder || searchQuery) && (
+            <button
+              type="button"
+              onClick={() => setOnlyRepeatFilter(prev => !prev)}
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                onlyRepeatFilter
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                  : 'bg-gov-surface border-gov-border text-gov-text hover:bg-gov-light'
+              }`}
+              title={lang === 'ru' ? 'Показать только повторные обращения граждан' : 'Faqat takroriy murojaatlarni ko\'rsatish'}
+            >
+              <span>🔁</span>
+              <span>
+                {lang === 'ru'
+                  ? `Повторные (${citizenRepeatIndex.repeatTotalMaterialsCount})`
+                  : `Takroriy (${citizenRepeatIndex.repeatTotalMaterialsCount})`}
+              </span>
+            </button>
+            {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || officerFilter || statusFilter || quickStatusGroup || sortOrder || searchQuery || onlyRepeatFilter) && (
               <button
-                onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setOfficerFilter(''); setStatusFilter(''); setQuickStatusGroup(''); setSortOrder(''); setSearchQuery(''); }}
+                onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setOfficerFilter(''); setStatusFilter(''); setQuickStatusGroup(''); setSortOrder(''); setSearchQuery(''); setOnlyRepeatFilter(false); }}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-gov-danger hover:bg-rose-50 rounded-full px-3 py-2 transition-colors"
               >
                 <CloseIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Сбросить' : 'Tozalash'}
@@ -1407,7 +1432,24 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                             />
                           )}
                         </td>
-                        <td className="px-4 py-3">{c.citizen_name}</td>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-gov-text">{c.citizen_name}</p>
+                          <p className="text-[10px] text-gov-muted mt-0.5">{c.citizen_phone}</p>
+                          {citizenRepeatIndex.isRepeat(c) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSearchQuery(c.citizen_phone || c.citizen_name);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                              title={lang === 'ru' ? 'Показать все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rish'}
+                            >
+                              <span>🔁</span>
+                              <span>{lang === 'ru' ? `${citizenRepeatIndex.getCount(c)} обращений` : `${citizenRepeatIndex.getCount(c)} ta murojaat`}</span>
+                            </button>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-gov-muted max-w-[150px] truncate" title={lang === 'ru' ? c.title_ru : c.title_uz}>
                           {lang === 'ru' ? c.title_ru : c.title_uz}
                         </td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
@@ -14,6 +14,7 @@ import { notify } from '../toastService';
 import { confirm } from '../confirmService';
 import { MATERIAL_TYPES, getSourceOptions } from '../materialTaxonomy';
 import { OLMAZOR_MAHALLAS } from '../data/olmazorMahallas';
+import { findCitizenMaterials, buildCitizenRepeatIndex } from '../citizenUtils';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 const MONTH_NAMES_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'];
@@ -30,6 +31,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [monthFilter, setMonthFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [officerFilter, setOfficerFilter] = useState('');
+  const [onlyRepeatFilter, setOnlyRepeatFilter] = useState(false);
   const [registryPage, setRegistryPage] = useState(1);
   const REGISTRY_PAGE_SIZE = 20;
 
@@ -235,8 +237,22 @@ function RegistratorView({ lang, onViewDetails, user }) {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
+  // Citizen repeat index across all loaded materials
+  const citizenRepeatIndex = useMemo(() => {
+    return buildCitizenRepeatIndex(materials);
+  }, [materials]);
+
+  // Real-time previous materials detection for registration form
+  const formMatchingMaterials = useMemo(() => {
+    return findCitizenMaterials(materials, {
+      name: citizenName,
+      phone: citizenPhone,
+    });
+  }, [materials, citizenName, citizenPhone]);
+
   // Filtered registry
   const filteredMaterials = materials.filter(m => {
+    if (onlyRepeatFilter && !citizenRepeatIndex.isRepeat(m)) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       const haystack = `${m.id} ${m.citizen_name} ${m.citizen_phone}`.toLowerCase();
@@ -277,7 +293,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
 
   useEffect(() => {
     setRegistryPage(1);
-  }, [searchQuery, dateRange, monthFilter, statusFilter, officerFilter]);
+  }, [searchQuery, dateRange, monthFilter, statusFilter, officerFilter, onlyRepeatFilter]);
 
   useEffect(() => {
     if (registryPage > registryPageCount) setRegistryPage(registryPageCount);
@@ -429,6 +445,68 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 />
                 {errors.citizenPhone && <p className="text-[11px] text-gov-danger mt-1">{errors.citizenPhone}</p>}
               </div>
+
+              {/* Duplicate / Previous Materials Alert */}
+              {formMatchingMaterials.length > 0 && (
+                <div className="p-3 bg-amber-500/15 border border-amber-500/40 rounded-xl space-y-2 text-left animate-fadeIn">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                      <span>⚠️</span>
+                      <span>
+                        {lang === 'ru'
+                          ? `Найдено ${formMatchingMaterials.length} предыдущих обращений этого гражданина!`
+                          : `Ushbu fuqaroning ${formMatchingMaterials.length} ta oldingi murojaati topildi!`}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/25 text-amber-900 border border-amber-500/40">
+                      {lang === 'ru' ? 'Повторный заявитель' : 'Takroriy murojaat'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gov-text leading-snug">
+                    {lang === 'ru'
+                      ? 'Внимание: заявитель с такими данными уже зарегистрирован в базе данных. Проверьте список:'
+                      : 'Diqqat: ushbu ma\'lumotlarga ega fuqaro bazada mavjud. Oldingi materiallar bilan tanishing:'}
+                  </p>
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                    {formMatchingMaterials.map(prevMat => {
+                      const prevOfficer = officers.find(o => o.id === prevMat.officer);
+                      const offName = prevOfficer ? (lang === 'ru' ? prevOfficer.name_ru : prevOfficer.name_uz) : '';
+                      return (
+                        <div
+                          key={prevMat.id}
+                          className="p-2 bg-gov-surface border border-amber-500/30 rounded-lg flex items-center justify-between gap-2 text-xs hover:border-gov-primary/50 transition-colors"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-gov-primary text-[11px]">{prevMat.id}</span>
+                              <span className="text-[10px] text-gov-muted font-mono">{formatDate(prevMat.registered_at)}</span>
+                              <span className={`px-1.5 py-0.2 rounded text-[9px] font-semibold ${getStatusClass(prevMat.status)}`}>
+                                {getStatusText(prevMat.status)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gov-text truncate mt-0.5" title={lang === 'ru' ? prevMat.title_ru : prevMat.title_uz}>
+                              {lang === 'ru' ? prevMat.title_ru : prevMat.title_uz}
+                            </p>
+                            {offName && (
+                              <p className="text-[10px] text-gov-muted">
+                                {lang === 'ru' ? 'Исполнитель: ' : 'Ijrochi: '}
+                                <strong>{offName}</strong>
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => onViewDetails(prevMat.id)}
+                            className="px-2 py-1 bg-gov-primaryLight hover:bg-gov-primary text-gov-primary hover:text-white rounded text-[10px] font-semibold transition-colors shrink-0"
+                          >
+                            {lang === 'ru' ? 'Открыть' : 'Ko\'rish'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
@@ -654,9 +732,26 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
                 ]}
               />
-              {(dateRange !== 'all' || monthFilter || statusFilter || officerFilter || searchQuery) && (
+              <button
+                type="button"
+                onClick={() => setOnlyRepeatFilter(prev => !prev)}
+                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                  onlyRepeatFilter
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                    : 'bg-gov-surface border-gov-border text-gov-text hover:bg-gov-light'
+                }`}
+                title={lang === 'ru' ? 'Показать только повторные обращения граждан' : 'Faqat takroriy murojaatlarni ko\'rsatish'}
+              >
+                <span>🔁</span>
+                <span>
+                  {lang === 'ru'
+                    ? `Повторные (${citizenRepeatIndex.repeatTotalMaterialsCount})`
+                    : `Takroriy (${citizenRepeatIndex.repeatTotalMaterialsCount})`}
+                </span>
+              </button>
+              {(dateRange !== 'all' || monthFilter || statusFilter || officerFilter || searchQuery || onlyRepeatFilter) && (
                 <button
-                  onClick={() => { setDateRange('all'); setMonthFilter(''); setStatusFilter(''); setOfficerFilter(''); setSearchQuery(''); }}
+                  onClick={() => { setDateRange('all'); setMonthFilter(''); setStatusFilter(''); setOfficerFilter(''); setSearchQuery(''); setOnlyRepeatFilter(false); }}
                   className="inline-flex items-center gap-1 text-xs font-semibold text-gov-danger hover:bg-rose-50 rounded-full px-3 py-2 transition-colors"
                 >
                   <CloseIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Сбросить' : 'Tozalash'}
@@ -688,6 +783,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   {pagedMaterials.map(m => {
                     const officer = officers.find(o => o.id === m.officer);
                     const officerName = officer ? (lang === 'ru' ? officer.name_ru.split(' ')[0] + ' ' + officer.name_ru.split(' ')[1][0] + '.' : officer.name_uz.split(' ')[0]) : '';
+                    const isRepeatCitizen = citizenRepeatIndex.isRepeat(m);
+                    const citizenCount = citizenRepeatIndex.getCount(m);
                     return (
                       <tr key={m.id} className="hover:bg-gov-light/30">
                         <td className="px-4 py-3 font-semibold text-gov-text">
@@ -697,6 +794,20 @@ function RegistratorView({ lang, onViewDetails, user }) {
                         <td className="px-4 py-3">
                           <p className="font-semibold text-gov-text">{m.citizen_name}</p>
                           <p className="text-[10px] text-gov-muted mt-0.5">{m.citizen_phone}</p>
+                          {isRepeatCitizen && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSearchQuery(m.citizen_phone || m.citizen_name);
+                              }}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                              title={lang === 'ru' ? 'Показать все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rsatish'}
+                            >
+                              <span>🔁</span>
+                              <span>{lang === 'ru' ? `${citizenCount} обращений` : `${citizenCount} ta murojaat`}</span>
+                            </button>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-medium text-gov-muted">{officerName}</td>
                         <td className="px-4 py-3 text-gov-muted max-w-[150px] truncate" title={lang === 'ru' ? m.title_ru : m.title_uz}>
