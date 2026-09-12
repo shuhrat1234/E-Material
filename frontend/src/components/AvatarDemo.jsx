@@ -26,13 +26,39 @@ const PRECOMPUTED_ANSWERS = {
     text: "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
     audio: '/precomputed_qabul.wav?v=4',
   },
+  salom: {
+    text: "Vaalaykum assalom! Olmazor tumani IIB xizmati sizni eshitmoqda. Qanday yordam bera olaman?",
+    audio: '/precomputed_salom.wav?v=4',
+  },
+  rahmat: {
+    text: "Arzimaydi! Tinchlik va xavfsizligingiz biz uchun muhim. Yana savollaringiz bo'lsa, bemalol so'rang.",
+    audio: '/precomputed_rahmat.wav?v=4',
+  },
+  aloqa: {
+    text: "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
+    audio: '/precomputed_aloqa.wav?v=4',
+  },
+  telefon: {
+    text: "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
+    audio: '/precomputed_aloqa.wav?v=4',
+  },
+  nomer: {
+    text: "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
+    audio: '/precomputed_aloqa.wav?v=4',
+  },
+  manzil: {
+    text: "Olmazor tumani IIB manzili: Toshkent shahri, Olmazor tumani, Qoraqamish mavzesi.",
+    audio: '/precomputed_manzil.wav?v=4',
+  },
 };
 
 const SUGGESTIONS = [
-  "Ariza topshirish tartibi qanday?",
-  "Pasport yo'qolganda nima qilish kerak?",
-  "Murojaatim holatini qanday tekshiraman?",
-  "Tergovchi qabuliga qanday yozilsa bo'ladi?",
+  { label: "Ariza tartibi", query: "Ariza topshirish tartibi qanday?", icon: "📄" },
+  { label: "Pasport yo'qolganda", query: "Pasport yo'qolganda nima qilish kerak?", icon: "🪪" },
+  { label: "Murojaat holati", query: "Murojaatim holatini qanday tekshiraman?", icon: "🔍" },
+  { label: "Tergovchi qabuli", query: "Tergovchi qabuliga qanday yozilsa bo'ladi?", icon: "⚖️" },
+  { label: "Navbatchilik telefoni", query: "Navbatchilik aloqa raqami", icon: "📞" },
+  { label: "IIB manzili", query: "Olmazor tumani IIB manzili qayerda?", icon: "📍" },
 ];
 
 function AvatarDemo({ lang = 'uz', onBack }) {
@@ -46,6 +72,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
   const [error, setError] = useState('');
 
   const audioRef = useRef(null);
+  const lastAudioRef = useRef(GREETING_AUDIO);
   const recognitionRef = useRef(null);
   const idleVideoRef = useRef(null);
   const talkingVideoRef = useRef(null);
@@ -100,7 +127,11 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       '/precomputed_ariza.wav?v=4',
       '/precomputed_pasport.wav?v=4',
       '/precomputed_murojaat.wav?v=4',
-      '/precomputed_qabul.wav?v=4'
+      '/precomputed_qabul.wav?v=4',
+      '/precomputed_salom.wav?v=4',
+      '/precomputed_rahmat.wav?v=4',
+      '/precomputed_aloqa.wav?v=4',
+      '/precomputed_manzil.wav?v=4'
     ];
     audioUrls.forEach(src => {
       const a = new Audio();
@@ -114,6 +145,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       audioRef.current.pause();
     }
 
+    lastAudioRef.current = audioUrl;
     const audio = new Audio();
     audio.preload = 'auto';
     audioRef.current = audio;
@@ -316,58 +348,80 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       </div>
 
       {/* Top Header Bar */}
-      <div className="relative z-20 flex items-center justify-between p-3.5 sm:p-6 pointer-events-none">
+      <div className="relative z-20 flex items-center justify-between p-3.5 sm:p-5 pointer-events-none">
         <button
           type="button"
           onClick={() => { endCall(); onBack(); }}
-          className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10 shadow-lg pointer-events-auto shrink-0"
-          title="Orqaga"
+          className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 backdrop-blur-xl text-white flex items-center justify-center transition-all border border-white/20 shadow-xl pointer-events-auto shrink-0 active:scale-90"
+          title="Orqaga chiqish"
         >
           <CloseIcon className="h-5 w-5" />
         </button>
 
-        {/* Compact Olmazor Tumani IIB block on responsive (top-right on mobile, smaller) */}
-        <div className="md:hidden flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-neutral-950/80 backdrop-blur-xl border border-white/20 shadow-xl pointer-events-auto select-none">
-          <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-6 h-6 object-contain drop-shadow shrink-0" />
+        {/* Official IIB Header Badge */}
+        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-neutral-950/85 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-auto select-none">
+          <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-5 h-5 sm:w-6 sm:h-6 object-contain drop-shadow shrink-0" />
           <div className="text-left leading-tight">
-            <div className="text-[11px] font-bold text-white tracking-wide">OLMAZOR TUMANI IIB</div>
-            <div className="text-[9px] text-blue-300 font-medium">Ichki ishlar bo'limi</div>
+            <div className="text-[11px] sm:text-[12px] font-bold text-white tracking-wider">OLMAZOR TUMANI IIB</div>
+            <div className="text-[8px] sm:text-[9px] text-blue-300 font-medium">Rasmiy AI tergovchi</div>
           </div>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-1" title="Tizim onlayn" />
         </div>
       </div>
 
-      {/* Active Conversation Dialog - TOP RIGHT (or top dropdown on mobile) */}
+      {/* Active Conversation Dialog - Top Right on desktop, top dropdown on mobile */}
       {inCall && (
-        <div className="fixed top-16 sm:top-6 right-3 sm:right-6 left-3 sm:left-auto z-30 sm:max-w-[400px] flex flex-col items-end gap-2.5 pointer-events-auto">
+        <div className="fixed top-18 sm:top-20 right-3 sm:right-6 left-3 sm:left-auto z-30 sm:max-w-[420px] flex flex-col items-end gap-2.5 pointer-events-auto animate-fadeIn">
           {/* User Question */}
           {lastQuestion && (
             <div className="flex justify-end w-full animate-fadeIn">
-              <div className="max-w-[85%] bg-blue-600/95 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-xl border border-blue-400/30 backdrop-blur-md">
+              <div className="max-w-[85%] bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs sm:text-sm px-4 py-2.5 rounded-2xl rounded-tr-xs shadow-xl border border-blue-400/30 backdrop-blur-md font-medium">
                 {lastQuestion}
               </div>
             </div>
           )}
 
-          {/* AI Answer Box - In TOP RIGHT CORNER */}
+          {/* AI Officer Answer Box */}
           <div className="flex justify-end w-full animate-fadeIn">
-            <div className="w-full bg-black/85 backdrop-blur-xl border border-white/20 rounded-2xl rounded-tr-xs p-3.5 sm:p-4 text-white shadow-2xl space-y-2 text-left">
-              <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
-                <span className="flex items-center gap-1.5">
+            <div className="w-full bg-neutral-950/90 backdrop-blur-2xl border border-white/20 rounded-2xl rounded-tr-xs p-4 text-white shadow-2xl space-y-2.5 text-left transition-all">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-2 text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
                   <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  Jasur (AI Tergovchi)
+                  Jasur Akromovich
                 </span>
-                {isSpeaking && (
-                  <span className="text-emerald-400 text-[10px] lowercase font-medium">● gapirmoqda</span>
+                {isSpeaking ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                    <div className="flex items-end gap-0.5 h-3">
+                      <span className="w-0.5 bg-emerald-400 rounded-full animate-pulse h-2" />
+                      <span className="w-0.5 bg-emerald-400 rounded-full animate-pulse h-3" />
+                      <span className="w-0.5 bg-emerald-400 rounded-full animate-pulse h-2.5" />
+                    </div>
+                    <span className="text-emerald-400 text-[10px] font-medium">gapirmoqda</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => playSpeech(lastAudioRef.current || GREETING_AUDIO)}
+                    className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white transition-colors"
+                    title="Javobni qayta eshitish"
+                  >
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                    <span>Qayta eshitish</span>
+                  </button>
                 )}
               </div>
 
               {loading ? (
-                <div className="flex items-center gap-2 py-1 text-white/70 text-xs sm:text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" />
-                  <span className="text-xs text-white/60 ml-1">
-                    Jasur javob tayyorlamoqda...
+                <div className="flex items-center gap-2.5 py-2 text-white/70 text-xs sm:text-sm">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-bounce" />
+                  </div>
+                  <span className="text-xs text-white/70">
+                    Tergovchi javob tayyorlamoqda...
                   </span>
                 </div>
               ) : (
@@ -384,7 +438,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
         </div>
       )}
 
-      {/* Desktop Only: Official IIB Badge at Bottom-Left */}
+      {/* Desktop Only: Official IIB Badge at Bottom-Left to cover any watermark */}
       <div className="hidden md:flex fixed bottom-6 left-6 z-30 items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-neutral-950/95 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-none select-none min-w-[240px] sm:min-w-[270px]">
         <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-10 h-10 object-contain drop-shadow shrink-0" />
         <div className="text-left">
@@ -395,85 +449,110 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       </div>
 
       {/* Bottom Interactive Area */}
-      <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-6 sm:pb-8 flex flex-col justify-end">
+      <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-5 sm:pb-8 flex flex-col justify-end">
         {!inCall ? (
-          /* Initial Screen - Centered call button */
-          <div className="text-center my-auto py-6 sm:py-8 flex justify-center">
+          /* Initial Screen - Welcome Card & Call Button */
+          <div className="text-center my-auto py-6 sm:py-8 flex flex-col items-center justify-center max-w-md mx-auto animate-fadeIn">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-xl border border-white/20 shadow-2xl mb-3">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-semibold text-white tracking-wide">
+                Jasur Akromovich (AI Tergovchi)
+              </span>
+              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
+                ONLAYN
+              </span>
+            </div>
+
+            <p className="text-white/85 text-xs sm:text-sm font-medium mb-5 max-w-sm leading-relaxed px-4 drop-shadow-md">
+              Arizalar, pasport va murojaatlar tartibi bo'yicha tergovchi bilan jonli ovozli muloqot qiling
+            </p>
+
             <button
               type="button"
               onClick={startCall}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-neutral-900 font-bold text-base shadow-2xl hover:bg-white/95 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              className="group relative inline-flex items-center gap-3 px-8 sm:px-10 py-4 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white font-bold text-sm sm:text-base shadow-[0_10px_35px_rgba(37,99,235,0.45)] hover:shadow-[0_15px_45px_rgba(37,99,235,0.65)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-blue-400/40"
             >
-              <svg className="w-5 h-5 text-blue-600 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-              </svg>
-              <span>Qo'ng'iroqni boshlash</span>
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+              </div>
+              <span className="tracking-wide">Qo'ng'iroqni boshlash</span>
             </button>
           </div>
         ) : (
           /* Active Call Dialog - Suggestions & Controls at bottom */
           <div className="w-full space-y-2.5">
-
-            {/* Suggestions */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+            {/* Quick Question Suggestions */}
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 px-1">
               {SUGGESTIONS.map((item, idx) => (
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => sendQuery(item)}
+                  onClick={() => sendQuery(item.query)}
                   disabled={loading}
-                  className="shrink-0 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/15 text-white text-[11px] font-medium transition-all"
+                  className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-neutral-900/80 hover:bg-neutral-800 backdrop-blur-xl border border-white/20 hover:border-blue-400/50 text-white text-[11px] font-medium transition-all shadow-lg active:scale-95 cursor-pointer"
                 >
-                  {item}
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
                 </button>
               ))}
             </div>
 
             {/* Controls Bar */}
             <div className="flex items-center gap-2 pt-1 w-full">
-              {/* Mic toggle */}
+              {/* Mic Toggle Button */}
               <button
                 type="button"
                 onClick={toggleMic}
                 disabled={loading}
-                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all shadow-lg ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all shadow-2xl ${
                   isListening
-                    ? 'bg-red-500 text-white animate-pulse ring-4 ring-red-400/40'
-                    : 'bg-white/15 hover:bg-white/25 text-white backdrop-blur-md border border-white/20'
+                    ? 'bg-red-600 text-white animate-pulse ring-4 ring-red-400/40'
+                    : 'bg-neutral-900/85 hover:bg-neutral-800 text-white backdrop-blur-xl border border-white/25 active:scale-95'
                 }`}
                 title={isListening ? "Eshitishni to'xtatish" : "Mikrofonni yoqish"}
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                  <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                </svg>
+                {isListening ? (
+                  <div className="relative">
+                    <span className="absolute -inset-1 rounded-full bg-red-400 animate-ping opacity-75" />
+                    <svg className="w-5 h-5 relative" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                      <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                  </div>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                  </svg>
+                )}
               </button>
 
-              {/* Text input */}
-              <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex items-center gap-1.5 bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-4 py-1.5 shadow-lg">
+              {/* Text Input Form */}
+              <form onSubmit={handleSubmit} className="flex-1 min-w-0 flex items-center gap-2 bg-neutral-900/85 backdrop-blur-2xl border border-white/25 focus-within:border-blue-400 rounded-full px-4 py-2 shadow-2xl transition-all">
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={isListening ? "Sizni eshityapman..." : "Savolingizni yozing yoki mikrofondan gapiring..."}
+                  placeholder={isListening ? "Sizni eshityapman..." : "Savolingizni yozing yoki mikrofonda ayting..."}
                   className="flex-1 min-w-0 bg-transparent text-white placeholder-white/50 text-xs sm:text-sm focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={!query.trim() || loading}
-                  className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-white flex items-center justify-center shrink-0 transition-all"
+                  className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-500 disabled:opacity-25 text-white flex items-center justify-center shrink-0 transition-all shadow-md active:scale-95 cursor-pointer"
                 >
                   <SendIcon className="h-4 w-4" />
                 </button>
               </form>
 
-              {/* End call */}
+              {/* End Call Button */}
               <button
                 type="button"
                 onClick={endCall}
-                className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shrink-0 transition-all shadow-lg border border-red-400/30 active:scale-95"
-                title="Qo'ng'iroqni tugatish"
+                className="w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shrink-0 transition-all shadow-2xl border border-red-400/40 active:scale-90 cursor-pointer"
+                title="Qo'ng'iroqni yakunlash"
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/>
