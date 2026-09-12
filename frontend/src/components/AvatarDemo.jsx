@@ -317,36 +317,31 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           style={{ backgroundImage: `url('/officer-poster.png')` }}
         />
 
-        {/* Animated Avatar Body Container (Organic Breathing & Conversational Gestures) */}
-        <div className={`relative z-10 h-full w-full flex items-center justify-center transition-all duration-700 ${
-          isSpeaking ? 'avatar-body-speaking' : 'avatar-body-breathing'
-        }`}>
-          {/* Idle Video (Breathing, calm eyes) */}
-          <video
-            ref={idleVideoRef}
-            src={IDLE_VIDEO}
-            poster="/officer-poster.png"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={`relative h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
-              isSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
-          />
+        {/* Idle Video (Breathing, calm eyes) */}
+        <video
+          ref={idleVideoRef}
+          src={IDLE_VIDEO}
+          poster="/officer-poster.png"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className={`relative z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
+            isSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        />
 
-          {/* Talking Video (Lip-synced with Jasur voice) */}
-          <video
-            ref={talkingVideoRef}
-            src={TALKING_VIDEO}
-            loop
-            muted
-            playsInline
-            className={`absolute h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
-              isSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          />
-        </div>
+        {/* Talking Video (Lip-synced with Jasur voice) */}
+        <video
+          ref={talkingVideoRef}
+          src={TALKING_VIDEO}
+          loop
+          muted
+          playsInline
+          className={`absolute z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
+            isSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        />
 
         {/* Subtle bottom gradient behind controls only */}
         <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none z-10" />
@@ -456,33 +451,18 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       {/* Bottom Interactive Area */}
       <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-5 sm:pb-8 flex flex-col justify-end">
         {!inCall ? (
-          /* Initial Screen - Welcome Card & Call Button */
-          <div className="text-center my-auto py-6 sm:py-8 flex flex-col items-center justify-center max-w-md mx-auto animate-fadeIn">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-xl border border-white/20 shadow-2xl mb-3">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-semibold text-white tracking-wide">
-                Jasur Akromovich (AI Tergovchi)
-              </span>
-              <span className="text-[10px] text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full font-medium">
-                ONLAYN
-              </span>
-            </div>
-
-            <p className="text-white/85 text-xs sm:text-sm font-medium mb-5 max-w-sm leading-relaxed px-4 drop-shadow-md">
-              Arizalar, pasport va murojaatlar tartibi bo'yicha tergovchi bilan jonli ovozli muloqot qiling
-            </p>
-
+          /* Initial Screen - Clean Call Button Only */
+          <div className="text-center my-auto py-6 sm:py-8 flex justify-center">
             <button
               type="button"
               onClick={startCall}
-              className="group relative inline-flex items-center gap-3 px-8 sm:px-10 py-4 rounded-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white font-bold text-sm sm:text-base shadow-[0_10px_35px_rgba(37,99,235,0.45)] hover:shadow-[0_15px_45px_rgba(37,99,235,0.65)] hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer border border-blue-400/40"
+              className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 rounded-full bg-white text-neutral-900 font-bold text-sm sm:text-base shadow-2xl hover:bg-white/95 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:rotate-12 transition-transform">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-                </svg>
-              </div>
-              <span className="tracking-wide">Qo'ng'iroqni boshlash</span>
+              <svg className="w-5 h-5 text-blue-600 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+              <span>Qo'ng'iroqni boshlash</span>
             </button>
           </div>
         ) : (

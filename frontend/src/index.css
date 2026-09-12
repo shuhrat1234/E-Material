@@ -271,59 +271,6 @@ svg.leaflet-zoom-animated path:focus,
 .leaflet-pane path:focus {
   outline: none !important;
   outline-style: none !important;
-  box-shadow: none !important;
-}
-
-/* Organic Avatar Body Breathing and Conversational Torso Motion */
-@keyframes avatarBodyBreathing {
-  0% {
-    transform: translateY(0px) scale(1) rotate(0deg);
-  }
-  35% {
-    transform: translateY(-6px) scale(1.012) rotate(0.35deg);
-  }
-  70% {
-    transform: translateY(-2px) scale(1.005) rotate(-0.25deg);
-  }
-  100% {
-    transform: translateY(0px) scale(1) rotate(0deg);
-  }
-}
-
-@keyframes avatarBodySpeaking {
-  0% {
-    transform: translateY(0px) scale(1) rotate(0deg);
-  }
-  16% {
-    transform: translateY(-9px) scale(1.018) rotate(0.5deg);
-  }
-  32% {
-    transform: translateY(-3px) scale(1.007) rotate(-0.4deg);
-  }
-  50% {
-    transform: translateY(-10px) scale(1.02) rotate(0.35deg);
-  }
-  68% {
-    transform: translateY(-2px) scale(1.006) rotate(-0.25deg);
-  }
-  84% {
-    transform: translateY(-7px) scale(1.014) rotate(0.3deg);
-  }
-  100% {
-    transform: translateY(0px) scale(1) rotate(0deg);
-  }
-}
-
-.avatar-body-breathing {
-  animation: avatarBodyBreathing 5.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  transform-origin: bottom center;
-  will-change: transform;
-}
-
-.avatar-body-speaking {
-  animation: avatarBodySpeaking 3.2s cubic-bezier(0.35, 0, 0.25, 1) infinite;
-  transform-origin: bottom center;
-  will-change: transform;
 }
 
 
