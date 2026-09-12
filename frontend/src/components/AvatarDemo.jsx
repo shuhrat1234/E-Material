@@ -317,31 +317,36 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           style={{ backgroundImage: `url('/officer-poster.png')` }}
         />
 
-        {/* Idle Video (Breathing, calm eyes) */}
-        <video
-          ref={idleVideoRef}
-          src={IDLE_VIDEO}
-          poster="/officer-poster.png"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className={`relative z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
-            isSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}
-        />
+        {/* Animated Avatar Body Container (Organic Breathing & Conversational Gestures) */}
+        <div className={`relative z-10 h-full w-full flex items-center justify-center transition-all duration-700 ${
+          isSpeaking ? 'avatar-body-speaking' : 'avatar-body-breathing'
+        }`}>
+          {/* Idle Video (Breathing, calm eyes) */}
+          <video
+            ref={idleVideoRef}
+            src={IDLE_VIDEO}
+            poster="/officer-poster.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={`relative h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
+              isSpeaking ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+          />
 
-        {/* Talking Video (Lip-synced with Jasur voice) */}
-        <video
-          ref={talkingVideoRef}
-          src={TALKING_VIDEO}
-          loop
-          muted
-          playsInline
-          className={`absolute z-10 h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
-            isSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-        />
+          {/* Talking Video (Lip-synced with Jasur voice) */}
+          <video
+            ref={talkingVideoRef}
+            src={TALKING_VIDEO}
+            loop
+            muted
+            playsInline
+            className={`absolute h-full w-auto max-w-none md:max-w-full object-contain object-center contrast-[1.04] brightness-[1.02] transition-opacity duration-150 drop-shadow-2xl ${
+              isSpeaking ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          />
+        </div>
 
         {/* Subtle bottom gradient behind controls only */}
         <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none z-10" />
