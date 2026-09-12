@@ -5,9 +5,28 @@ import { CloseIcon, SendIcon } from './Icons';
 
 const GREETING_TEXT = "Assalomu alaykum! Men Olmazor tumani ichki ishlar bo'limi sun'iy intellekt yordamchisiman. Sizga qanday yordam bera olaman?";
 const GREETING_VIDEO = '/officer-talking.mp4';
-const GREETING_AUDIO = '/greeting-voicelab.wav?v=2';
+const GREETING_AUDIO = '/greeting-jasur.wav?v=6';
 const IDLE_VIDEO = '/officer-idle.mp4';
 const TALKING_VIDEO = '/officer-talking.mp4';
+
+const PRECOMPUTED_ANSWERS = {
+  ariza: {
+    text: "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik xizmati xonasiga shaxsan murojaat qilishingiz mumkin. O'zingiz bilan pasportingizni olishni unutmang.",
+    audio: '/precomputed_ariza.wav?v=4',
+  },
+  pasport: {
+    text: "Pasport yo'qolganda darhol hududiy IIB migratsiya va fuqarolikni rasmiylashtirish bo'limiga ariza bering. Sizga vaqtinchalik ma'lumotnoma rasmiylashtirib beriladi.",
+    audio: '/precomputed_pasport.wav?v=4',
+  },
+  murojaat: {
+    text: "Murojaatingiz holatini bilish uchun IIB navbatchilik qismiga qo'ng'iroq qilib, arizangiz raqamini aytsangiz, mas'ul tergovchi haqida ma'lumot beriladi.",
+    audio: '/precomputed_murojaat.wav?v=4',
+  },
+  qabul: {
+    text: "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
+    audio: '/precomputed_qabul.wav?v=4',
+  },
+};
 
 const SUGGESTIONS = [
   "Ariza topshirish tartibi qanday?",
@@ -74,24 +93,44 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     };
   }, [lang]);
 
+  // Pre-load all precomputed audio files into browser memory to eliminate speech delay
+  useEffect(() => {
+    const audioUrls = [
+      GREETING_AUDIO,
+      '/precomputed_ariza.wav?v=4',
+      '/precomputed_pasport.wav?v=4',
+      '/precomputed_murojaat.wav?v=4',
+      '/precomputed_qabul.wav?v=4'
+    ];
+    audioUrls.forEach(src => {
+      const a = new Audio();
+      a.preload = 'auto';
+      a.src = src;
+    });
+  }, []);
+
   const playSpeech = (audioUrl, onFinish) => {
     if (audioRef.current) {
       audioRef.current.pause();
     }
 
-    const audio = new Audio(audioUrl);
+    const audio = new Audio();
+    audio.preload = 'auto';
     audioRef.current = audio;
 
     const talkingVid = talkingVideoRef.current;
     const idleVid = idleVideoRef.current;
 
-    audio.onplay = () => {
-      setIsSpeaking(true);
-      if (talkingVid) {
-        talkingVid.currentTime = 0;
-        talkingVid.play().catch(() => {});
-      }
-    };
+    setIsSpeaking(true);
+    if (talkingVid) {
+      talkingVid.currentTime = 0;
+      talkingVid.play().catch(() => {});
+    }
+    if (idleVid) {
+      idleVid.pause();
+    }
+
+    audio.src = audioUrl;
 
     audio.onended = () => {
       setIsSpeaking(false);
@@ -109,12 +148,14 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       console.warn('Audio playback error:', err);
       setIsSpeaking(false);
       if (talkingVid) talkingVid.pause();
+      if (idleVid) idleVid.play().catch(() => {});
     };
 
     audio.play().catch(e => {
       console.warn('Audio autoplay prevented:', e);
       setIsSpeaking(false);
       if (talkingVid) talkingVid.pause();
+      if (idleVid) idleVid.play().catch(() => {});
     });
   };
 
@@ -179,7 +220,6 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
     setLastQuestion(q);
     setQuery('');
-    setLoading(true);
     setError('');
 
     if (audioRef.current) {
@@ -194,6 +234,18 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       }
     }
 
+    // 1. Instant 0-second matching for common topics (zero speech delay!)
+    const qLower = q.toLowerCase();
+    for (const [key, item] of Object.entries(PRECOMPUTED_ANSWERS)) {
+      if (qLower.includes(key)) {
+        setAnswerText(item.text);
+        playSpeech(item.audio);
+        return;
+      }
+    }
+
+    // 2. Dynamic question via backend
+    setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/avatar/session/`, { query: q, lang });
       const text = res.data.answer_text || '';
@@ -204,8 +256,8 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       if (audioUrl) {
         playSpeech(audioUrl);
       } else {
-        // Fallback to tts endpoint
-        const ttsRes = await axios.post(`${API_BASE}/ai/tts/`, { text, model: 'abdulhay' });
+        // Fallback to tts endpoint with Jasur model
+        const ttsRes = await axios.post(`${API_BASE}/ai/tts/`, { text, model: 'jasur' });
         if (ttsRes.data.audio_url) {
           playSpeech(ttsRes.data.audio_url);
         }
@@ -264,20 +316,29 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       </div>
 
       {/* Top Header Bar */}
-      <div className="relative z-20 flex items-center justify-between p-4 sm:p-6 pointer-events-none">
+      <div className="relative z-20 flex items-center justify-between p-3.5 sm:p-6 pointer-events-none">
         <button
           type="button"
           onClick={() => { endCall(); onBack(); }}
-          className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10 shadow-lg pointer-events-auto"
+          className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-md text-white flex items-center justify-center transition-all border border-white/10 shadow-lg pointer-events-auto shrink-0"
           title="Orqaga"
         >
           <CloseIcon className="h-5 w-5" />
         </button>
+
+        {/* Compact Olmazor Tumani IIB block on responsive (top-right on mobile, smaller) */}
+        <div className="md:hidden flex items-center gap-2.5 px-3 py-1.5 rounded-2xl bg-neutral-950/80 backdrop-blur-xl border border-white/20 shadow-xl pointer-events-auto select-none">
+          <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-6 h-6 object-contain drop-shadow shrink-0" />
+          <div className="text-left leading-tight">
+            <div className="text-[11px] font-bold text-white tracking-wide">OLMAZOR TUMANI IIB</div>
+            <div className="text-[9px] text-blue-300 font-medium">Ichki ishlar bo'limi</div>
+          </div>
+        </div>
       </div>
 
-      {/* TOP-RIGHT CORNER: Active Conversation Dialog */}
+      {/* Active Conversation Dialog - TOP RIGHT (or top dropdown on mobile) */}
       {inCall && (
-        <div className="fixed top-5 right-5 sm:top-6 sm:right-6 z-30 max-w-[340px] sm:max-w-[420px] w-full flex flex-col items-end gap-2.5 pointer-events-auto">
+        <div className="fixed top-16 sm:top-6 right-3 sm:right-6 left-3 sm:left-auto z-30 sm:max-w-[400px] flex flex-col items-end gap-2.5 pointer-events-auto">
           {/* User Question */}
           {lastQuestion && (
             <div className="flex justify-end w-full animate-fadeIn">
@@ -289,7 +350,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
           {/* AI Answer Box - In TOP RIGHT CORNER */}
           <div className="flex justify-end w-full animate-fadeIn">
-            <div className="w-full bg-black/80 backdrop-blur-xl border border-white/20 rounded-2xl rounded-tr-xs p-3.5 sm:p-4 text-white shadow-2xl space-y-2 text-left">
+            <div className="w-full bg-black/85 backdrop-blur-xl border border-white/20 rounded-2xl rounded-tr-xs p-3.5 sm:p-4 text-white shadow-2xl space-y-2 text-left">
               <div className="flex items-center justify-between text-[11px] font-semibold text-blue-400 tracking-wide uppercase">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
@@ -323,8 +384,8 @@ function AvatarDemo({ lang = 'uz', onBack }) {
         </div>
       )}
 
-      {/* BOTTOM-LEFT CORNER: Official IIB Badge (Enlarged to 100% cover D-ID logo watermark) */}
-      <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-30 flex items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-neutral-950/95 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-none select-none min-w-[240px] sm:min-w-[270px]">
+      {/* Desktop Only: Official IIB Badge at Bottom-Left */}
+      <div className="hidden md:flex fixed bottom-6 left-6 z-30 items-center gap-3.5 px-5 py-3.5 rounded-2xl bg-neutral-950/95 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-none select-none min-w-[240px] sm:min-w-[270px]">
         <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-10 h-10 object-contain drop-shadow shrink-0" />
         <div className="text-left">
           <div className="text-[12px] sm:text-[13px] font-bold text-white tracking-wider leading-tight">OLMAZOR TUMANI IIB</div>
@@ -334,14 +395,14 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       </div>
 
       {/* Bottom Interactive Area */}
-      <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-4 sm:pb-6 flex flex-col justify-end">
+      <div className="relative z-20 w-full max-w-2xl mx-auto px-4 pb-6 sm:pb-8 flex flex-col justify-end">
         {!inCall ? (
-          /* Initial Screen - Minimal button only */
-          <div className="text-center my-auto py-8">
+          /* Initial Screen - Centered call button */
+          <div className="text-center my-auto py-6 sm:py-8 flex justify-center">
             <button
               type="button"
               onClick={startCall}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-neutral-900 font-bold text-base shadow-2xl hover:bg-white/95 hover:scale-105 active:scale-95 transition-all"
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-neutral-900 font-bold text-base shadow-2xl hover:bg-white/95 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
               <svg className="w-5 h-5 text-blue-600 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>

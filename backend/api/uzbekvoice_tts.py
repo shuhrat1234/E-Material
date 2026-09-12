@@ -10,62 +10,62 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+UZBEKVOICE_API_URL = 'https://uzbekvoice.ai/api/v1/tts'
 VOICELAB_API_URL = 'https://api.voicelab.uz/v1/tts'
-LEGACY_UZBEKVOICE_API_URL = 'https://uzbekvoice.ai/api/v1/tts'
-
-# Friendly voice mappings on VoiceLab
-VOICELAB_VOICES = {
-    'abdulhay': 'voice_M-p5iz9z_kPWNm_C0cFqbC6X',  # Abdulhay Otaxo'jayev (Peter Parker dubbing actor, authoritative officer tone)
-    'jasur': 'voice_M-p5iz9z_kPWNm_C0cFqbC6X',     # Alias legacy jasur -> abdulhay
-    'shohruxmirzo': 'voice_jABVrmH-0x6pbYefNCuYfH6H',
-    'sardor': 'voice_xdQMoRJkjHbPIB-jounXzKq8',
-    'firdavs': 'voice_OBuMpAaB5iYCUZS0eCc9Fj3k',
-    'xurshid': 'voice_2QZX3LFMkNO0lNyrOZ-WwJxK',
-    'gulnoza': 'voice_01J9NEUTRAL0000000000000001',
-    'lola': 'voice_EvIb9vE6iY_dWgK7OobYdZcX',
-}
-
-DEFAULT_VOICE_ID = 'voice_M-p5iz9z_kPWNm_C0cFqbC6X'
 
 
 class UzbekVoiceTtsError(Exception):
     pass
 
 
-def resolve_voice_id(model_or_voice: str = None) -> str:
-    """Resolves voice name or ID to a valid VoiceLab voice ID."""
-    if not model_or_voice:
-        return getattr(settings, 'VOICELAB_VOICE_ID', DEFAULT_VOICE_ID)
-    
-    val = str(model_or_voice).strip()
-    if val.startswith('voice_'):
-        return val
-    
-    return VOICELAB_VOICES.get(val.lower(), getattr(settings, 'VOICELAB_VOICE_ID', DEFAULT_VOICE_ID))
-
-
-def synthesize_voicelab_wav(text: str, voice_id: str = None, language: str = 'uz', speed: float = 1.0) -> bytes:
-    """Synthesizes text via VoiceLab API and returns raw WAV bytes."""
+def synthesize_uzbekvoice_direct(text: str, model: str = 'jasur') -> str:
+    """Synthesizes text using UzbekVoice.ai (Jasur voice) and returns direct CDN audio URL."""
     text = (text or '').strip()
     if not text:
-        raise UzbekVoiceTtsError('Matn kiritilmadi (Empty text)')
+        raise UzbekVoiceTtsError('Matn kiritilmadi')
 
-    api_key = (
-        getattr(settings, 'VOICELAB_API_KEY', '') or
-        getattr(settings, 'UZBEKVOICE_API_KEY', '') or
-        'vlk_6sXr0AWv47hCAeI_cb1-k1SdN9sp4ohxqVVT9We33FQ'
-    ).strip()
+    api_key = getattr(settings, 'UZBEKVOICE_API_KEY', '5b9118bc-3676-4ab0-b500-026b3a6372b1:c504ec5b-d67a-4e85-a935-ed2e21e9d08e')
+    payload = json.dumps({
+        'text': text,
+        'model': model or 'jasur',
+        'blocking': 'true',
+    }).encode('utf-8')
 
-    if not api_key:
-        raise UzbekVoiceTtsError('VOICELAB_API_KEY sozlanmagan')
+    req = urllib.request.Request(
+        UZBEKVOICE_API_URL,
+        headers={
+            'Authorization': api_key,
+            'Content-Type': 'application/json',
+            'User-Agent': 'E-Material/1.0',
+        },
+        data=payload,
+        method='POST',
+    )
 
-    target_voice = resolve_voice_id(voice_id)
+    ctx = ssl._create_unverified_context()
+    with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+        resp_data = json.loads(response.read().decode('utf-8'))
+
+    if resp_data.get('status') != 'SUCCESS':
+        raise UzbekVoiceTtsError(f"UzbekVoice status: {resp_data.get('status')}")
+
+    audio_url = resp_data.get('result', {}).get('url')
+    if not audio_url:
+        raise UzbekVoiceTtsError('UzbekVoice audio URL topilmadi')
+
+    return audio_url
+
+
+def synthesize_voicelab_wav(text: str, voice_id: str = None) -> bytes:
+    """Fallback: Synthesizes via VoiceLab API and returns raw WAV bytes."""
+    api_key = getattr(settings, 'VOICELAB_API_KEY', 'vlk_6sXr0AWv47hCAeI_cb1-k1SdN9sp4ohxqVVT9We33FQ')
+    target_voice = voice_id or getattr(settings, 'VOICELAB_VOICE_ID', 'voice_M-p5iz9z_kPWNm_C0cFqbC6X')
 
     payload = json.dumps({
         'text': text,
         'voice_id': target_voice,
-        'language': language,
-        'speed': speed,
+        'language': 'uz',
+        'speed': 1.0,
     }).encode('utf-8')
 
     req = urllib.request.Request(
@@ -73,7 +73,6 @@ def synthesize_voicelab_wav(text: str, voice_id: str = None, language: str = 'uz
         headers={
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
             'Idempotency-Key': str(uuid.uuid4()),
             'User-Agent': 'E-Material/1.0',
         },
@@ -81,90 +80,56 @@ def synthesize_voicelab_wav(text: str, voice_id: str = None, language: str = 'uz
         method='POST',
     )
 
-    try:
-        ctx = ssl.create_default_context()
-        resp = urllib.request.urlopen(req, timeout=30, context=ctx)
-    except Exception:
-        ctx = ssl._create_unverified_context()
-        try:
-            resp = urllib.request.urlopen(req, timeout=30, context=ctx)
-        except Exception as e:
-            err_body = ''
-            if hasattr(e, 'read'):
-                try:
-                    err_body = e.read().decode('utf-8')
-                except Exception:
-                    pass
-            logger.error('VoiceLab TTS API error: %s - %s', e, err_body)
-            raise UzbekVoiceTtsError(f"VoiceLab API xatosi: {e} {err_body}")
-
-    with resp as r:
-        content_type = r.headers.get('Content-Type', '')
-        data = r.read()
-
-    if 'application/json' in content_type:
-        try:
-            err_json = json.loads(data.decode('utf-8'))
-            raise UzbekVoiceTtsError(f"VoiceLab xatosi: {err_json.get('message')}")
-        except Exception:
-            pass
-
-    return data
+    ctx = ssl._create_unverified_context()
+    with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+        return r.read()
 
 
-def synthesize_uzbekvoice_audio_url(text: str, model: str = None) -> str:
+def synthesize_uzbekvoice_audio_url(text: str, model: str = 'jasur') -> str:
     """
-    Synthesizes speech using VoiceLab (or fallback UzbekVoice) and saves the WAV
-    file to media/tts/<uuid>.wav, returning the public audio URL.
+    Primary synthesis function. First tries UzbekVoice.ai (Jasur voice) for fast
+    speech without delay. Falls back to VoiceLab if needed.
     """
     text = (text or '').strip()
     if not text:
-        raise UzbekVoiceTtsError('Matn kiritilmadi (Empty text)')
+        raise UzbekVoiceTtsError('Matn kiritilmadi')
 
-    # Synthesize WAV bytes
-    wav_bytes = synthesize_voicelab_wav(text, voice_id=model)
-
-    # Save to media/tts directory
-    media_root = Path(settings.MEDIA_ROOT)
-    tts_dir = media_root / 'tts'
-    tts_dir.mkdir(parents=True, exist_ok=True)
-
-    filename = f'{uuid.uuid4().hex}.wav'
-    file_path = tts_dir / filename
-    file_path.write_bytes(wav_bytes)
-
-    public_base = getattr(settings, 'PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz').rstrip('/')
-    return f'{public_base}/media/tts/{filename}'
-
-
-def synthesize_pcm16(text: str, target_rate: int = 16000, model: str = None) -> bytes:
-    """Synthesizes text using VoiceLab and returns raw PCM16 bytes."""
-    wav_bytes = synthesize_voicelab_wav(text, voice_id=model)
-
+    # 1. Try UzbekVoice.ai (fastest, authentic Jasur voice)
     try:
-        with wave.open(io.BytesIO(wav_bytes), 'rb') as wf:
-            pcm16 = wf.readframes(wf.getnframes())
-            return pcm16
+        url = synthesize_uzbekvoice_direct(text, model=model or 'jasur')
+        return url
     except Exception as e:
-        logger.error('Failed to parse WAV from VoiceLab: %s', e)
-        raise UzbekVoiceTtsError(f"WAV formatini o'qishda xatolik: {e}")
+        logger.warning('UzbekVoice direct synthesis failed (%s), falling back to VoiceLab...', e)
+
+    # 2. Fallback to VoiceLab
+    try:
+        wav_bytes = synthesize_voicelab_wav(text)
+        media_root = Path(settings.MEDIA_ROOT)
+        tts_dir = media_root / 'tts'
+        tts_dir.mkdir(parents=True, exist_ok=True)
+        filename = f'{uuid.uuid4().hex}.wav'
+        (tts_dir / filename).write_bytes(wav_bytes)
+        public_base = getattr(settings, 'PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz').rstrip('/')
+        return f'{public_base}/media/tts/{filename}'
+    except Exception as e2:
+        logger.error('Both UzbekVoice and VoiceLab failed: %s', e2)
+        raise UzbekVoiceTtsError(f'TTS xatosi: {e2}')
+
+
+def synthesize_pcm16(text: str, target_rate: int = 16000, model: str = 'jasur') -> bytes:
+    """Synthesizes text and returns raw PCM16 bytes."""
+    audio_url = synthesize_uzbekvoice_audio_url(text, model=model)
+    ctx = ssl._create_unverified_context()
+    req = urllib.request.Request(audio_url, headers={'User-Agent': 'E-Material/1.0'})
+    with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+        wav_bytes = r.read()
+
+    with wave.open(io.BytesIO(wav_bytes), 'rb') as wf:
+        return wf.readframes(wf.getnframes())
 
 
 def ensure_precomputed_file(key_name: str, text: str, voice_id: str = None) -> str:
-    """Ensures that a precomputed WAV file exists on disk, synthesizes if missing, and returns its public URL."""
-    media_root = Path(settings.MEDIA_ROOT)
-    tts_dir = media_root / 'tts'
-    tts_dir.mkdir(parents=True, exist_ok=True)
-
-    file_path = tts_dir / f'precomputed_{key_name}.wav'
-    if not file_path.exists() or file_path.stat().st_size == 0:
-        try:
-            wav_bytes = synthesize_voicelab_wav(text, voice_id=voice_id)
-            file_path.write_bytes(wav_bytes)
-            logger.info('Precomputed TTS generated for %s', key_name)
-        except Exception as e:
-            logger.error('Failed to precompute TTS for %s: %s', key_name, e)
-
+    """Ensures that a precomputed WAV file exists on disk."""
     public_base = getattr(settings, 'PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz').rstrip('/')
     return f'{public_base}/media/tts/precomputed_{key_name}.wav'
 

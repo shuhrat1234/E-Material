@@ -36,7 +36,7 @@ function CitizenAiChat({ lang, fullPage = false }) {
     if (audioRef.current) {
       audioRef.current.pause();
     }
-    axios.post(`${API_BASE}/ai/tts/`, { text })
+    axios.post(`${API_BASE}/ai/tts/`, { text, model: 'jasur' })
       .then(res => {
         if (res.data?.audio_url) {
           const audio = new Audio(res.data.audio_url);

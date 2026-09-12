@@ -913,26 +913,26 @@ class AiAssistantViewSet(viewsets.ViewSet):
                 _AVATAR_CACHE[q_lower] = precomputed
                 return Response(precomputed)
 
-        # 2. Fast DeepSeek generation (max_tokens=60, timeout=3)
+        # 2. Fast DeepSeek generation for ultra-low latency (max_tokens=40, timeout=2.5)
         system_prompt = (
             "Sen Olmazor tumani IIB AI-yordamchisisan. "
-            "1-2 ta juda qisqa gapda aniq javob ber. "
-            "Faqat o'zbek tilida, lotin alifbosida, ro'yxatsiz javob ber."
+            "1 ta juda qisqa, lo'nda gapda javob ber (maksimum 12-15 so'z). "
+            "Faqat o'zbek tilida, lotin alifbosida yoz."
         )
         try:
             answer_text = deepseek_chat([
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': query},
-            ], temperature=0.2, timeout=3, max_tokens=60)
+            ], temperature=0.1, timeout=2.5, max_tokens=40)
         except Exception:
             answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
 
-        # 3. Synthesize VoiceLab audio (Abdulhay Otaxo'jayev voice)
+        # 3. Synthesize Jasur audio (UzbekVoice.ai authentic voice, minimal delay)
         audio_url = None
         try:
-            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='abdulhay')
+            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
         except Exception as e:
-            logger.error('VoiceLab synthesis error in avatar_session: %s', e)
+            logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
 
         result = {
             'answer_text': answer_text,
@@ -944,7 +944,7 @@ class AiAssistantViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='tts')
     def tts(self, request):
         text = (request.data.get('text') or '').strip()
-        model = request.data.get('model') or request.data.get('voice_id') or 'abdulhay'
+        model = request.data.get('model') or request.data.get('voice_id') or 'jasur'
         if not text:
             return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -1050,11 +1050,11 @@ class AiAssistantViewSet(viewsets.ViewSet):
         if not answer_text:
             return Response({'error': 'No text or query provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Synthesize audio via VoiceLab (Abdulhay Otaxo'jayev voice!)
+        # 1. Synthesize audio via UzbekVoice (Jasur voice!)
         try:
-            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='abdulhay')
+            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
         except Exception as e:
-            return Response({'error': f'VoiceLab xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response({'error': f'UzbekVoice xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
 
         # 2. Feed VoiceLab audio directly into D-ID stream for real-time lip sync
         key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
