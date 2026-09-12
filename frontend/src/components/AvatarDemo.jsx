@@ -358,8 +358,8 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           <CloseIcon className="h-5 w-5" />
         </button>
 
-        {/* Official IIB Header Badge */}
-        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-neutral-950/85 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-auto select-none">
+        {/* Mobile Only: Compact Top Header Badge */}
+        <div className="md:hidden flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-neutral-950/85 backdrop-blur-2xl border border-white/20 shadow-2xl pointer-events-auto select-none">
           <img src="/emblem.png" alt="O'zbekiston Gerbi" className="w-5 h-5 sm:w-6 sm:h-6 object-contain drop-shadow shrink-0" />
           <div className="text-left leading-tight">
             <div className="text-[11px] sm:text-[12px] font-bold text-white tracking-wider">OLMAZOR TUMANI IIB</div>
