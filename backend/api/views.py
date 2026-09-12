@@ -27,25 +27,25 @@ from .serializers import (
 )
 from .deepseek import deepseek_json, deepseek_chat, DeepSeekError
 from .silero_tts import synthesize_pcm16 as silero_synthesize, TtsError
-from .uzbekvoice_tts import synthesize_pcm16 as uzbekvoice_synthesize, synthesize_uzbekvoice_audio_url, UzbekVoiceTtsError
+from .uzbekvoice_tts import synthesize_pcm16 as uzbekvoice_synthesize, synthesize_uzbekvoice_audio_url, ensure_precomputed_file, UzbekVoiceTtsError
 from .simli_render import render_avatar_video, SimliError
 
 _PRECOMPUTED_ANSWERS = {
     'ariza': {
         'answer_text': "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik xizmati xonasiga shaxsan murojaat qilishingiz mumkin. O'zingiz bilan pasportingizni olishni unutmang.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/1e92872c-68af-458c-98a6-3de8fd768090.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213235Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=93f52f74c0cbeda362f1f699a5fb0717fb9d61b1ec0ec6425e13c253168ece53',
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_ariza.wav',
     },
     'pasport': {
         'answer_text': "Pasport yo'qolganda darhol hududiy IIB migratsiya va fuqarolikni rasmiylashtirish bo'limiga ariza bering. Sizga vaqtinchalik ma'lumotnoma rasmiylashtirib beriladi.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/7efb1e80-4254-4d27-82f7-95e3a2b5f0e9.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213238Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=eb02811de95326ba9d2c87988edff9d55b27b6557afda310f71c6a7ba48dddbe',
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_pasport.wav',
     },
     'murojaat': {
         'answer_text': "Murojaatingiz holatini bilish uchun IIB navbatchilik qismiga qo'ng'iroq qilib, arizangiz raqamini aytsangiz, mas'ul tergovchi haqida ma'lumot beriladi.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/33fa8908-77ef-4311-9237-2170e86320bc.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213241Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=15407ec59347cf12df359d2117009a19d19651309a954f6c451cfbcc4aee42e2',
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_murojaat.wav',
     },
     'qabul': {
         'answer_text': "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
-        'audio_url': 'https://cdn.uz.uzbekvoice.ai/beta-studio/api_media/tts/d9608901-5672-47cd-abbd-b0e589c917e5/8d7314bc-5b65-400d-9f37-7ec26911f6d4.wav?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=i8nFiKGACruqM8WB0Zhb%2F20260908%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260908T213244Z&X-Amz-Expires=345600&X-Amz-SignedHeaders=host&X-Amz-Signature=8832572594b1ae453aa7417130e0854f8693df90ed838f5957c858cd27626136',
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_qabul.wav',
     },
 }
 
@@ -909,6 +909,7 @@ class AiAssistantViewSet(viewsets.ViewSet):
 
         for key, precomputed in _PRECOMPUTED_ANSWERS.items():
             if key in q_lower:
+                ensure_precomputed_file(key, precomputed['answer_text'])
                 _AVATAR_CACHE[q_lower] = precomputed
                 return Response(precomputed)
 
@@ -926,12 +927,12 @@ class AiAssistantViewSet(viewsets.ViewSet):
         except Exception:
             answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
 
-        # 3. Synthesize Jasur audio
+        # 3. Synthesize VoiceLab audio (Abdulhay Otaxo'jayev voice)
         audio_url = None
         try:
-            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
+            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='abdulhay')
         except Exception as e:
-            logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
+            logger.error('VoiceLab synthesis error in avatar_session: %s', e)
 
         result = {
             'answer_text': answer_text,
@@ -943,7 +944,7 @@ class AiAssistantViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'], url_path='tts')
     def tts(self, request):
         text = (request.data.get('text') or '').strip()
-        model = request.data.get('model') or 'jasur'
+        model = request.data.get('model') or request.data.get('voice_id') or 'abdulhay'
         if not text:
             return Response({'error': 'No text provided'}, status=status.HTTP_400_BAD_REQUEST)
         try:
@@ -1049,13 +1050,13 @@ class AiAssistantViewSet(viewsets.ViewSet):
         if not answer_text:
             return Response({'error': 'No text or query provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Synthesize audio via UzbekVoice.ai (Jasur voice!)
+        # 1. Synthesize audio via VoiceLab (Abdulhay Otaxo'jayev voice!)
         try:
-            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
+            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='abdulhay')
         except Exception as e:
-            return Response({'error': f'UzbekVoice xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+            return Response({'error': f'VoiceLab xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
 
-        # 2. Feed UzbekVoice Jasur audio directly into D-ID stream for real-time lip sync
+        # 2. Feed VoiceLab audio directly into D-ID stream for real-time lip sync
         key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'
         b64 = base64.b64encode(key.encode('utf-8')).decode('utf-8')
         headers = {'Authorization': f'Basic {b64}', 'Content-Type': 'application/json'}

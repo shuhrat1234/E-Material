@@ -114,9 +114,12 @@ DEEPSEEK_MODEL = os.environ.get('DEEPSEEK_MODEL', 'deepseek-chat')
 SIMLI_API_KEY = os.environ.get('SIMLI_API_KEY', '')
 SIMLI_FACE_ID = os.environ.get('SIMLI_FACE_ID', '')
 
-# UzbekVoice.ai TTS settings (Jasur / Shoira models)
-UZBEKVOICE_API_KEY = os.environ.get('UZBEKVOICE_API_KEY', '5b9118bc-3676-4ab0-b500-026b3a6372b1:c504ec5b-d67a-4e85-a935-ed2e21e9d08e')
-UZBEKVOICE_MODEL = os.environ.get('UZBEKVOICE_MODEL', 'jasur')
+# UzbekVoice.ai / VoiceLab.uz TTS settings
+VOICELAB_API_KEY = os.environ.get('VOICELAB_API_KEY', 'vlk_6sXr0AWv47hCAeI_cb1-k1SdN9sp4ohxqVVT9We33FQ')
+VOICELAB_VOICE_ID = os.environ.get('VOICELAB_VOICE_ID', 'voice_M-p5iz9z_kPWNm_C0cFqbC6X')  # Abdulhay Otaxo'jayev
+UZBEKVOICE_API_KEY = os.environ.get('UZBEKVOICE_API_KEY', VOICELAB_API_KEY)
+UZBEKVOICE_MODEL = os.environ.get('UZBEKVOICE_MODEL', 'abdulhay')
+PUBLIC_BASE_URL = os.environ.get('PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz')
 
 # D-ID API settings
 DID_API_KEY = os.environ.get('DID_API_KEY', 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d')
