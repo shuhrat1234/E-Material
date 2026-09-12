@@ -469,7 +469,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
           /* Active Call Dialog - Suggestions & Controls at bottom */
           <div className="w-full space-y-2.5">
             {/* Quick Question Suggestions */}
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-1 px-1">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto thin-scrollbar pb-1.5 pt-1 px-1">
               {SUGGESTIONS.map((item, idx) => (
                 <button
                   key={idx}
