@@ -5,7 +5,7 @@ import { CloseIcon, SendIcon } from './Icons';
 
 const GREETING_TEXT = "Assalomu alaykum! Men Olmazor tumani ichki ishlar bo'limi sun'iy intellekt yordamchisiman. Sizga qanday yordam bera olaman?";
 const GREETING_VIDEO = '/officer-talking.mp4';
-const GREETING_AUDIO = '/greeting-jasur.wav';
+const GREETING_AUDIO = '/greeting-voicelab.wav?v=2';
 const IDLE_VIDEO = '/officer-idle.mp4';
 const TALKING_VIDEO = '/officer-talking.mp4';
 
@@ -205,7 +205,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
         playSpeech(audioUrl);
       } else {
         // Fallback to tts endpoint
-        const ttsRes = await axios.post(`${API_BASE}/ai/tts/`, { text, model: 'jasur' });
+        const ttsRes = await axios.post(`${API_BASE}/ai/tts/`, { text, model: 'abdulhay' });
         if (ttsRes.data.audio_url) {
           playSpeech(ttsRes.data.audio_url);
         }

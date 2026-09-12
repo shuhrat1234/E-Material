@@ -22,12 +22,31 @@ function CitizenAiChat({ lang, fullPage = false }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
-  const speak = (text) => {
+  const audioRef = useRef(null);
+
+  const fallbackSpeak = (text) => {
     if (!ttsSupported) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = lang === 'ru' ? 'ru-RU' : 'uz-UZ';
     window.speechSynthesis.speak(utterance);
+  };
+
+  const speak = (text) => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    axios.post(`${API_BASE}/ai/tts/`, { text })
+      .then(res => {
+        if (res.data?.audio_url) {
+          const audio = new Audio(res.data.audio_url);
+          audioRef.current = audio;
+          audio.play().catch(() => fallbackSpeak(text));
+        } else {
+          fallbackSpeak(text);
+        }
+      })
+      .catch(() => fallbackSpeak(text));
   };
 
   const send = (text) => {
