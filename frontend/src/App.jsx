@@ -204,9 +204,9 @@ function App() {
                 <MenuIcon className="h-5 w-5" />
               </button>
             )}
-            <img src="/emblem.png" alt="" className="h-9 w-9 sm:h-11 sm:w-11 lg:h-12 lg:w-12 shrink-0 object-contain" />
-            <div className="min-w-0">
-              <p className="text-[11px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-snug lg:leading-snug line-clamp-2 lg:line-clamp-none">{t.subtitle}</p>
+            <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-11 sm:w-11 lg:h-12 lg:w-12 shrink-0 object-contain" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[9.5px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-tight sm:leading-snug line-clamp-none">{t.subtitle}</p>
             </div>
           </div>
 

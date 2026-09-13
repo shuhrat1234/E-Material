@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
-import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon } from './Icons';
+import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon, RepeatIcon } from './Icons';
 import Modal from './Modal';
 import Select from './ui/Select';
 import { notify } from '../toastService';
@@ -220,7 +220,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
-      <div className="p-6 flex flex-col flex-1 min-h-0">
+      <div className="p-4 sm:p-6 flex flex-col flex-1 min-h-0">
 
         {/* Header */}
         <div className="flex justify-between items-start border-b border-gov-border pb-3 shrink-0">
@@ -231,10 +231,10 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 <button
                   type="button"
                   onClick={() => setActiveTab('citizenCases')}
-                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
                   title={lang === 'ru' ? 'Посмотреть все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rish'}
                 >
-                  <span>🔁</span>
+                  <RepeatIcon className="h-3 w-3 text-amber-700 shrink-0" />
                   <span>
                     {lang === 'ru'
                       ? `Повторный заявитель (всего: ${citizenMaterials.length + 1})`
@@ -250,10 +250,10 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gov-border shrink-0 text-xs font-semibold mt-4">
+        <div className="flex border-b border-gov-border shrink-0 text-xs font-semibold mt-3 sm:mt-4 overflow-x-auto no-scrollbar scroll-smooth">
           <button
             onClick={() => setActiveTab('info')}
-            className={`pb-2.5 px-4 -mb-[1px] border-b-2 transition-all ${
+            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all ${
               activeTab === 'info' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
@@ -261,7 +261,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
           </button>
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`pb-2.5 px-4 -mb-[1px] border-b-2 transition-all ${
+            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all ${
               activeTab === 'timeline' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
@@ -269,7 +269,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`pb-2.5 px-4 -mb-[1px] border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 ${
               activeTab === 'documents' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
@@ -282,11 +282,11 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
           </button>
           <button
             onClick={() => setActiveTab('citizenCases')}
-            className={`pb-2.5 px-4 -mb-[1px] border-b-2 transition-all flex items-center gap-1.5 ${
+            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 ${
               activeTab === 'citizenCases' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
-            <span>🔁</span>
+            <RepeatIcon className="h-3 w-3 text-amber-700 shrink-0" />
             <span>{lang === 'ru' ? 'Обращения гражданина' : 'Fuqaro murojaatlari'}</span>
             {citizenMaterials.length > 0 && (
               <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-amber-500/20 text-amber-800 text-[9px] font-bold inline-flex items-center justify-center">
@@ -297,7 +297,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto py-3 sm:py-4">
           
           {activeTab === 'info' ? (
             <div className="space-y-4 text-xs">
@@ -313,7 +313,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</p>
                   <p className="text-gov-text font-semibold">{officer ? (lang === 'ru' ? officer.name_ru : officer.name_uz) : (lang === 'ru' ? 'Не назначен' : 'Tayinlanmagan')}</p>
@@ -358,7 +358,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 <div className="space-y-2 pt-2 border-t border-gov-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
-                      <span>🔁</span>
+                      <RepeatIcon className="h-3.5 w-3.5 text-amber-700 shrink-0" />
                       <span>
                         {lang === 'ru'
                           ? `Другие обращения этого гражданина (${citizenMaterials.length})`
@@ -553,7 +553,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
               <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
                 <div className="flex items-center justify-between">
                   <h4 className="font-bold text-gov-text text-sm flex items-center gap-1.5">
-                    <span>🔁</span>
+                    <RepeatIcon className="h-4 w-4 text-amber-700 shrink-0" />
                     <span>{caseItem.citizen_name}</span>
                   </h4>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-800 border border-amber-500/30">
@@ -659,10 +659,10 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gov-border pt-4 shrink-0 flex justify-end">
+        <div className="border-t border-gov-border pt-3 sm:pt-4 shrink-0 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 border border-transparent"
+            className="w-full sm:w-auto px-5 py-2.5 sm:py-2 bg-gov-primary text-white text-xs font-semibold rounded-lg hover:bg-blue-700 border border-transparent shadow-sm transition-colors"
           >
             {t.common_close}
           </button>

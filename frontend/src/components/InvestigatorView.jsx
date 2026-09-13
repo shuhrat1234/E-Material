@@ -4,7 +4,7 @@ import { API_BASE } from '../App';
 import ChatPanel from './ChatPanel';
 import SmsModal from './SmsModal';
 import RatingsModal from './RatingsModal';
-import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon, GearIcon, FlaskIcon, LockIcon, TrashIcon } from './Icons';
+import { DashboardIcon, FolderIcon, AiIcon, ClockIcon, ChatIcon, TrendUpIcon, EyeIcon, ScaleIcon, SendIcon, CloseIcon, SearchIcon, GearIcon, FlaskIcon, LockIcon, TrashIcon, RepeatIcon } from './Icons';
 import { useChatHistory } from '../hooks/useChatHistory';
 import Modal from './Modal';
 import Card, { CardHeader } from './ui/Card';
@@ -571,7 +571,7 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
         )}
 
         {(activePanel === 'dashboard' || activePanel === 'materials') && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <span className="flex items-center gap-1.5 text-gov-muted text-xs font-semibold pr-1">
               <FolderIcon className="h-3.5 w-3.5" /> {lang === 'ru' ? 'Фильтры:' : 'Filtrlar:'}
             </span>
@@ -654,14 +654,14 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
             <button
               type="button"
               onClick={() => setOnlyRepeatFilter(prev => !prev)}
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+              className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border transition-all shrink-0 ${
                 onlyRepeatFilter
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-1 ring-amber-500/40'
                   : 'bg-gov-surface border-gov-border text-gov-text hover:bg-gov-light'
               }`}
               title={lang === 'ru' ? 'Показать только повторные обращения граждан' : 'Faqat takroriy murojaatlarni ko\'rsatish'}
             >
-              <span>🔁</span>
+              <RepeatIcon className={`h-3.5 w-3.5 ${onlyRepeatFilter ? 'text-white' : 'text-amber-600'} shrink-0`} />
               <span>
                 {lang === 'ru'
                   ? `Повторные (${citizenRepeatIndex.repeatTotalMaterialsCount})`

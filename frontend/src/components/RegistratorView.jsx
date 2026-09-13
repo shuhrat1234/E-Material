@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
 import ChatPanel from './ChatPanel';
 import Modal from './Modal';
-import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon, TrashIcon } from './Icons';
+import { ChatIcon, EyeIcon, SearchIcon, ClockIcon, DashboardIcon, UsersIcon, CloseIcon, TrashIcon, RepeatIcon } from './Icons';
 import Select from './ui/Select';
 import MahallaPicker from './ui/MahallaPicker';
 import FilterPill from './ui/FilterPill';
@@ -686,7 +686,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-4">
               <FilterPill
                 icon={<ClockIcon className="h-3.5 w-3.5" />}
                 value={dateRange}
@@ -735,14 +735,14 @@ function RegistratorView({ lang, onViewDetails, user }) {
               <button
                 type="button"
                 onClick={() => setOnlyRepeatFilter(prev => !prev)}
-                className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border transition-all shrink-0 ${
                   onlyRepeatFilter
-                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-1 ring-amber-500/40'
                     : 'bg-gov-surface border-gov-border text-gov-text hover:bg-gov-light'
                 }`}
                 title={lang === 'ru' ? 'Показать только повторные обращения граждан' : 'Faqat takroriy murojaatlarni ko\'rsatish'}
               >
-                <span>🔁</span>
+                <RepeatIcon className={`h-3.5 w-3.5 ${onlyRepeatFilter ? 'text-white' : 'text-amber-600'} shrink-0`} />
                 <span>
                   {lang === 'ru'
                     ? `Повторные (${citizenRepeatIndex.repeatTotalMaterialsCount})`
