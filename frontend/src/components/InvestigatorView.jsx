@@ -946,7 +946,7 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
                               className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
                               title={lang === 'ru' ? 'Показать все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rsatish'}
                             >
-                              <span>🔁</span>
+                              <RepeatIcon className="h-3 w-3 text-amber-700 shrink-0" />
                               <span>{lang === 'ru' ? `${citizenRepeatIndex.getCount(c)} обращений` : `${citizenRepeatIndex.getCount(c)} ta murojaat`}</span>
                             </button>
                           )}
