@@ -453,7 +453,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
             </div>
           ) : activeTab === 'timeline' ? (
             /* Timeline Tab */
-            <div className="space-y-4 text-xs text-left max-w-md mx-auto py-2">
+            <div className="space-y-4 text-xs text-left max-w-md mx-auto py-2 pl-3.5 sm:pl-4 pr-1">
               {displayList.map((step, idx) => (
                 <div key={idx} className="flex gap-4 items-start relative pb-6 border-l border-gov-border pl-6 last:pb-0 last:border-transparent">
                   <div className={`w-5 h-5 rounded-full absolute -left-[10px] top-0.5 flex items-center justify-center text-[10px] font-bold border transition-colors ${
@@ -482,21 +482,21 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
               ))}
 
               {/* Add Custom Step Form */}
-              <form onSubmit={handleAddStep} className="mt-6 pt-4 border-t border-gov-border flex gap-2">
+              <form onSubmit={handleAddStep} className="mt-5 pt-3 border-t border-gov-border flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   required
                   value={newStepText}
                   onChange={(e) => setNewStepText(e.target.value)}
-                  placeholder={lang === 'ru' ? "Добавить новое действие..." : "Yangi harakat qo'shish..."}
-                  className="flex-1 px-3 py-1.5 border border-gov-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                  placeholder={lang === 'ru' ? "Новое действие..." : "Yangi harakat qo'shish..."}
+                  className="min-w-0 flex-1 px-3 py-1.5 border border-gov-border rounded text-xs focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
                 />
                 <button
                   type="submit"
                   disabled={addingStep}
-                  className="px-4 py-1.5 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded transition-colors disabled:opacity-50"
+                  className="px-4 py-1.5 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded transition-colors disabled:opacity-50 shrink-0 text-center"
                 >
-                  {addingStep ? '...' : (lang === 'ru' ? "Добавить" : "Qo'shish")}
+                  {addingStep ? '...' : (lang === 'ru' ? 'Добавить' : 'Qo\'shish')}
                 </button>
               </form>
             </div>
