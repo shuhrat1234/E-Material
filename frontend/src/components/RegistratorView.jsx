@@ -33,7 +33,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [officerFilter, setOfficerFilter] = useState('');
   const [onlyRepeatFilter, setOnlyRepeatFilter] = useState(false);
   const [registryPage, setRegistryPage] = useState(1);
-  const [registryPageSize, setRegistryPageSize] = useState(10);
+  const [registryPageSize, setRegistryPageSize] = useState(14);
 
   // Form State
   const [materialId, setMaterialId] = useState('');
@@ -847,7 +847,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
             </div>
 
             {filteredMaterials.length > 0 && (
-              <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-4 border-t border-gov-border">
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-auto pt-4 border-t border-gov-border">
                 <div className="flex items-center gap-3">
                   <p className="text-[11px] text-gov-muted">
                     {lang === 'ru'
@@ -856,7 +856,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                   </p>
                   <div className="inline-flex items-center gap-1 text-[11px] text-gov-muted">
                     <span className="hidden sm:inline">{lang === 'ru' ? 'Показывать:' : 'Sahifada:'}</span>
-                    {[10, 16, 20].map(size => (
+                    {[10, 14, 16, 20].map(size => (
                       <button
                         key={size}
                         type="button"
