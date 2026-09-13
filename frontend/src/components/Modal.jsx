@@ -23,13 +23,13 @@ function Modal({ onClose, children, maxWidth = 'max-w-xl', zIndex = 'z-[1000]' }
 
   return (
     <div
-      className={`fixed inset-0 ${zIndex} bg-gov-navy/50 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4`}
+      className={`fixed inset-0 ${zIndex} bg-gov-navy/50 backdrop-blur-sm flex items-center justify-center p-1.5 sm:p-4`}
       style={{ animation: 'fadeIn 0.15s ease-out' }}
       onMouseDown={handleBackdropClick}
     >
       <div
         ref={panelRef}
-        className={`bg-gov-surface border border-gov-border rounded-2xl ${maxWidth} w-full shadow-xl text-left flex flex-col max-h-[92vh] sm:max-h-[90vh]`}
+        className={`bg-gov-surface border border-gov-border rounded-xl sm:rounded-2xl ${maxWidth} w-full shadow-xl text-left flex flex-col max-h-[94vh] sm:max-h-[90vh]`}
         style={{ animation: 'modalIn 0.18s ease-out' }}
       >
         {children}
