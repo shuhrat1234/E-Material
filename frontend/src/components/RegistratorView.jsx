@@ -324,10 +324,10 @@ function RegistratorView({ lang, onViewDetails, user }) {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex bg-gov-surface shadow-card p-1.5 rounded-full w-fit gap-1">
+      <div className="flex bg-gov-surface shadow-card p-1 sm:p-1.5 rounded-2xl sm:rounded-full w-full sm:w-fit gap-1 overflow-x-auto no-scrollbar scroll-smooth">
         <button
           onClick={() => setActiveTab('register')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-all ${
             activeTab === 'register' ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-muted hover:text-gov-text'
           }`}
         >
@@ -335,20 +335,20 @@ function RegistratorView({ lang, onViewDetails, user }) {
         </button>
         <button
           onClick={() => setActiveTab('approvals')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 sm:gap-2 ${
             activeTab === 'approvals' ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-muted hover:text-gov-text'
           }`}
         >
-          {lang === 'ru' ? 'Тасдиклаш сурови' : 'Tasdiqlash so\'rovlari'}
+          {lang === 'ru' ? 'Согласования' : 'Tasdiqlash so\'rovlari'}
           {approvalRequests.length > 0 && (
-            <span className="w-5 h-5 bg-gov-primary text-white rounded-full flex items-center justify-center text-[10px] font-bold">
+            <span className="w-4 h-4 sm:w-5 sm:h-5 bg-gov-primary text-white rounded-full flex items-center justify-center text-[9px] sm:text-[10px] font-bold">
               {approvalRequests.length}
             </span>
           )}
         </button>
         <button
           onClick={() => setActiveTab('chat')}
-          className={`px-4 py-2 rounded-full text-xs font-semibold transition-all inline-flex items-center gap-1.5 ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full text-[11px] sm:text-xs font-semibold whitespace-nowrap shrink-0 transition-all inline-flex items-center gap-1.5 ${
             activeTab === 'chat' ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-muted hover:text-gov-text'
           }`}
         >
@@ -361,7 +361,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       ) : activeTab === 'register' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form Left */}
-          <div className="lg:col-span-1 bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6 space-y-4">
+          <div className="lg:col-span-1 bg-gov-surface rounded-2xl shadow-card p-3.5 sm:p-6 space-y-4">
             <h3 className="font-semibold text-sm text-gov-text border-b border-gov-border pb-3">
               {lang === 'ru' ? 'Регистрация нового материала' : 'Yangi materialni ro\'yxatdan o\'tkazish'}
             </h3>
@@ -559,7 +559,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
                     {lang === 'ru' ? 'Срок (дней)' : 'Muddat (kun)'}
@@ -593,7 +593,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
                     {lang === 'ru' ? 'Тип материала' : 'Hujjat turi'}
@@ -629,7 +629,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 {errors.mahalla && <p className="text-[11px] text-gov-danger mt-1">{errors.mahalla}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
                     ИИБ

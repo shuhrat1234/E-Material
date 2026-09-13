@@ -210,18 +210,18 @@ function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 mt-2.5 md:mt-0">
+          <div className="flex items-center justify-between md:justify-start gap-1.5 sm:gap-3 lg:gap-4 mt-2.5 md:mt-0 w-full md:w-auto flex-wrap">
             {/* Language Selector */}
-            <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold">
+            <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold shrink-0">
               <button
                 onClick={() => setLang('ru')}
-                className={`px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 RU
               </button>
               <button
                 onClick={() => setLang('uz')}
-                className={`px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 UZ
               </button>
@@ -241,35 +241,35 @@ function App() {
             {!hasSidebar && (
               <button
                 onClick={() => setShowSettings(true)}
-                className="p-2 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all"
+                className="p-1.5 sm:p-2 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
                 title={lang === 'ru' ? 'Настройки интерфейса' : 'Interfeys sozlamalari'}
               >
-                <GearIcon className="h-5 w-5" />
+                <GearIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             )}
 
             {/* User display */}
-            <div className="flex items-center gap-3 border-l border-gov-border pl-4">
+            <div className="flex items-center gap-1.5 sm:gap-3 border-l border-gov-border pl-2 sm:pl-4 min-w-0">
               <button
                 onClick={() => setShowProfile(true)}
-                className="flex items-center gap-2.5 hover:bg-gov-light rounded-lg px-2 py-1.5 -my-1.5 transition-colors"
+                className="flex items-center gap-1.5 sm:gap-2.5 hover:bg-gov-light rounded-lg px-1 sm:px-2 py-1.5 -my-1.5 transition-colors min-w-0"
                 title={lang === 'ru' ? 'Мой профиль' : 'Mening profilim'}
               >
                 {kioskInfo ? (
-                  <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
+                  <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
                     <kioskInfo.Icon className="h-4 w-4" />
                   </span>
                 ) : (
-                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-9 h-9 sm:w-10 sm:h-10" textSize="text-xs" className="border border-gov-border" />
+                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8 sm:w-10 sm:h-10" textSize="text-[10px] sm:text-xs" className="border border-gov-border shrink-0" />
                 )}
-                <div className="text-left">
-                  <p className="text-xs font-semibold text-gov-text">{displayName}</p>
-                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider">{displayRoleLabel}</p>
+                <div className="text-left min-w-0">
+                  <p className="text-xs font-semibold text-gov-text truncate max-w-[7rem] sm:max-w-none">{displayName}</p>
+                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider truncate max-w-[7rem] sm:max-w-none">{displayRoleLabel}</p>
                 </div>
               </button>
               <button
                 onClick={handleLogout}
-                className="ml-1 p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-all"
+                className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-all shrink-0"
                 title="Exit"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
