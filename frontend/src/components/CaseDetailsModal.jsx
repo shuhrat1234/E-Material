@@ -249,51 +249,63 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
           <button onClick={onClose} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-5 w-5" /></button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-gov-border shrink-0 text-xs font-semibold mt-2 sm:mt-4 overflow-x-auto no-scrollbar scroll-smooth gap-0.5 sm:gap-1">
+        {/* Tabs - Modern Segmented Control */}
+        <div className="grid grid-cols-4 p-1 bg-gov-light/80 rounded-xl shrink-0 mt-2 sm:mt-3 border border-gov-border/60">
           <button
+            type="button"
             onClick={() => setActiveTab('info')}
-            className={`pb-2 sm:pb-2.5 px-2 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[10.5px] sm:text-xs ${
-              activeTab === 'info' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
+            className={`py-1.5 sm:py-2 rounded-lg text-center font-bold text-[10.5px] sm:text-xs transition-all flex items-center justify-center gap-1 ${
+              activeTab === 'info'
+                ? 'bg-gov-surface text-gov-primary shadow-xs'
+                : 'text-gov-muted hover:text-gov-text'
             }`}
           >
             <span className="sm:hidden">{lang === 'ru' ? 'Инфо' : 'Asosiy'}</span>
             <span className="hidden sm:inline">{t.info_tab}</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('timeline')}
-            className={`pb-2 sm:pb-2.5 px-2 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[10.5px] sm:text-xs ${
-              activeTab === 'timeline' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
+            className={`py-1.5 sm:py-2 rounded-lg text-center font-bold text-[10.5px] sm:text-xs transition-all flex items-center justify-center gap-1 ${
+              activeTab === 'timeline'
+                ? 'bg-gov-surface text-gov-primary shadow-xs'
+                : 'text-gov-muted hover:text-gov-text'
             }`}
           >
             <span className="sm:hidden">{lang === 'ru' ? 'Этапы' : 'Bosqich'}</span>
             <span className="hidden sm:inline">{t.timeline_tab}</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('documents')}
-            className={`pb-2 sm:pb-2.5 px-2 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[10.5px] sm:text-xs flex items-center gap-1 sm:gap-1.5 ${
-              activeTab === 'documents' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
+            className={`py-1.5 sm:py-2 rounded-lg text-center font-bold text-[10.5px] sm:text-xs transition-all flex items-center justify-center gap-1 ${
+              activeTab === 'documents'
+                ? 'bg-gov-surface text-gov-primary shadow-xs'
+                : 'text-gov-muted hover:text-gov-text'
             }`}
           >
             <span className="sm:hidden">{lang === 'ru' ? 'Файлы' : 'Hujjat'}</span>
             <span className="hidden sm:inline">{lang === 'ru' ? 'Документы' : 'Hujjatlar'}</span>
             {documents.length > 0 && (
-              <span className="min-w-[1rem] h-[1rem] sm:min-w-[1.1rem] sm:h-[1.1rem] px-1 rounded-full bg-gov-primaryLight text-gov-primary text-[8.5px] sm:text-[9px] font-bold inline-flex items-center justify-center">
+              <span className="min-w-[0.95rem] h-[0.95rem] sm:min-w-[1.1rem] sm:h-[1.1rem] px-1 rounded-full bg-gov-primary text-white text-[8px] sm:text-[9px] font-bold inline-flex items-center justify-center">
                 {documents.length}
               </span>
             )}
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('citizenCases')}
-            className={`pb-2 sm:pb-2.5 px-2 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[10.5px] sm:text-xs flex items-center gap-1 sm:gap-1.5 ${
-              activeTab === 'citizenCases' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
+            className={`py-1.5 sm:py-2 rounded-lg text-center font-bold text-[10.5px] sm:text-xs transition-all flex items-center justify-center gap-1 ${
+              activeTab === 'citizenCases'
+                ? 'bg-gov-surface text-gov-primary shadow-xs'
+                : 'text-gov-muted hover:text-gov-text'
             }`}
           >
             <RepeatIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-amber-700 shrink-0" />
             <span className="sm:hidden">{lang === 'ru' ? 'Архив' : 'Tarix'}</span>
-            <span className="hidden sm:inline">{lang === 'ru' ? 'Обращения гражданина' : 'Fuqaro murojaatlari'}</span>
+            <span className="hidden sm:inline">{lang === 'ru' ? 'Обращения' : 'Murojaatlar'}</span>
             {citizenMaterials.length > 0 && (
-              <span className="min-w-[1rem] h-[1rem] sm:min-w-[1.1rem] sm:h-[1.1rem] px-1 rounded-full bg-amber-500/20 text-amber-800 text-[8.5px] sm:text-[9px] font-bold inline-flex items-center justify-center">
+              <span className="min-w-[0.95rem] h-[0.95rem] sm:min-w-[1.1rem] sm:h-[1.1rem] px-1 rounded-full bg-amber-500/20 text-amber-800 text-[8px] sm:text-[9px] font-bold inline-flex items-center justify-center">
                 {citizenMaterials.length + 1}
               </span>
             )}
@@ -558,23 +570,23 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
             </div>
           ) : (
             /* Citizen Cases Tab */
-            <div className="space-y-4 text-xs">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-gov-text text-sm flex items-center gap-1.5">
-                    <RepeatIcon className="h-4 w-4 text-amber-700 shrink-0" />
-                    <span>{caseItem.citizen_name}</span>
+            <div className="space-y-3.5 text-xs">
+              <div className="p-2.5 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <h4 className="font-bold text-gov-text text-xs sm:text-sm flex items-center gap-1.5 min-w-0 truncate">
+                    <RepeatIcon className="h-3.5 w-3.5 text-amber-700 shrink-0" />
+                    <span className="truncate">{caseItem.citizen_name}</span>
                   </h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-800 border border-amber-500/30">
+                  <span className="px-2 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-bold bg-amber-500/20 text-amber-800 border border-amber-500/30 shrink-0">
                     {lang === 'ru'
-                      ? `Всего обращений: ${citizenMaterials.length + 1}`
-                      : `Jami murojaatlar: ${citizenMaterials.length + 1} ta`}
+                      ? `Всего: ${citizenMaterials.length + 1}`
+                      : `Jami: ${citizenMaterials.length + 1} ta`}
                   </span>
                 </div>
-                <p className="text-gov-muted text-[11px]">
+                <p className="text-gov-muted text-[10.5px] sm:text-[11px]">
                   {lang === 'ru'
-                    ? `Номер телефона: ${caseItem.citizen_phone || 'не указан'}`
-                    : `Telefon raqami: ${caseItem.citizen_phone || 'ko\'rsatilmagan'}`}
+                    ? `Телефон: ${caseItem.citizen_phone || 'не указан'}`
+                    : `Telefon: ${caseItem.citizen_phone || 'ko\'rsatilmagan'}`}
                 </p>
               </div>
 
@@ -583,17 +595,17 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-gov-muted">
                   {lang === 'ru' ? 'Текущий открытый материал' : 'Hozirgi ochilgan material'}
                 </p>
-                <div className="p-3 bg-gov-primaryLight/30 border border-gov-primary/40 rounded-xl space-y-1.5 text-left">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-gov-primary text-xs">{caseItem.id}</span>
-                      <span className="text-[10px] text-gov-muted font-mono">{formatDate(caseItem.registered_at)}</span>
+                <div className="p-2.5 sm:p-3 bg-gov-primaryLight/30 border border-gov-primary/40 rounded-xl space-y-1.5 text-left">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-bold text-gov-primary text-xs font-mono whitespace-nowrap">{caseItem.id}</span>
+                      <span className="text-[10px] text-gov-muted font-mono whitespace-nowrap">{formatDate(caseItem.registered_at)}</span>
                     </div>
-                    <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none ${getStatusBadge(caseItem.status)}`}>
+                    <span className={`px-1.5 py-0.5 border rounded text-[9.5px] font-semibold leading-none shrink-0 ${getStatusBadge(caseItem.status)}`}>
                       {getStatusText(caseItem.status)}
                     </span>
                   </div>
-                  <p className="text-gov-text font-medium text-[11px]">
+                  <p className="text-gov-text font-medium text-[11px] leading-relaxed">
                     {lang === 'ru' ? caseItem.title_ru : caseItem.title_uz}
                   </p>
                   <span className="inline-block text-[9px] font-bold text-gov-primary bg-gov-surface border border-gov-primary/30 px-2 py-0.5 rounded">
@@ -628,21 +640,21 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                     {citizenMaterials.map(cm => (
                       <div
                         key={cm.id}
-                        className="p-3 bg-gov-surface border border-gov-border rounded-xl space-y-2 hover:border-gov-primary/50 transition-all text-left shadow-sm"
+                        className="p-2.5 sm:p-3 bg-gov-surface border border-gov-border rounded-xl space-y-2 hover:border-gov-primary/50 transition-all text-left shadow-sm"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-1.5">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="font-bold text-gov-primary text-xs font-mono whitespace-nowrap">{cm.id}</span>
                             <span className="text-[10px] text-gov-muted font-mono whitespace-nowrap">{formatDate(cm.registered_at)}</span>
                           </div>
-                          <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none shrink-0 ${getStatusBadge(cm.status)}`}>
+                          <span className={`px-1.5 py-0.5 border rounded text-[9.5px] font-semibold leading-none shrink-0 ${getStatusBadge(cm.status)}`}>
                             {getStatusText(cm.status)}
                           </span>
                         </div>
                         <p className="text-gov-text font-medium text-[11px] leading-relaxed" title={lang === 'ru' ? cm.title_ru : cm.title_uz}>
                           {lang === 'ru' ? cm.title_ru : cm.title_uz}
                         </p>
-                        <div className="flex items-center justify-between pt-2 border-t border-gov-border/60 text-[10px] text-gov-muted">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gov-border/60 text-[10px] text-gov-muted">
                           <span>
                             {lang === 'ru' ? 'Срок: ' : 'Muddat: '}
                             <strong className="font-mono text-gov-text">{formatDate(cm.deadline)}</strong>
@@ -652,7 +664,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                             onClick={() => {
                               if (onSelectCase) onSelectCase(cm.id);
                             }}
-                            className="px-3 py-1 bg-gov-primary text-white hover:bg-blue-700 rounded text-[10px] font-semibold transition-colors shadow-sm"
+                            className="px-2.5 py-1 bg-gov-primary text-white hover:bg-blue-700 rounded text-[10px] font-semibold transition-colors shadow-sm shrink-0"
                           >
                             {lang === 'ru' ? 'Открыть дело →' : 'Materialni ochish →'}
                           </button>
