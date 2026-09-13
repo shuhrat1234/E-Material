@@ -33,7 +33,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
   const [officerFilter, setOfficerFilter] = useState('');
   const [onlyRepeatFilter, setOnlyRepeatFilter] = useState(false);
   const [registryPage, setRegistryPage] = useState(1);
-  const REGISTRY_PAGE_SIZE = 16;
+  const [registryPageSize, setRegistryPageSize] = useState(10);
 
   // Form State
   const [materialId, setMaterialId] = useState('');
@@ -288,8 +288,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
       return { value: key, label: `${name} ${y}` };
     });
 
-  const registryPageCount = Math.max(1, Math.ceil(filteredMaterials.length / REGISTRY_PAGE_SIZE));
-  const pagedMaterials = filteredMaterials.slice((registryPage - 1) * REGISTRY_PAGE_SIZE, registryPage * REGISTRY_PAGE_SIZE);
+  const registryPageCount = Math.max(1, Math.ceil(filteredMaterials.length / registryPageSize));
+  const pagedMaterials = filteredMaterials.slice((registryPage - 1) * registryPageSize, registryPage * registryPageSize);
 
   useEffect(() => {
     setRegistryPage(1);
@@ -763,21 +763,21 @@ function RegistratorView({ lang, onViewDetails, user }) {
               <table className="min-w-full divide-y divide-gov-border text-left">
                 <thead>
                   <tr className="bg-gov-border/20 text-[10px] font-bold text-gov-muted uppercase tracking-wider">
-                    <th className="px-3 py-2">ID</th>
-                    <th className="px-3 py-2">{lang === 'ru' ? 'Заявитель' : 'Murojaatchi'}</th>
-                    <th className="px-3 py-2">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</th>
-                    <th className="px-3 py-2">{lang === 'ru' ? 'Содержание' : 'Mazmuni'}</th>
-                    <th className="px-3 py-2">ИИБ</th>
-                    <th className="px-3 py-2">{lang === 'ru' ? 'Ст. УК' : 'Modda'}</th>
-                    <th className="px-3 py-2">{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
-                    <th className="px-3 py-2">{lang === 'ru' ? 'Статус' : 'Status'}</th>
-                    <th className="px-3 py-2 text-center">{lang === 'ru' ? 'Действия' : 'Amallar'}</th>
+                    <th className="px-4 py-3">ID</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Заявитель' : 'Murojaatchi'}</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Содержание' : 'Mazmuni'}</th>
+                    <th className="px-4 py-3">ИИБ</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Ст. УК' : 'Modda'}</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
+                    <th className="px-4 py-3">{lang === 'ru' ? 'Статус' : 'Status'}</th>
+                    <th className="px-4 py-3 text-center">{lang === 'ru' ? 'Действия' : 'Amallar'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gov-border text-xs">
                   {pagedMaterials.length === 0 && (
                     <tr>
-                      <td colSpan="9" className="px-4 py-8 text-center text-gov-muted font-medium">{lang === 'ru' ? 'Материалов нет' : 'Materiallar yo\'q'}</td>
+                      <td colSpan="9" className="px-4 py-12 text-center text-gov-muted font-medium">{lang === 'ru' ? 'Материалов нет' : 'Materiallar yo\'q'}</td>
                     </tr>
                   )}
                   {pagedMaterials.map(m => {
@@ -786,14 +786,14 @@ function RegistratorView({ lang, onViewDetails, user }) {
                     const isRepeatCitizen = citizenRepeatIndex.isRepeat(m);
                     const citizenCount = citizenRepeatIndex.getCount(m);
                     return (
-                      <tr key={m.id} className="hover:bg-gov-light/30 transition-colors">
-                        <td className="px-3 py-1.5 font-semibold text-gov-text">
+                      <tr key={m.id} className="hover:bg-gov-light/30">
+                        <td className="px-4 py-3 font-semibold text-gov-text">
                           {m.id}
-                          {m.extra_ids && <p className="text-[9.5px] font-normal text-gov-muted mt-0.5 leading-none">+ {m.extra_ids}</p>}
+                          {m.extra_ids && <p className="text-[10px] font-normal text-gov-muted mt-0.5">+ {m.extra_ids}</p>}
                         </td>
-                        <td className="px-3 py-1.5">
-                          <p className="font-semibold text-gov-text leading-tight">{m.citizen_name}</p>
-                          <p className="text-[10px] text-gov-muted mt-0.5 leading-tight">{m.citizen_phone}</p>
+                        <td className="px-4 py-3">
+                          <p className="font-semibold text-gov-text">{m.citizen_name}</p>
+                          <p className="text-[10px] text-gov-muted mt-0.5">{m.citizen_phone}</p>
                           {isRepeatCitizen && (
                             <button
                               type="button"
@@ -801,41 +801,41 @@ function RegistratorView({ lang, onViewDetails, user }) {
                                 e.stopPropagation();
                                 setSearchQuery(m.citizen_phone || m.citizen_name);
                               }}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 mt-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
                               title={lang === 'ru' ? 'Показать все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rsatish'}
                             >
-                              <RepeatIcon className="h-2.5 w-2.5 text-amber-700 shrink-0" />
+                              <RepeatIcon className="h-3 w-3 text-amber-700 shrink-0" />
                               <span>{lang === 'ru' ? `${citizenCount} обращений` : `${citizenCount} ta murojaat`}</span>
                             </button>
                           )}
                         </td>
-                        <td className="px-3 py-1.5 font-medium text-gov-muted">{officerName}</td>
-                        <td className="px-3 py-1.5 text-gov-muted max-w-[150px] truncate" title={lang === 'ru' ? m.title_ru : m.title_uz}>
+                        <td className="px-4 py-3 font-medium text-gov-muted">{officerName}</td>
+                        <td className="px-4 py-3 text-gov-muted max-w-[150px] truncate" title={lang === 'ru' ? m.title_ru : m.title_uz}>
                           {lang === 'ru' ? m.title_ru : m.title_uz}
                         </td>
-                        <td className="px-3 py-1.5 text-gov-muted">{m.iib || '—'}</td>
-                        <td className="px-3 py-1.5 text-gov-muted">{m.preliminary_article || '—'}</td>
-                        <td className="px-3 py-1.5 font-mono text-[11px] text-gov-text">{formatDate(m.deadline)}</td>
-                        <td className="px-3 py-1.5">
+                        <td className="px-4 py-3 text-gov-muted">{m.iib || '—'}</td>
+                        <td className="px-4 py-3 text-gov-muted">{m.preliminary_article || '—'}</td>
+                        <td className="px-4 py-3 font-mono text-[11px] text-gov-text">{formatDate(m.deadline)}</td>
+                        <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold leading-none ${getStatusClass(m.status)}`}>
                             {getStatusText(m.status)}
                           </span>
                         </td>
-                        <td className="px-3 py-1.5 text-center">
-                          <div className="inline-flex items-center gap-1">
+                        <td className="px-4 py-3 text-center">
+                          <div className="inline-flex items-center gap-1.5">
                             <button
                               onClick={() => onViewDetails(m.id)}
-                              className="p-1 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
+                              className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-text rounded hover:bg-gov-border/30 transition-colors inline-flex"
                               title="Details"
                             >
-                              <EyeIcon className="h-3.5 w-3.5" />
+                              <EyeIcon />
                             </button>
                             <button
                               onClick={() => handleDeleteMaterial(m.id)}
-                              className="p-1 bg-gov-border/20 border border-gov-border text-gov-danger rounded hover:bg-rose-50 hover:border-rose-200 transition-colors inline-flex"
+                              className="p-1.5 bg-gov-border/20 border border-gov-border text-gov-danger rounded hover:bg-rose-50 hover:border-rose-200 transition-colors inline-flex"
                               title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
                             >
-                              <TrashIcon className="h-3.5 w-3.5" />
+                              <TrashIcon />
                             </button>
                           </div>
                         </td>
@@ -847,12 +847,34 @@ function RegistratorView({ lang, onViewDetails, user }) {
             </div>
 
             {filteredMaterials.length > 0 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gov-border">
-                <p className="text-[11px] text-gov-muted">
-                  {lang === 'ru'
-                    ? `Показано ${(registryPage - 1) * REGISTRY_PAGE_SIZE + 1}–${Math.min(registryPage * REGISTRY_PAGE_SIZE, filteredMaterials.length)} из ${filteredMaterials.length}`
-                    : `${(registryPage - 1) * REGISTRY_PAGE_SIZE + 1}–${Math.min(registryPage * REGISTRY_PAGE_SIZE, filteredMaterials.length)} / ${filteredMaterials.length} ta ko'rsatilmoqda`}
-                </p>
+              <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-4 border-t border-gov-border">
+                <div className="flex items-center gap-3">
+                  <p className="text-[11px] text-gov-muted">
+                    {lang === 'ru'
+                      ? `Показано ${(registryPage - 1) * registryPageSize + 1}–${Math.min(registryPage * registryPageSize, filteredMaterials.length)} из ${filteredMaterials.length}`
+                      : `${(registryPage - 1) * registryPageSize + 1}–${Math.min(registryPage * registryPageSize, filteredMaterials.length)} / ${filteredMaterials.length} ta ko'rsatilmoqda`}
+                  </p>
+                  <div className="inline-flex items-center gap-1 text-[11px] text-gov-muted">
+                    <span className="hidden sm:inline">{lang === 'ru' ? 'Показывать:' : 'Sahifada:'}</span>
+                    {[10, 16, 20].map(size => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => {
+                          setRegistryPageSize(size);
+                          setRegistryPage(1);
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                          registryPageSize === size
+                            ? 'bg-gov-primary text-white shadow-xs'
+                            : 'bg-gov-border/20 text-gov-muted hover:bg-gov-border/40 hover:text-gov-text'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setRegistryPage(p => Math.max(1, p - 1))}
