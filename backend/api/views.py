@@ -49,6 +49,9 @@ _PRECOMPUTED_ANSWERS = {
     },
 }
 
+_OFFTOPIC_DECLINE_UZ = "Kechirasiz, men faqat Olmazor tumani IIB faoliyati bo'yicha yordam beraman. Ichki ishlar bo'limi bo'yicha qanday yordam kerak?"
+_OFFTOPIC_AUDIO_URL = 'https://tqtb-olmazor.uz/media/tts/precomputed_decline.wav'
+
 _AVATAR_CACHE = {}
 
 def parse_difficulty(value):
@@ -740,11 +743,19 @@ class AiAssistantViewSet(viewsets.ViewSet):
 
         lang_name = 'русском языке' if lang == 'ru' else "o'zbek tilida"
         system_prompt = (
-            "Ты — вежливый AI-помощник у входа в Олмазорский районный отдел внутренних дел (Узбекистан). "
-            "К тебе обращаются обычные граждане (не юристы) с вопросами вроде «у меня украли телефон», "
-            "«потерял паспорт», «сосед шумит» и т.п.\n\n"
-            "Правила:\n"
-            "- Объясняй простым языком, без юридического жаргона, 3-6 предложений.\n"
+            "Ты — вежливый AI-помощник у входа в Олмазорский районный отдел внутренних дел (Узбекистан).\n\n"
+            "СТРОГОЕ ПРАВИЛО БЕЗОПАСНОСТИ И ТЕМАТИКИ:\n"
+            "- Отвечай ИСКЛЮЧИТЕЛЬНО на вопросы, связанные с деятельностью органов внутренних дел (ИИБ / РУВД), "
+            "правопорядком, безопасностью, подачей заявлений, утерей документов, приемом у следователя, участковыми и дежурной частью 102.\n"
+            "- Если вопрос НЕ относится к органам внутренних дел (например: кто создал Apple, общие знания, история мира, "
+            "кулинарные рецепты, погода, программирование, посторонние темы), КАТЕГОРИЧЕСКИ НЕ ОТВЕЧАЙ на него!\n"
+            "В таких случаях вежливо ответь только этим:\n"
+            + ("«Извините, я отвечаю только на вопросы по деятельности Олмазорского РУВД и органов внутренних дел. Чем я могу помочь вам по линии правопорядка?»"
+               if lang == 'ru' else
+               "«Kechirasiz, men faqat Olmazor tumani IIB faoliyati bo'yicha yordam beraman. Ichki ishlar bo'limi bo'yicha qanday yordam kerak?»")
+            + "\n\n"
+            "Правила для профильных вопросов по линии ИИБ:\n"
+            "- Объясняй простым языком, без юридического жаргона, 3-5 предложений.\n"
             "- Не давай юридических консультаций как адвокат — только практические шаги: куда обратиться, "
             "какие документы взять с собой, к кому подойти в отделе.\n"
             "- Если ситуация экстренная (угроза жизни, происшествие прямо сейчас) — сразу скажи звонить 102.\n"
@@ -913,26 +924,36 @@ class AiAssistantViewSet(viewsets.ViewSet):
                 _AVATAR_CACHE[q_lower] = precomputed
                 return Response(precomputed)
 
-        # 2. Fast DeepSeek generation for ultra-low latency (max_tokens=40, timeout=2.5)
+        # 2. Fast DeepSeek generation with strict IIB domain guardrails
         system_prompt = (
-            "Sen Olmazor tumani IIB AI-yordamchisisan. "
-            "1 ta juda qisqa, lo'nda gapda javob ber (maksimum 12-15 so'z). "
-            "Faqat o'zbek tilida, lotin alifbosida yoz."
+            "Sen Olmazor tumani IIB (Ichki ishlar bo'limi) sun'iy intellekt yordamchisisan.\n"
+            "QAT'IY QOIDA: Savol FAQAT Olmazor tumani IIB faoliyati, ichki ishlar xizmatlari, ariza berish, "
+            "tergovchi qabuli, pasport, navbatchilik 102 va fuqarolar xavfsizligiga oid bo'lishi shart. "
+            "Agar savol IIB va ichki ishlar sohasiga mutlaqo aloqador bo'lmasa (masalan: kim nimani kashf qilgan/yaratgan, "
+            "Apple, ob-havo, taom tayyorlash, umumiy bilimlar, shaxsiy suhbat va h.k.), unga ASLO javob berma!\n"
+            "Bunday holatda FAQAT mana shu matnni so'zma-so'z qaytar:\n"
+            f'"{_OFFTOPIC_DECLINE_UZ}"\n'
+            "Agar savol IIBga oid bo'lsa, 1 ta lo'nda qisqa gapda (maksimum 12-15 so'z) o'zbek tilida lotin alifbosida javob ber."
         )
         try:
             answer_text = deepseek_chat([
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': query},
-            ], temperature=0.1, timeout=2.5, max_tokens=40)
+            ], temperature=0.1, timeout=2.5, max_tokens=45)
         except Exception:
             answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
 
-        # 3. Synthesize Jasur audio (UzbekVoice.ai authentic voice, minimal delay)
+        # 3. Audio synthesis or instant precomputed decline audio
         audio_url = None
-        try:
-            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
-        except Exception as e:
-            logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
+        ans_lower = answer_text.lower()
+        if "faqat olmazor tumani iib" in ans_lower or "ichki ishlar bo'limi bo'yicha qanday yordam" in ans_lower:
+            answer_text = _OFFTOPIC_DECLINE_UZ
+            audio_url = _OFFTOPIC_AUDIO_URL
+        else:
+            try:
+                audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
+            except Exception as e:
+                logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
 
         result = {
             'answer_text': answer_text,
@@ -1035,26 +1056,37 @@ class AiAssistantViewSet(viewsets.ViewSet):
         answer_text = custom_text
         if not answer_text and query:
             system_prompt = (
-                "Sen Olmazor tumani IIB oldida turgan xushmuomala AI-yordamchisan. "
-                "Fuqarolarga oddiy tilda javob ber: 2-3 ta qisqa gap, chunki javobing ovozli aytiladi. "
-                "Faqat o'zbek tilida, lotin alifbosida, markdown yoki ro'yxatlarsiz javob ber."
+                "Sen Olmazor tumani IIB oldida turgan xushmuomala AI-yordamchisan.\n"
+                "QAT'IY QOIDA: Sen FAQAT Olmazor tumani IIB va ichki ishlar organlari faoliyati (arizalar, navbatchilik 102, "
+                "tergovchi qabuli, pasport, fuqarolar xavfsizligi) bo'yicha yordam berasan.\n"
+                "Agar savol IIB va ichki ishlar sohasiga mutlaqo aloqador bo'lmasa (masalan: kim nimani kashf qilgani, "
+                "Apple kompaniyasi, umumiy dunyoqarash, taomlar, ob-havo va h.k.), boshqa mavzularga ASLO javob berma!\n"
+                "Bunday holda faqat mana shu gapni ayt:\n"
+                f'"{_OFFTOPIC_DECLINE_UZ}"\n'
+                "IIBga oid savollarga esa fuqarolarga oddiy tilda 2 ta qisqa gapda, o'zbek tilida lotin alifbosida javob ber."
             )
             try:
                 answer_text = deepseek_chat([
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': query},
-                ], temperature=0.4)
+                ], temperature=0.2)
             except DeepSeekError:
                 answer_text = "Kechirasiz, AI xizmati vaqtincha ishlamayapti (internet yo'q yoki xizmat band)."
 
         if not answer_text:
             return Response({'error': 'No text or query provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Synthesize audio via UzbekVoice (Jasur voice!)
-        try:
-            audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
-        except Exception as e:
-            return Response({'error': f'UzbekVoice xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
+        # 1. Synthesize audio via UzbekVoice (Jasur voice!) or instant precomputed decline audio
+        audio_url = None
+        ans_lower = answer_text.lower()
+        if "faqat olmazor tumani iib" in ans_lower or "ichki ishlar bo'limi bo'yicha qanday yordam" in ans_lower:
+            answer_text = _OFFTOPIC_DECLINE_UZ
+            audio_url = _OFFTOPIC_AUDIO_URL
+        else:
+            try:
+                audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
+            except Exception as e:
+                return Response({'error': f'UzbekVoice xatosi: {e}', 'answer_text': answer_text}, status=status.HTTP_502_BAD_GATEWAY)
 
         # 2. Feed VoiceLab audio directly into D-ID stream for real-time lip sync
         key = getattr(settings, 'DID_API_KEY', '') or 'Z29vZ2xlLW9hdXRoMnwxMTAzMTE5NzUwMzQ5NTMwODQ4NTJAYWtfMWxLOWRaNGw4XzZVSm16Yl9KbEFs:eNJgP9by0_DXDspGyXb4d'

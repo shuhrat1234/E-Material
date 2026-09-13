@@ -211,15 +211,21 @@ function CitizenView({ lang }) {
             <div
               key={off.id}
               onClick={() => selectOfficer(off.id)}
-              className="p-4 border border-gov-border bg-gov-surface hover:border-gov-muted/40 hover:bg-gov-light/30 rounded-lg cursor-pointer transition-all flex items-center gap-4"
+              className="p-3.5 sm:p-4 border border-gov-border bg-gov-surface hover:border-gov-muted/40 hover:bg-gov-light/30 rounded-xl cursor-pointer transition-all flex items-center gap-3.5 sm:gap-4 shadow-sm"
             >
-              <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
-              <div className="text-left overflow-hidden">
-                <h4 className="font-semibold text-xs text-gov-text truncate">
+              <Avatar
+                src={off.avatar}
+                initials={off.photo || off.name_ru[0]}
+                size="w-16 h-16 sm:w-18 sm:h-18"
+                textSize="text-base"
+                initialsClassName="bg-gov-primary text-white shadow-sm"
+              />
+              <div className="text-left overflow-hidden min-w-0 flex-1">
+                <h4 className="font-semibold text-xs sm:text-sm text-gov-text truncate">
                   {lang === 'ru' ? off.name_ru : off.name_uz}
                 </h4>
-                <p className="flex items-center gap-1 text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
-                  <ApprovalIcon className="h-3 w-3 shrink-0 opacity-60" />
+                <p className="flex items-center gap-1 text-[11px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                  <ApprovalIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
                   {lang === 'ru' ? off.rank_ru : off.rank_uz}
                 </p>
               </div>
@@ -232,20 +238,26 @@ function CitizenView({ lang }) {
         const off = officers.find(o => o.id === selectedOfficerId);
         if (!off) return null;
         return (
-          <div className="max-w-4xl mx-auto flex items-center gap-4 p-3 pr-4 border border-gov-blue bg-gov-light rounded-lg shadow-sm ring-1 ring-gov-blue/20">
-            <Avatar src={off.avatar} initials={off.photo || off.name_ru[0]} initialsClassName="bg-gov-primary text-white shadow-sm" />
-            <div className="text-left overflow-hidden flex-1">
-              <h4 className="font-semibold text-xs text-gov-text truncate">
+          <div className="max-w-4xl mx-auto flex items-center gap-3.5 sm:gap-4 p-3.5 pr-4 border border-gov-blue bg-gov-light rounded-xl shadow-sm ring-1 ring-gov-blue/20">
+            <Avatar
+              src={off.avatar}
+              initials={off.photo || off.name_ru[0]}
+              size="w-16 h-16 sm:w-18 sm:h-18"
+              textSize="text-base"
+              initialsClassName="bg-gov-primary text-white shadow-sm"
+            />
+            <div className="text-left overflow-hidden flex-1 min-w-0">
+              <h4 className="font-semibold text-xs sm:text-sm text-gov-text truncate">
                 {lang === 'ru' ? off.name_ru : off.name_uz}
               </h4>
-              <p className="flex items-center gap-1 text-[10px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
-                <ApprovalIcon className="h-3 w-3 shrink-0 opacity-60" />
+              <p className="flex items-center gap-1 text-[11px] text-gov-muted mt-0.5 truncate font-medium uppercase tracking-wider">
+                <ApprovalIcon className="h-3.5 w-3.5 shrink-0 opacity-60" />
                 {lang === 'ru' ? off.rank_ru : off.rank_uz}
               </p>
             </div>
             <button
               onClick={changeOfficer}
-              className="text-[10px] font-semibold text-gov-muted hover:text-gov-primary underline uppercase tracking-wider shrink-0"
+              className="text-xs font-semibold text-gov-muted hover:text-gov-primary underline uppercase tracking-wider shrink-0"
             >
               {lang === 'ru' ? 'Изменить' : "O'zgartirish"}
             </button>
