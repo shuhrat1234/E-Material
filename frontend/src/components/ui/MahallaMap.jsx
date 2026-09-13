@@ -85,16 +85,16 @@ function MahallaMap({
         bg: '#e2e8f0',
       };
     }
-    // Default Carto Minimalist (No POI / clean vector look)
+    // Default Clean Minimalist Canvas (No POI / clean vector look, no watermark)
     return isDark
       ? {
-        url: 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri &mdash; Earthstar Geographics',
         bg: '#0b1220',
       }
       : {
-        url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        attribution: '&copy; Esri &mdash; Earthstar Geographics',
         bg: '#eef2f7',
       };
   }, [mapType, isDark]);
