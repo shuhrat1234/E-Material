@@ -61,13 +61,14 @@ function MahallaMap({
   mapType = 'carto', // 'carto' | 'streets' | 'satellite'
   focusLocation = null,
   resetTrigger = null,
+  boundsPadding = 0.004,
 }) {
   const { isDark } = useSettings();
 
   const bounds = useMemo(() => [
-    [OLMAZOR_BOUNDS.south - PAD, OLMAZOR_BOUNDS.west - PAD],
-    [OLMAZOR_BOUNDS.north + PAD, OLMAZOR_BOUNDS.east + PAD],
-  ], []);
+    [OLMAZOR_BOUNDS.south - boundsPadding, OLMAZOR_BOUNDS.west - boundsPadding],
+    [OLMAZOR_BOUNDS.north + boundsPadding, OLMAZOR_BOUNDS.east + boundsPadding],
+  ], [boundsPadding]);
 
   // Multi-basemap support
   const tileConfig = useMemo(() => {

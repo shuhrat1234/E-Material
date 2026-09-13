@@ -98,33 +98,34 @@ function MahallaPicker({ value, onChange, lang, error }) {
   }, [cells, value, hoveredId, isDark, lang, selected, onChange, emptyBorder, emptyFill]);
 
   return (
-    <div className="space-y-2 text-left">
+    <div className="space-y-1.5 text-left">
       <Select
         value={value}
         onChange={onChange}
         placeholder={lang === 'ru' ? 'Выберите махаллю из списка...' : 'Ro\'yxatdan mahallani tanlang...'}
         options={options}
-        className={`block w-full px-3 py-2.5 rounded bg-gov-light text-sm ${error ? 'ring-2 ring-gov-danger/40' : ''}`}
+        className={`block w-full px-3 py-2 rounded bg-gov-light text-sm ${error ? 'ring-2 ring-gov-danger/40' : ''}`}
       />
 
-      <div className={`relative rounded-xl overflow-hidden border border-gov-border shadow-inner ${error ? 'ring-2 ring-gov-danger/40' : ''}`}>
+      <div className={`relative rounded-xl overflow-hidden ${error ? 'ring-2 ring-gov-danger/40' : ''}`}>
         <MahallaMap
-          height="240px"
+          height="175px"
           scrollWheelZoom={false}
+          boundsPadding={0.003}
           overlayLayers={overlayLayers}
           focusLocation={selected ? { lat: selected.lat, lon: selected.lon, zoom: 14 } : null}
         />
 
         {/* Floating helper chip on top right of map */}
         <div className="absolute top-2 right-2 z-[400] pointer-events-none">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gov-surface/90 backdrop-blur-sm border border-gov-border shadow-sm text-[10px] font-semibold text-gov-muted">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gov-surface/90 backdrop-blur-sm border border-gov-border shadow-sm text-[10px] font-semibold text-gov-muted">
             <MapIcon className="h-3 w-3 text-gov-primary" />
             {lang === 'ru' ? 'Интерактивная карта' : 'Interaktiv xarita'}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between p-2 rounded-lg bg-gov-light/60 border border-gov-border text-xs min-h-[36px]">
+      <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-gov-light/60 border border-gov-border text-xs min-h-[32px]">
         {selected ? (
           <>
             <div className="flex items-center gap-2 min-w-0 flex-1">
