@@ -220,10 +220,10 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
 
   return (
     <Modal onClose={onClose} maxWidth="max-w-xl">
-      <div className="p-4 sm:p-6 flex flex-col flex-1 min-h-0">
+      <div className="p-3 sm:p-6 flex flex-col flex-1 min-h-0">
 
         {/* Header */}
-        <div className="flex justify-between items-start border-b border-gov-border pb-3 shrink-0">
+        <div className="flex justify-between items-start border-b border-gov-border pb-2.5 sm:pb-3 shrink-0">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-bold text-gov-primary">{caseItem.id}</span>
@@ -231,14 +231,14 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 <button
                   type="button"
                   onClick={() => setActiveTab('citizenCases')}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-800 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
                   title={lang === 'ru' ? 'Посмотреть все обращения этого гражданина' : 'Ushbu fuqaroning barcha murojaatlarini ko\'rish'}
                 >
                   <RepeatIcon className="h-3 w-3 text-amber-700 shrink-0" />
                   <span>
                     {lang === 'ru'
-                      ? `Повторный заявитель (всего: ${citizenMaterials.length + 1})`
-                      : `Takroriy murojaat (jami: ${citizenMaterials.length + 1} ta)`}
+                      ? `Повторный (${citizenMaterials.length + 1})`
+                      : `Takroriy (${citizenMaterials.length + 1} ta)`}
                   </span>
                 </button>
               )}
@@ -250,30 +250,32 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gov-border shrink-0 text-xs font-semibold mt-3 sm:mt-4 overflow-x-auto no-scrollbar scroll-smooth">
+        <div className="flex border-b border-gov-border shrink-0 text-xs font-semibold mt-2.5 sm:mt-4 overflow-x-auto no-scrollbar scroll-smooth gap-0.5 sm:gap-0">
           <button
             onClick={() => setActiveTab('info')}
-            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all ${
+            className={`pb-2 sm:pb-2.5 px-2.5 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[11px] sm:text-xs ${
               activeTab === 'info' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
-            {t.info_tab}
+            <span className="sm:hidden">{lang === 'ru' ? 'Инфо' : 'Ma\'lumot'}</span>
+            <span className="hidden sm:inline">{t.info_tab}</span>
           </button>
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all ${
+            className={`pb-2 sm:pb-2.5 px-2.5 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[11px] sm:text-xs ${
               activeTab === 'timeline' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
-            {t.timeline_tab}
+            <span className="sm:hidden">{lang === 'ru' ? 'Этапы' : 'Bosqichlar'}</span>
+            <span className="hidden sm:inline">{t.timeline_tab}</span>
           </button>
           <button
             onClick={() => setActiveTab('documents')}
-            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 ${
+            className={`pb-2 sm:pb-2.5 px-2.5 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 ${
               activeTab === 'documents' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
-            {lang === 'ru' ? 'Документы' : 'Hujjatlar'}
+            <span>{lang === 'ru' ? 'Документы' : 'Hujjatlar'}</span>
             {documents.length > 0 && (
               <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-gov-primaryLight text-gov-primary text-[9px] font-bold inline-flex items-center justify-center">
                 {documents.length}
@@ -282,12 +284,13 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
           </button>
           <button
             onClick={() => setActiveTab('citizenCases')}
-            className={`pb-2 sm:pb-2.5 px-3 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 ${
+            className={`pb-2 sm:pb-2.5 px-2.5 sm:px-4 -mb-[1px] border-b-2 whitespace-nowrap shrink-0 transition-all text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 ${
               activeTab === 'citizenCases' ? 'border-gov-primary text-gov-primary font-bold' : 'border-transparent text-gov-muted hover:text-gov-text'
             }`}
           >
             <RepeatIcon className="h-3 w-3 text-amber-700 shrink-0" />
-            <span>{lang === 'ru' ? 'Обращения гражданина' : 'Fuqaro murojaatlari'}</span>
+            <span className="sm:hidden">{lang === 'ru' ? 'Обращения' : 'Murojaatlar'}</span>
+            <span className="hidden sm:inline">{lang === 'ru' ? 'Обращения гражданина' : 'Fuqaro murojaatlari'}</span>
             {citizenMaterials.length > 0 && (
               <span className="min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-amber-500/20 text-amber-800 text-[9px] font-bold inline-flex items-center justify-center">
                 {citizenMaterials.length + 1}
@@ -297,14 +300,14 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto py-3 sm:py-4">
+        <div className="flex-1 overflow-y-auto py-3 sm:py-4 pb-6 sm:pb-4 pr-0.5">
           
           {activeTab === 'info' ? (
-            <div className="space-y-4 text-xs">
+            <div className="space-y-3.5 sm:space-y-4 text-xs">
               <div className="space-y-1">
                 <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Содержание обращения' : 'Murojaat mazmuni'}</p>
-                <div className="flex items-start justify-between gap-3 bg-gov-light/45 p-3 border border-gov-border rounded">
-                  <p className="text-gov-text leading-relaxed font-medium min-w-0 flex-1 break-words">
+                <div className="flex items-start justify-between gap-3 bg-gov-light/45 p-2.5 sm:p-3 border border-gov-border rounded">
+                  <p className="text-gov-text leading-relaxed font-medium min-w-0 flex-1 break-words text-xs">
                     {lang === 'ru' ? caseItem.title_ru : caseItem.title_uz}
                   </p>
                   <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none shrink-0 ${getStatusBadge(caseItem.status)}`}>
@@ -314,17 +317,17 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
+                <div className="col-span-2 sm:col-span-1 space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</p>
-                  <p className="text-gov-text font-semibold">{officer ? (lang === 'ru' ? officer.name_ru : officer.name_uz) : (lang === 'ru' ? 'Не назначен' : 'Tayinlanmagan')}</p>
+                  <p className="text-gov-text font-semibold break-words">{officer ? (lang === 'ru' ? officer.name_ru : officer.name_uz) : (lang === 'ru' ? 'Не назначен' : 'Tayinlanmagan')}</p>
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Дата регистрации' : 'Ro\'yxatga olingan sana'}</p>
-                  <p className="text-gov-text font-semibold font-mono">{formatDate(caseItem.registered_at)}</p>
+                  <p className="text-gov-text font-semibold font-mono text-[11px]">{formatDate(caseItem.registered_at)}</p>
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Срок исполнения' : 'Bajarish muddati'}</p>
-                  <p className="text-gov-text font-semibold font-mono">{formatDate(caseItem.deadline)}</p>
+                  <p className="text-gov-text font-semibold font-mono text-[11px]">{formatDate(caseItem.deadline)}</p>
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Продления' : 'Uzaytirishlar'}</p>
@@ -336,11 +339,11 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Тип материала' : 'Material turi'}</p>
-                  <p className="text-gov-text font-semibold">{getMaterialTypeLabel(caseItem.material_type, lang)}</p>
+                  <p className="text-gov-text font-semibold truncate">{getMaterialTypeLabel(caseItem.material_type, lang)}</p>
                 </div>
                 <div className="space-y-1 border border-gov-border rounded p-2.5 bg-gov-light/45">
                   <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Источник' : 'Manba'}</p>
-                  <p className="text-gov-text font-semibold">{getSourceLabel(caseItem.source_from, lang)}</p>
+                  <p className="text-gov-text font-semibold truncate">{getSourceLabel(caseItem.source_from, lang)}</p>
                 </div>
               </div>
 
@@ -405,9 +408,9 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
               )}
 
               {/* Status Change */}
-              <div className="space-y-2 pt-2 border-t border-gov-border">
+              <div className="space-y-2 pt-2.5 border-t border-gov-border pb-2">
                 <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Статус дела' : 'Ish holati'}</p>
-                <div className="flex gap-2 items-center">
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                   <Select
                     value={statusDraft ?? caseItem.status}
                     onChange={setStatusDraft}
@@ -422,7 +425,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                   <button
                     disabled={changingStatus}
                     onClick={() => handleStatusChange(statusDraft)}
-                    className="px-4 py-2 bg-gov-primary hover:bg-blue-700 text-white text-[11px] font-semibold rounded transition-colors disabled:opacity-50 shrink-0"
+                    className="px-4 py-2 bg-gov-primary hover:bg-blue-700 text-white text-xs font-semibold rounded transition-colors disabled:opacity-50 shrink-0 text-center"
                   >
                     {changingStatus ? '...' : (lang === 'ru' ? 'Сохранить' : 'Saqlash')}
                   </button>
