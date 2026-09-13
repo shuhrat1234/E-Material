@@ -256,11 +256,11 @@ function App() {
                 title={lang === 'ru' ? 'Мой профиль' : 'Mening profilim'}
               >
                 {kioskInfo ? (
-                  <span className="w-8 h-8 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
+                  <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
                     <kioskInfo.Icon className="h-4 w-4" />
                   </span>
                 ) : (
-                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8" textSize="text-[10px]" className="border border-gov-border" />
+                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-9 h-9 sm:w-10 sm:h-10" textSize="text-xs" className="border border-gov-border" />
                 )}
                 <div className="text-left">
                   <p className="text-xs font-semibold text-gov-text">{displayName}</p>

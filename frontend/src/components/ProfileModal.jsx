@@ -71,29 +71,29 @@ function ProfileModal({ user, lang, onClose, onSaved }) {
         </div>
 
         <form onSubmit={handleSave} className="space-y-4 text-left">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 sm:gap-5 pb-3 border-b border-gov-border/60">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="relative w-16 h-16 rounded-full shrink-0 overflow-hidden bg-gov-primaryLight text-gov-primary flex items-center justify-center font-bold text-xl border border-gov-border group"
+              className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full shrink-0 overflow-hidden bg-gov-primaryLight text-gov-primary flex items-center justify-center font-bold text-2xl border-2 border-white shadow-md ring-2 ring-gov-border/80 group cursor-pointer"
               title={lang === 'ru' ? 'Изменить аватар' : 'Avatarni o\'zgartirish'}
             >
               {avatarPreview ? (
-                <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
+                <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover object-top" />
               ) : initials}
-              <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-semibold transition-opacity">
+              <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold transition-opacity">
                 {lang === 'ru' ? 'Изменить' : 'O\'zgartirish'}
               </span>
             </button>
-            <div>
+            <div className="space-y-1.5">
               <button
                 type="button"
                 onClick={() => fileRef.current?.click()}
-                className="text-xs font-semibold text-gov-primary hover:underline"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gov-primary text-white text-xs font-semibold shadow-sm hover:bg-blue-700 transition-colors cursor-pointer"
               >
                 {lang === 'ru' ? 'Загрузить фото' : 'Rasm yuklash'}
               </button>
-              <p className="text-[11px] text-gov-muted mt-1">{lang === 'ru' ? 'JPG, PNG до 5MB' : 'JPG, PNG 5MB gacha'}</p>
+              <p className="text-[11px] text-gov-muted">{lang === 'ru' ? 'JPG, PNG до 5MB' : 'JPG, PNG 5MB gacha'}</p>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </div>
           </div>
