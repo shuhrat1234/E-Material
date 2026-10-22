@@ -232,7 +232,8 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
                     {result.documents.map(d => (
                       <a
                         key={d.id}
-                        href={d.file_url}
+                        href={d.file_url ? d.file_url.replace(/^http:\/\//, 'https://') : ''}
+                        download={d.original_name || 'hujjat.docx'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-between p-2 rounded-lg bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors text-xs font-semibold text-gov-primary"

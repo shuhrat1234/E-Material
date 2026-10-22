@@ -44,7 +44,14 @@ class MaterialDocumentSerializer(serializers.ModelSerializer):
         if obj.file:
             request = self.context.get('request')
             url = obj.file.url
-            return request.build_absolute_uri(url) if request else url
+            if request:
+                abs_url = request.build_absolute_uri(url)
+                if abs_url.startswith('http://') and not abs_url.startswith('http://localhost') and not abs_url.startswith('http://127.0.0.1'):
+                    return abs_url.replace('http://', 'https://', 1)
+                return abs_url
+            from django.conf import settings
+            base = getattr(settings, 'PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz')
+            return f"{base.rstrip('/')}{url}"
         return None
 
 class CaseRequestSerializer(serializers.ModelSerializer):

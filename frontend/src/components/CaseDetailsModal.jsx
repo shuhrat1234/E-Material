@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
-import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon, RepeatIcon } from './Icons';
+import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon, RepeatIcon, DownloadIcon } from './Icons';
 import Modal from './Modal';
 import Select from './ui/Select';
 import { notify } from '../toastService';
@@ -525,10 +525,11 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                         </span>
                         <div className="min-w-0 flex-1">
                           <a
-                            href={doc.file_url}
+                            href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
+                            download={doc.original_name || 'hujjat.docx'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors truncate block"
+                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors truncate block cursor-pointer"
                             title={doc.original_name}
                           >
                             {doc.original_name || doc.file_url}
@@ -537,6 +538,14 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                             {doc.uploaded_by && `${doc.uploaded_by} · `}{formatDate(doc.uploaded_at)}
                           </p>
                         </div>
+                        <a
+                          href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
+                          download={doc.original_name || 'hujjat.docx'}
+                          className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors shrink-0 flex items-center justify-center"
+                          title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
+                        >
+                          <DownloadIcon className="h-4 w-4" />
+                        </a>
                         <button
                           onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
                           className="px-2 py-1.5 border border-gov-border rounded text-[10px] font-semibold text-gov-text hover:bg-gov-light transition-colors shrink-0"

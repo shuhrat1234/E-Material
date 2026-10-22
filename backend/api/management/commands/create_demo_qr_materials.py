@@ -13,7 +13,7 @@ from api.models import Department, Officer, Material, MaterialDocument, AppealSt
 
 MATERIALS_CONFIG = [
     {
-        "id": "YASH-2026-0001",
+        "id": "MAT-2026-0001",
         "doc_file": "Ekspertiza.docx",
         "doc_title": "Sud-tibbiy ekspertiza tayinlash qarori (QR-kodli)",
         "citizen_name": "Tillayeva Zaxro Djalalovna",
@@ -32,7 +32,7 @@ MATERIALS_CONFIG = [
         ]
     },
     {
-        "id": "YASH-2026-0002",
+        "id": "MAT-2026-0002",
         "doc_file": "Uzaytirish.docx",
         "doc_title": "Muddatni uzaytirish haqida qaror (QR-kodli)",
         "citizen_name": "Musirmonov Islom Bahodir o‘g‘li",
@@ -51,7 +51,7 @@ MATERIALS_CONFIG = [
         ]
     },
     {
-        "id": "YASH-2026-0003",
+        "id": "MAT-2026-0003",
         "doc_file": "Otkaz.docx",
         "doc_title": "Jinoyat ishini qo‘zg‘atishni rad etish to‘g‘risida qaror (QR-kodli)",
         "citizen_name": "Mamataliyeva Mohina Zohidovna",
@@ -126,7 +126,14 @@ def stamp_document_with_qr(source_docx_path, dest_docx_path, qr_image_path, mate
 class Command(BaseCommand):
     help = 'Creates 3 Yashnobod demo materials with QR-code embedded official documents'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--database', default='yashnobod', help='Nominates a database to populate.')
+
     def handle(self, *args, **options):
+        from backend.db_router import set_current_branch
+        db = options.get('database', 'yashnobod')
+        set_current_branch(db)
+
         dept_yashnobod, _ = Department.objects.get_or_create(id='yashnobod')
 
         # Find documents directory

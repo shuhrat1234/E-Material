@@ -241,8 +241,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
             case_id = custom_id
         else:
             count = Material.objects.filter(department_id=dept_id).count() + 1
-            prefix = "YASH" if dept_id == 'yashnobod' else "MAT"
-            case_id = f"{prefix}-2026-{str(count).zfill(4)}"
+            case_id = f"MAT-2026-{str(count).zfill(4)}"
 
         new_material = Material.objects.create(
             id=case_id,
@@ -1345,6 +1344,17 @@ def check_material_status(request):
 
     material = Material.objects.filter(id__iexact=material_id).first()
     if not material:
+        # Fallback to alternative DB if configured
+        from django.conf import settings
+        from backend.db_router import get_current_branch
+        other_db = 'yashnobod' if get_current_branch() != 'yashnobod' else 'default'
+        if other_db in getattr(settings, 'DATABASES', {}):
+            try:
+                material = Material.objects.using(other_db).filter(id__iexact=material_id).first()
+            except Exception:
+                material = None
+
+    if not material:
         return Response({'error': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)
 
     # If checking with phone, verify phone digits match
@@ -1357,10 +1367,13 @@ def check_material_status(request):
     officer = material.officer
     docs = []
     for doc in material.documents.all():
+        abs_url = request.build_absolute_uri(doc.file.url) if doc.file else ''
+        if abs_url.startswith('http://') and not abs_url.startswith('http://localhost') and not abs_url.startswith('http://127.0.0.1'):
+            abs_url = abs_url.replace('http://', 'https://', 1)
         docs.append({
             'id': doc.id,
             'original_name': doc.original_name,
-            'file_url': request.build_absolute_uri(doc.file.url) if doc.file else '',
+            'file_url': abs_url,
             'uploaded_at': doc.uploaded_at
         })
 
