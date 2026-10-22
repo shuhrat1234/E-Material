@@ -40,7 +40,7 @@ axios.interceptors.request.use((config) => {
 export const TRANSLATIONS = {
   ru: {
     title: "АИС «Е-Материал»",
-    subtitle: "Подразделение доследственной проверки Следственного отдела при РУВД Олмазорского района",
+    subtitle: "Подразделение доследственной проверки Следственного отдела при УКД ОВД Яшнабадского района",
     select_role: "Выберите роль",
     password: "Пароль доступа",
     login_btn: "Войти в систему",
@@ -64,7 +64,7 @@ export const TRANSLATIONS = {
   },
   uz: {
     title: "AIS «E-Material»",
-    subtitle: "Olmazor tumani bo'yicha IIO FMB huzuridagi Tergov bo'limi Tergovga qadar tekshiruv bo'linmasi",
+    subtitle: "Yashnobod tumani bo'yicha IIO FMB huzuridagi Tergov bo'limi Tergovga qadar tekshiruv bo'linmasi",
     select_role: "Rolni tanlang",
     password: "Kirish paroli",
     login_btn: "Tizimga kirish",
@@ -177,7 +177,15 @@ function App() {
   if (route.includes('/arizalarim')) {
     const rawId = new URLSearchParams(window.location.search).get('id') || '';
     const initialMaterialId = rawId.replace(/\s+/g, '').trim();
-    return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate(`/${districtId}`)} initialMaterialId={initialMaterialId} />;
+    return (
+      <MaterialStatusPage
+        lang={lang}
+        setLang={setLang}
+        districtId={districtId}
+        onBack={() => navigate(`/${districtId}`)}
+        initialMaterialId={initialMaterialId}
+      />
+    );
   }
 
   if (route.includes('/avatar-demo')) {

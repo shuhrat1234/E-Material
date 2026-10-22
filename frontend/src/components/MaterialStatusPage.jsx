@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
+import { DISTRICTS, getActiveDistrictId } from '../config/districts';
 import { SearchIcon, CloseIcon, DocumentIcon } from './Icons';
 import DocumentPreviewModal from './DocumentPreviewModal';
 
@@ -15,7 +16,7 @@ const STATUS_LABELS = {
 // Public, no-login page: a citizen tracks their own material with just its ID and
 // the phone number they registered with. Reached at /arizalarim, independent of the
 // normal login flow — see App.jsx's manual route check.
-function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
+function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', districtId }) {
   const cleanInitialId = (initialMaterialId || '').replace(/\s+/g, '').trim();
   const [materialId, setMaterialId] = useState(cleanInitialId);
   const [phone, setPhone] = useState('');
@@ -23,8 +24,17 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [openQrDocId, setOpenQrDocId] = useState(null);
 
-  const t = TRANSLATIONS[lang];
+  // Derive active district: priority to material's actual department from API, then prop, then pathname, then default to Yashnobod
+  const activeDistrictId = (
+    result?.department ||
+    districtId ||
+    getActiveDistrictId(window.location.pathname) ||
+    'yashnobod'
+  );
+  const currentDistrict = DISTRICTS[activeDistrictId] || DISTRICTS.yashnobod;
+  const headerSubtitle = lang === 'ru' ? currentDistrict.subtitle_ru : currentDistrict.subtitle_uz;
 
   useEffect(() => {
     if (cleanInitialId) {
@@ -37,6 +47,9 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
         .then(res => {
           setLoading(false);
           setResult(res.data);
+          if (res.data?.documents && res.data.documents.length > 0) {
+            setOpenQrDocId(res.data.documents[0].id);
+          }
         })
         .catch(() => {
           setLoading(false);
@@ -47,7 +60,7 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
           );
         });
     }
-  }, [initialMaterialId, lang]);
+  }, [cleanInitialId, lang]);
 
   const handleCheckStatus = (e) => {
     e.preventDefault();
@@ -66,6 +79,9 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
       .then(res => {
         setLoading(false);
         setResult(res.data);
+        if (res.data?.documents && res.data.documents.length > 0) {
+          setOpenQrDocId(res.data.documents[0].id);
+        }
       })
       .catch(() => {
         setLoading(false);
@@ -96,7 +112,7 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
         <div className="flex flex-col items-center text-center mb-6">
           <img src="/emblem.png" alt="" className="h-20 w-20 object-contain mb-3" />
           <p className="text-sm text-gov-text font-extrabold uppercase leading-snug">
-            {t.subtitle}
+            {headerSubtitle}
           </p>
         </div>
 
@@ -231,40 +247,93 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
                   <p className="text-[10px] font-bold text-gov-navy uppercase tracking-wider mb-2">
                     {lang === 'ru' ? 'Прикрепленные документы с QR-кодом' : 'Biriktirilgan QR-kodli rasmiy hujjatlar'}
                   </p>
-                  <div className="space-y-1.5">
-                    {result.documents.map(d => (
-                      <div
-                        key={d.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors text-xs font-semibold text-gov-primary"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDoc(d)}
-                          className="flex items-center gap-2 min-w-0 flex-1 text-left text-gov-navy font-semibold truncate hover:text-gov-primary cursor-pointer"
-                          title={d.original_name}
+                  <div className="space-y-2.5">
+                    {result.documents.map(d => {
+                      const isQrOpen = openQrDocId === d.id || (openQrDocId === null && result.documents.length === 1);
+                      const docUrl = d.file_url ? d.file_url.replace(/^http:\/\//, 'https://') : window.location.href;
+                      return (
+                        <div
+                          key={d.id}
+                          className="p-2.5 rounded-xl bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors text-xs font-semibold text-gov-primary"
                         >
-                          <DocumentIcon className="h-4 w-4 text-gov-primary shrink-0" />
-                          <span className="truncate">{d.original_name}</span>
-                        </button>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                          <button
-                            type="button"
-                            onClick={() => setPreviewDoc(d)}
-                            className="text-[10px] px-2 py-1 rounded bg-gov-light hover:bg-gov-primaryLight text-gov-primary font-semibold transition-colors cursor-pointer"
-                          >
-                            {lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}
-                          </button>
-                          <a
-                            href={d.file_url ? d.file_url.replace(/^http:\/\//, 'https://') : ''}
-                            download={d.original_name || 'hujjat.docx'}
-                            className="text-[10px] px-2 py-1 rounded bg-gov-primary text-white font-semibold hover:bg-gov-primaryDark transition-colors"
-                          >
-                            {lang === 'ru' ? 'Скачать' : 'Yuklab olish'}
-                          </a>
+                          <div className="flex items-center justify-between gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewDoc(d)}
+                              className="flex items-center gap-2 min-w-0 flex-1 text-left text-gov-navy font-semibold truncate hover:text-gov-primary cursor-pointer"
+                              title={d.original_name}
+                            >
+                              <DocumentIcon className="h-4 w-4 text-gov-primary shrink-0" />
+                              <span className="truncate">{d.original_name}</span>
+                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewDoc(d)}
+                                className="text-[10px] px-2 py-1 rounded bg-gov-light hover:bg-gov-primaryLight text-gov-primary font-semibold transition-colors cursor-pointer"
+                              >
+                                {lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}
+                              </button>
+                              <a
+                                href={docUrl}
+                                download={d.original_name || 'hujjat.docx'}
+                                className="text-[10px] px-2 py-1 rounded bg-gov-primary text-white font-semibold hover:bg-gov-primaryDark transition-colors"
+                              >
+                                {lang === 'ru' ? 'Скачать' : 'Yuklab olish'}
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => setOpenQrDocId(prev => prev === d.id ? false : d.id)}
+                                className={`text-[10px] px-2 py-1 rounded border font-semibold transition-colors cursor-pointer ${
+                                  isQrOpen
+                                    ? 'bg-gov-navy text-white border-gov-navy shadow-xs'
+                                    : 'bg-gov-light text-gov-text border-gov-border hover:bg-gov-primaryLight hover:text-gov-primary'
+                                }`}
+                                title="QR-kod"
+                              >
+                                QR
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* QR Code container matching Image 1 */}
+                          {isQrOpen && (
+                            <div className="mt-3 pt-3 border-t border-gov-border/70 flex flex-col items-center gap-2 bg-slate-50/70 p-3 rounded-xl">
+                              <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-200">
+                                <QRCodeSVG value={docUrl} size={150} level="M" />
+                              </div>
+                              <p className="text-[11px] text-gov-muted text-center font-medium">
+                                {lang === 'ru'
+                                  ? 'Отсканируйте, чтобы открыть документ'
+                                  : 'Hujjatni ochish uchun skanerlang'}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+                </div>
+              )}
+
+              {/* Fallback Material Verification QR Code if no attached docs */}
+              {(!result.documents || result.documents.length === 0) && (
+                <div className="border border-gov-border rounded-xl p-3 bg-gov-light/30 flex flex-col items-center gap-2">
+                  <p className="text-[10px] font-bold text-gov-navy uppercase tracking-wider">
+                    {lang === 'ru' ? 'QR-верификация материала' : 'Material QR-verifikatsiyasi'}
+                  </p>
+                  <div className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-200">
+                    <QRCodeSVG
+                      value={`https://tqtb-olmazor.uz/${activeDistrictId}/arizalarim?id=${result.id}`}
+                      size={150}
+                      level="M"
+                    />
+                  </div>
+                  <p className="text-[11px] text-gov-muted text-center font-medium">
+                    {lang === 'ru'
+                      ? 'Отсканируйте для проверки материала'
+                      : 'Hujjatni ochish uchun skanerlang'}
+                  </p>
                 </div>
               )}
 

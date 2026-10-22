@@ -24,10 +24,18 @@ export const DISTRICTS = {
 };
 
 export function getActiveDistrictId(pathname = window.location.pathname) {
+  if (pathname.startsWith('/olmazor')) {
+    return 'olmazor';
+  }
   if (pathname.startsWith('/yashnobod')) {
     return 'yashnobod';
   }
-  return 'olmazor';
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get('district') || params.get('dept');
+    if (d && DISTRICTS[d]) return d;
+  } catch {}
+  return 'yashnobod';
 }
 
 export function getActiveDistrict(pathname = window.location.pathname) {

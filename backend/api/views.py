@@ -1485,8 +1485,13 @@ def check_material_status(request):
             'uploaded_at': doc.uploaded_at
         })
 
+    dept_id = (
+        getattr(material, '_state', None) and getattr(material._state, 'db', None) == 'yashnobod' and 'yashnobod'
+    ) or material.department_id or (officer.department_id if officer else None) or 'yashnobod'
+
     return Response({
         'id': material.id,
+        'department': dept_id,
         'status': material.status,
         'title_ru': material.title_ru,
         'title_uz': material.title_uz,
