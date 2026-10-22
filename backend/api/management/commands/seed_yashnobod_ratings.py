@@ -3,6 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 from api.models import Officer, Rating
+from backend.db_router import set_current_branch
 
 CITIZEN_NAMES = [
     "Alimov Jasur Baxtiyorovich", "Karimov Sardor Rustamovich", "Rahmonov Bobur Alisherovich",
@@ -52,7 +53,8 @@ class Command(BaseCommand):
     help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days'
 
     def handle(self, *args, **options):
-        officers = Officer.objects.filter(department_id='yashnobod', role='investigator')
+        set_current_branch('yashnobod')
+        officers = Officer.objects.filter(role='investigator')
         if not officers.exists():
             self.stdout.write(self.style.ERROR('No Yashnobod investigators found!'))
             return
