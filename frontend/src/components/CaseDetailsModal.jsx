@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
-import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon, RepeatIcon, DownloadIcon } from './Icons';
+import { CheckIcon, CloseIcon, DocumentIcon, PaperclipIcon, TrashIcon, RepeatIcon, DownloadIcon, EyeIcon } from './Icons';
+import DocumentPreviewModal from './DocumentPreviewModal';
 import Modal from './Modal';
 import Select from './ui/Select';
 import { notify } from '../toastService';
@@ -22,6 +23,7 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [qrDocId, setQrDocId] = useState(null);
+  const [previewDoc, setPreviewDoc] = useState(null);
   const [citizenMaterials, setCitizenMaterials] = useState([]);
   const [loadingCitizenMaterials, setLoadingCitizenMaterials] = useState(false);
 
@@ -524,20 +526,26 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                           <DocumentIcon className="h-4 w-4" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <a
-                            href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
-                            download={doc.original_name || 'hujjat.docx'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors truncate block cursor-pointer"
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDoc(doc)}
+                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors truncate block text-left w-full cursor-pointer"
                             title={doc.original_name}
                           >
                             {doc.original_name || doc.file_url}
-                          </a>
+                          </button>
                           <p className="text-[10px] text-gov-muted mt-0.5">
                             {doc.uploaded_by && `${doc.uploaded_by} · `}{formatDate(doc.uploaded_at)}
                           </p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc(doc)}
+                          className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors shrink-0 flex items-center justify-center"
+                          title={lang === 'ru' ? 'Просмотр документа' : 'Hujjatni ko‘rish'}
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </button>
                         <a
                           href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
                           download={doc.original_name || 'hujjat.docx'}
@@ -699,6 +707,13 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
         </div>
 
       </div>
+      {previewDoc && (
+        <DocumentPreviewModal
+          doc={previewDoc}
+          lang={lang}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
     </Modal>
   );
 }

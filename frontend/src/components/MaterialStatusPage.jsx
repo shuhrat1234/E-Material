@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
-import { SearchIcon, CloseIcon } from './Icons';
+import { SearchIcon, CloseIcon, DocumentIcon } from './Icons';
+import DocumentPreviewModal from './DocumentPreviewModal';
 
 const STATUS_LABELS = {
   'изучаемый': { ru: 'Изучаемый', uz: 'O\'rganilmoqda', tone: 'bg-blue-50 text-blue-700 border-blue-100' },
@@ -20,6 +21,7 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const t = TRANSLATIONS[lang];
 
@@ -230,19 +232,36 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
                   </p>
                   <div className="space-y-1.5">
                     {result.documents.map(d => (
-                      <a
+                      <div
                         key={d.id}
-                        href={d.file_url ? d.file_url.replace(/^http:\/\//, 'https://') : ''}
-                        download={d.original_name || 'hujjat.docx'}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="flex items-center justify-between p-2 rounded-lg bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors text-xs font-semibold text-gov-primary"
                       >
-                        <span className="truncate pr-2">{d.original_name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-gov-primaryLight shrink-0">
-                          {lang === 'ru' ? 'Скачать / Просмотр' : 'Yuklab olish'}
-                        </span>
-                      </a>
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc(d)}
+                          className="flex items-center gap-2 min-w-0 flex-1 text-left text-gov-navy font-semibold truncate hover:text-gov-primary cursor-pointer"
+                          title={d.original_name}
+                        >
+                          <DocumentIcon className="h-4 w-4 text-gov-primary shrink-0" />
+                          <span className="truncate">{d.original_name}</span>
+                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDoc(d)}
+                            className="text-[10px] px-2 py-1 rounded bg-gov-light hover:bg-gov-primaryLight text-gov-primary font-semibold transition-colors cursor-pointer"
+                          >
+                            {lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}
+                          </button>
+                          <a
+                            href={d.file_url ? d.file_url.replace(/^http:\/\//, 'https://') : ''}
+                            download={d.original_name || 'hujjat.docx'}
+                            className="text-[10px] px-2 py-1 rounded bg-gov-primary text-white font-semibold hover:bg-gov-primaryDark transition-colors"
+                          >
+                            {lang === 'ru' ? 'Скачать' : 'Yuklab olish'}
+                          </a>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -284,6 +303,14 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
           </div>
         </div>
       </div>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          doc={previewDoc}
+          lang={lang}
+          onClose={() => setPreviewDoc(null)}
+        />
+      )}
     </div>
   );
 }

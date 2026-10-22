@@ -12,6 +12,7 @@
     "axios": "^1.6.8",
     "chart.js": "^4.4.2",
     "d3-delaunay": "^6.0.4",
+    "docx-preview": "^0.4.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.379.0",
     "polygon-clipping": "^0.15.7",
