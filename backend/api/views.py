@@ -79,6 +79,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
 
 class OfficerViewSet(viewsets.ModelViewSet):
+    queryset = Officer.objects.all()
     serializer_class = OfficerSerializer
 
     def get_queryset(self):
@@ -203,6 +204,7 @@ class OfficerViewSet(viewsets.ModelViewSet):
         return Response(RatingSerializer(ratings, many=True).data)
 
 class MaterialViewSet(viewsets.ModelViewSet):
+    queryset = Material.objects.all()
     serializer_class = MaterialSerializer
 
     def get_queryset(self):
@@ -486,6 +488,7 @@ class TaqiqViewSet(RegistryViewSetMixin, viewsets.ModelViewSet):
     audit_resolve_uz = "{instance.material_id} materiali bo'yicha ta'qiq bekor qilindi"
 
 class ApprovalRequestViewSet(viewsets.ModelViewSet):
+    queryset = ApprovalRequest.objects.all()
     serializer_class = ApprovalRequestSerializer
 
     def get_queryset(self):
@@ -606,6 +609,7 @@ class AuditLogViewSet(viewsets.ModelViewSet):
     serializer_class = AuditLogSerializer
 
 class ActiveVisitViewSet(viewsets.ModelViewSet):
+    queryset = ActiveVisit.objects.all()
     serializer_class = ActiveVisitSerializer
 
     def get_queryset(self):
