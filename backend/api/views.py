@@ -201,6 +201,113 @@ class OfficerViewSet(viewsets.ModelViewSet):
         ratings = officer.ratings.all()
         return Response(RatingSerializer(ratings, many=True).data)
 
+    @action(detail=False, methods=['get'])
+    def ratings_summary(self, request):
+        dept = get_request_department(request) or 'olmazor'
+        if dept == 'olmazor':
+            officers = Officer.objects.filter(Q(department_id='olmazor') | Q(department_id__isnull=True) | Q(department_id='so'), role='investigator')
+        else:
+            officers = Officer.objects.filter(department_id=dept, role='investigator')
+
+        officer_ids = list(officers.values_list('id', flat=True))
+        all_ratings = Rating.objects.filter(officer_id__in=officer_ids)
+
+        now = timezone.now()
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_yesterday = start_of_today - timedelta(days=1)
+        start_2days_ago = start_of_today - timedelta(days=2)
+
+        ratings_3d = all_ratings.filter(created_at__gte=start_2days_ago)
+        likes_3d = ratings_3d.filter(is_like=True).count()
+        dislikes_3d = ratings_3d.filter(is_like=False).count()
+        total_3d = likes_3d + dislikes_3d
+        index_3d = round((likes_3d / total_3d) * 100) if total_3d > 0 else 0
+
+        # Day breakdown
+        r_today = all_ratings.filter(created_at__gte=start_of_today)
+        l_today = r_today.filter(is_like=True).count()
+        d_today = r_today.filter(is_like=False).count()
+        idx_today = round((l_today / (l_today + d_today)) * 100) if (l_today + d_today) > 0 else 0
+
+        r_yesterday = all_ratings.filter(created_at__gte=start_yesterday, created_at__lt=start_of_today)
+        l_yesterday = r_yesterday.filter(is_like=True).count()
+        d_yesterday = r_yesterday.filter(is_like=False).count()
+        idx_yesterday = round((l_yesterday / (l_yesterday + d_yesterday)) * 100) if (l_yesterday + d_yesterday) > 0 else 0
+
+        r_2d = all_ratings.filter(created_at__gte=start_2days_ago, created_at__lt=start_yesterday)
+        l_2d = r_2d.filter(is_like=True).count()
+        d_2d = r_2d.filter(is_like=False).count()
+        idx_2d = round((l_2d / (l_2d + d_2d)) * 100) if (l_2d + d_2d) > 0 else 0
+
+        top_officers_data = []
+        for off in officers.order_by('-likes')[:3]:
+            top_officers_data.append({
+                'id': off.id,
+                'name_uz': off.name_uz,
+                'name_ru': off.name_ru,
+                'rank_uz': off.rank_uz,
+                'rank_ru': off.rank_ru,
+                'likes': off.likes,
+                'dislikes': off.dislikes,
+                'index': off.index,
+            })
+
+        from django.db.models import Count
+        top_like_reasons = (
+            ratings_3d.filter(is_like=True)
+            .exclude(reason_uz='')
+            .values('reason_uz', 'reason_ru')
+            .annotate(cnt=Count('id'))
+            .order_by('-cnt')[:4]
+        )
+        top_dislike_reasons = (
+            ratings_3d.filter(is_like=False)
+            .exclude(reason_uz='')
+            .values('reason_uz', 'reason_ru')
+            .annotate(cnt=Count('id'))
+            .order_by('-cnt')[:4]
+        )
+
+        return Response({
+            'total_3d': total_3d,
+            'likes_3d': likes_3d,
+            'dislikes_3d': dislikes_3d,
+            'index_3d': index_3d,
+            'days': [
+                {
+                    'label_uz': 'Bugun',
+                    'label_ru': 'Сегодня',
+                    'date': start_of_today.strftime('%d.%m'),
+                    'likes': l_today,
+                    'dislikes': d_today,
+                    'total': l_today + d_today,
+                    'index': idx_today,
+                },
+                {
+                    'label_uz': 'Kecha',
+                    'label_ru': 'Вчера',
+                    'date': start_yesterday.strftime('%d.%m'),
+                    'likes': l_yesterday,
+                    'dislikes': d_yesterday,
+                    'total': l_yesterday + d_yesterday,
+                    'index': idx_yesterday,
+                },
+                {
+                    'label_uz': '2 kun oldin',
+                    'label_ru': '2 дня назад',
+                    'date': start_2days_ago.strftime('%d.%m'),
+                    'likes': l_2d,
+                    'dislikes': d_2d,
+                    'total': l_2d + d_2d,
+                    'index': idx_2d,
+                },
+            ],
+            'top_officers': top_officers_data,
+            'top_like_reasons': list(top_like_reasons),
+            'top_dislike_reasons': list(top_dislike_reasons),
+        })
+
+
 class MaterialViewSet(viewsets.ModelViewSet):
     queryset = Material.objects.all()
     serializer_class = MaterialSerializer

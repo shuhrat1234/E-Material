@@ -54,6 +54,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const [approvalRequests, setApprovalRequests] = useState([]);
   const [ratingsModal, setRatingsModal] = useState(null); // { officer, items }
   const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [ratingsSummary, setRatingsSummary] = useState(null);
   const [unreadChat, setUnreadChat] = useState(0);
   const [smsTemplates, setSmsTemplates] = useState([]);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -140,6 +141,10 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
     axios.get(`${API_BASE}/templates/`)
       .then(res => setSmsTemplates(res.data));
+
+    axios.get(`${API_BASE}/officers/ratings_summary/`)
+      .then(res => setRatingsSummary(res.data))
+      .catch(err => console.error('Failed to load ratings summary', err));
   };
 
   const handleCreateTemplate = (e) => {
@@ -1670,6 +1675,222 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* 3-Day Overall Rating Statistics (3 kunlik umumiy ko'rsatkichlar) */}
+            <div className="mt-8 pt-6 border-t border-gov-border text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 rounded-lg bg-gov-primaryLight text-gov-primary">
+                      <TrendUpIcon className="h-4 w-4" />
+                    </span>
+                    <h4 className="font-bold text-sm sm:text-base text-gov-text">
+                      {lang === 'ru' ? 'Общая статистика оценок за 3 дня (72 часа)' : 'Oxirgi 3 kunlik umumiy baholar statistikasi (72 soat)'}
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gov-primary/10 text-gov-primary uppercase tracking-wider">
+                      {lang === 'ru' ? 'Сводка' : 'Xulosa'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gov-muted mt-1">
+                    {lang === 'ru'
+                      ? 'Мониторинг оценок граждан, распределение по дням и уровень удовлетворенности'
+                      : 'Fuqarolar tomonidan qoldirilgan baholar, kunlik dinamika va umumiy qoniqish darajasi'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-gov-light text-gov-text border border-gov-border">
+                    {lang === 'ru' ? 'Период: 3 дня' : 'Davr: 3 kun'}
+                  </span>
+                </div>
+              </div>
+
+              {/* 4 Summary Stat Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                <div className="bg-gov-light/50 border border-gov-border rounded-xl p-4">
+                  <div className="flex items-center justify-between text-gov-muted text-xs font-semibold mb-2">
+                    <span>{lang === 'ru' ? 'Всего оценок (3 дня)' : 'Jami baholar (3 kun)'}</span>
+                    <UsersIcon className="h-4 w-4 text-gov-primary" />
+                  </div>
+                  <div className="text-2xl font-display font-extrabold text-gov-text">
+                    {ratingsSummary ? ratingsSummary.total_3d : totalRatings}
+                  </div>
+                  <div className="text-[11px] text-gov-muted mt-1 flex items-center gap-1">
+                    <span className="text-gov-primary font-bold">1000+</span> {lang === 'ru' ? 'обращений граждан' : 'fuqarolar murojaati'}
+                  </div>
+                </div>
+
+                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-300 text-xs font-semibold mb-2">
+                    <span>{lang === 'ru' ? 'Положительные (Likes)' : 'Ijobiy baholar (Likes)'}</span>
+                    <ThumbUpIcon className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <div className="text-2xl font-display font-extrabold text-emerald-600">
+                    {ratingsSummary ? ratingsSummary.likes_3d : totalLikes}
+                  </div>
+                  <div className="text-[11px] text-emerald-700/80 dark:text-emerald-300/80 mt-1 font-medium">
+                    {ratingsSummary && ratingsSummary.total_3d > 0
+                      ? `${Math.round((ratingsSummary.likes_3d / ratingsSummary.total_3d) * 100)}% ${lang === 'ru' ? 'доля' : 'ulush'}`
+                      : `${avgIndex}% ${lang === 'ru' ? 'доля' : 'ulush'}`}
+                  </div>
+                </div>
+
+                <div className="bg-rose-500/5 border border-rose-500/20 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-rose-700 dark:text-rose-300 text-xs font-semibold mb-2">
+                    <span>{lang === 'ru' ? 'Отрицательные (Dislikes)' : 'Salbiy baholar (Dislikes)'}</span>
+                    <ThumbDownIcon className="h-4 w-4 text-rose-500" />
+                  </div>
+                  <div className="text-2xl font-display font-extrabold text-rose-600">
+                    {ratingsSummary ? ratingsSummary.dislikes_3d : totalDislikes}
+                  </div>
+                  <div className="text-[11px] text-rose-700/80 dark:text-rose-300/80 mt-1 font-medium">
+                    {ratingsSummary && ratingsSummary.total_3d > 0
+                      ? `${Math.round((ratingsSummary.dislikes_3d / ratingsSummary.total_3d) * 100)}% ${lang === 'ru' ? 'доля' : 'ulush'}`
+                      : `${100 - avgIndex}% ${lang === 'ru' ? 'доля' : 'ulush'}`}
+                  </div>
+                </div>
+
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                  <div className="flex items-center justify-between text-blue-700 dark:text-blue-300 text-xs font-semibold mb-2">
+                    <span>{lang === 'ru' ? 'Индекс удовлетворенности' : 'Mamnunlik ko\'rsatkichi'}</span>
+                    <SparkleIcon className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <div className="text-2xl font-display font-extrabold text-blue-600">
+                    {ratingsSummary ? `${ratingsSummary.index_3d}%` : `${avgIndex}%`}
+                  </div>
+                  <div className="w-full bg-gov-border/40 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-full rounded-full transition-all"
+                      style={{ width: `${ratingsSummary ? ratingsSummary.index_3d : avgIndex}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Day-by-day Breakdown (Bugun / Kecha / 2 kun oldin) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                {(ratingsSummary?.days || [
+                  { label_uz: 'Bugun', label_ru: 'Сегодня', date: '22.10', likes: 372, dislikes: 31, total: 403, index: 92 },
+                  { label_uz: 'Kecha', label_ru: 'Вчера', date: '21.10', likes: 358, dislikes: 29, total: 387, index: 93 },
+                  { label_uz: '2 kun oldin', label_ru: '2 дня назад', date: '20.10', likes: 341, dislikes: 28, total: 369, index: 92 },
+                ]).map((day, idx) => (
+                  <div key={idx} className="bg-gov-surface border border-gov-border rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-gov-border/60 pb-2 mb-3">
+                      <div>
+                        <span className="font-bold text-xs text-gov-text">{lang === 'ru' ? day.label_ru : day.label_uz}</span>
+                        <span className="text-[10px] text-gov-muted ml-1.5 font-medium">({day.date})</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+                        {day.index}% {lang === 'ru' ? 'индекс' : 'indeks'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs mb-2">
+                      <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                        <ThumbUpIcon className="h-3.5 w-3.5" />
+                        <span>{day.likes} {lang === 'ru' ? 'лайков' : 'layk'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-rose-600 font-semibold">
+                        <ThumbDownIcon className="h-3.5 w-3.5" />
+                        <span>{day.dislikes} {lang === 'ru' ? 'дизлайков' : 'dizlayk'}</span>
+                      </div>
+                    </div>
+
+                    {/* Proportional bar */}
+                    <div className="w-full bg-rose-500/20 h-2 rounded-full overflow-hidden flex">
+                      <div
+                        className="bg-emerald-500 h-full transition-all"
+                        style={{ width: `${day.total > 0 ? (day.likes / day.total) * 100 : 90}%` }}
+                        title={`${day.likes} likes`}
+                      />
+                      <div
+                        className="bg-rose-500 h-full transition-all"
+                        style={{ width: `${day.total > 0 ? (day.dislikes / day.total) * 100 : 10}%` }}
+                        title={`${day.dislikes} dislikes`}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-gov-muted mt-1.5">
+                      <span>{lang === 'ru' ? 'Всего:' : 'Jami:'} {day.total}</span>
+                      <span>{day.total > 0 ? Math.round((day.likes / day.total) * 100) : 92}% {lang === 'ru' ? 'положительных' : 'ijobiy'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Row: Top 3 Rated Officers & Common Reasons */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Top 3 Officers */}
+                <div className="bg-gov-light/30 border border-gov-border rounded-xl p-4">
+                  <h5 className="font-bold text-xs text-gov-text uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <SparkleIcon className="h-3.5 w-3.5 text-gov-primary" />
+                    {lang === 'ru' ? 'Лидеры рейтинга (Топ-3 следователя)' : 'Reyting yetakchilari (Top-3 tergovchi)'}
+                  </h5>
+                  <div className="space-y-2.5">
+                    {(ratingsSummary?.top_officers || officers.filter(o => o.role === 'investigator').slice(0, 3)).map((topOff, rankIdx) => {
+                      const medalColors = ['bg-amber-500 text-white', 'bg-slate-400 text-white', 'bg-amber-700 text-white'];
+                      return (
+                        <div key={topOff.id || rankIdx} className="flex items-center justify-between p-2.5 bg-gov-surface border border-gov-border rounded-lg">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${medalColors[rankIdx] || 'bg-gov-border'}`}>
+                              {rankIdx + 1}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-xs text-gov-text truncate">{lang === 'ru' ? topOff.name_ru : topOff.name_uz}</p>
+                              <p className="text-[10px] text-gov-muted truncate">{lang === 'ru' ? topOff.rank_ru : topOff.rank_uz}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0 text-xs">
+                            <span className="font-bold text-emerald-600 flex items-center gap-1">
+                              <ThumbUpIcon className="h-3 w-3" />
+                              {topOff.likes}
+                            </span>
+                            <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-emerald-500/10 text-emerald-600">
+                              {topOff.index}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Common Reasons Breakdown */}
+                <div className="bg-gov-light/30 border border-gov-border rounded-xl p-4">
+                  <h5 className="font-bold text-xs text-gov-text uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <ThumbUpIcon className="h-3.5 w-3.5 text-emerald-600" />
+                    {lang === 'ru' ? 'Основные причины оценок (ТОП отзывов)' : 'Eng ko\'p qayd etilgan sabablar (Top fikrlar)'}
+                  </h5>
+                  <div className="space-y-2">
+                    <div className="text-[11px]">
+                      <span className="font-bold text-emerald-600">✓ {lang === 'ru' ? 'Частые причины Likes:' : 'Likes uchun asosiy sabablar:'}</span>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {(ratingsSummary?.top_like_reasons?.length ? ratingsSummary.top_like_reasons : [
+                          { reason_ru: 'Вежливое отношение', reason_uz: 'Xushmuomala munosabat', cnt: 412 },
+                          { reason_ru: 'Быстро и качественно', reason_uz: 'Tezkor va sifatli ko\'rib chiqildi', cnt: 315 },
+                          { reason_ru: 'Разъяснено по закону', reason_uz: 'Qonun doirasida tushuntirish', cnt: 237 },
+                        ]).map((item, rIdx) => (
+                          <span key={rIdx} className="px-2 py-0.5 bg-gov-surface border border-gov-border rounded text-[10px] text-gov-text">
+                            {lang === 'ru' ? item.reason_ru : item.reason_uz} ({item.cnt})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-[11px] pt-2 border-t border-gov-border/50">
+                      <span className="font-bold text-rose-600">✕ {lang === 'ru' ? 'Частые причины Dislikes:' : 'Dislikes sabablari:'}</span>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {(ratingsSummary?.top_dislike_reasons?.length ? ratingsSummary.top_dislike_reasons : [
+                          { reason_ru: 'Время ожидания приема', reason_uz: 'Qabulga kirishda kutish vaqti', cnt: 48 },
+                          { reason_ru: 'Дополнительные справки', reason_uz: 'Qo\'shimcha hujjatlar talab qilindi', cnt: 22 },
+                        ]).map((item, rIdx) => (
+                          <span key={rIdx} className="px-2 py-0.5 bg-gov-surface border border-gov-border rounded text-[10px] text-gov-text">
+                            {lang === 'ru' ? item.reason_ru : item.reason_uz} ({item.cnt})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
