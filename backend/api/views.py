@@ -147,15 +147,6 @@ class OfficerViewSet(viewsets.ModelViewSet):
         if not citizen_name:
             return Response({'detail': 'citizenName is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if is_like:
-            officer.likes += 1
-            officer.index = min(100, officer.index + 2)
-        else:
-            officer.dislikes += 1
-            officer.index = max(0, officer.index - 1)
-
-        officer.save()
-
         Rating.objects.create(
             officer=officer,
             citizen_name=citizen_name,
@@ -163,6 +154,12 @@ class OfficerViewSet(viewsets.ModelViewSet):
             reason_ru=reason_ru,
             reason_uz=reason_uz,
         )
+
+        officer.likes = officer.ratings.filter(is_like=True).count()
+        officer.dislikes = officer.ratings.filter(is_like=False).count()
+        total = officer.likes + officer.dislikes
+        officer.index = round((officer.likes / total) * 100) if total > 0 else 0
+        officer.save()
 
         # Log action
         rating_type = "Like" if is_like else "Dislike"

@@ -32,6 +32,14 @@ class Officer(models.Model):
     photo = models.CharField(max_length=10, blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
 
+    def recalculate_ratings(self):
+        self.likes = self.ratings.filter(is_like=True).count()
+        self.dislikes = self.ratings.filter(is_like=False).count()
+        total = self.likes + self.dislikes
+        self.index = round((self.likes / total) * 100) if total > 0 else 0
+        self.save(update_fields=['likes', 'dislikes', 'index'])
+        return self.index
+
     def __str__(self):
         return self.name_ru
 

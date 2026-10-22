@@ -389,11 +389,10 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   };
 
   const investigatorsList = officers.filter(o => o.role === 'investigator');
-  const avgIndex = investigatorsList.length > 0
-    ? Math.round(investigatorsList.reduce((sum, o) => sum + o.index, 0) / investigatorsList.length)
-    : 0;
-  const totalLikes = investigatorsList.reduce((sum, o) => sum + o.likes, 0);
-  const totalDislikes = investigatorsList.reduce((sum, o) => sum + o.dislikes, 0);
+  const totalLikes = investigatorsList.reduce((sum, o) => sum + (o.likes || 0), 0);
+  const totalDislikes = investigatorsList.reduce((sum, o) => sum + (o.dislikes || 0), 0);
+  const totalRatings = totalLikes + totalDislikes;
+  const avgIndex = totalRatings > 0 ? Math.round((totalLikes / totalRatings) * 100) : 0;
 
   const difficultyCounts = { simple: 0, medium: 0, hard: 0 };
   filteredMaterials.forEach(c => {
@@ -561,7 +560,10 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const getOfficersRatingData = () => {
     const investigators = officers.filter(o => o.role === 'investigator');
     const names = investigators.map(o => lang === 'ru' ? o.name_ru.split(' ')[0] : o.name_uz.split(' ')[0]);
-    const indices = investigators.map(o => o.index);
+    const indices = investigators.map(o => {
+      const tot = (o.likes || 0) + (o.dislikes || 0);
+      return tot > 0 ? Math.round(((o.likes || 0) / tot) * 100) : 0;
+    });
     return {
       labels: names,
       datasets: [{
@@ -1307,7 +1309,13 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                           <td className="px-4 py-3 font-bold text-gov-success">{o.likes}</td>
                           <td className="px-4 py-3 font-bold text-gov-danger">{o.dislikes}</td>
                           <td className="px-4 py-3">
-                            <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold">{o.index}%</span>
+                            {((o.likes || 0) + (o.dislikes || 0)) > 0 ? (
+                              <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold">
+                                {Math.round(((o.likes || 0) / ((o.likes || 0) + (o.dislikes || 0))) * 100)}%
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded bg-gov-border/30 text-gov-muted font-medium" title={lang === 'ru' ? 'Нет оценок' : 'Baholanmagan'}>—</span>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1564,11 +1572,13 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                   [lang === 'ru' ? 'Следователь' : 'Tergovchi', 'Likes', 'Dislikes', lang === 'ru' ? 'Всего дел' : 'Jami ishlar', lang === 'ru' ? 'В производстве' : 'Ijroda', lang === 'ru' ? 'Индекс %' : 'Indeks %'],
                   officers.filter(o => o.role === 'investigator').map(o => {
                     const cases = materials.filter(m => m.officer === o.id);
+                    const tot = (o.likes || 0) + (o.dislikes || 0);
+                    const idx = tot > 0 ? Math.round(((o.likes || 0) / tot) * 100) : null;
                     return [
                       lang === 'ru' ? o.name_ru : o.name_uz,
                       o.likes, o.dislikes, cases.length,
                       cases.filter(m => m.status !== 'закрыт_в_срок').length,
-                      o.index,
+                      idx !== null ? `${idx}%` : '—',
                     ];
                   })
                 )}
@@ -1592,15 +1602,20 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     const cases = materials.filter(m => m.officer === o.id);
                     const totalCases = cases.length;
                     const inWork = cases.filter(m => m.status !== 'закрыт_в_срок').length;
+                    const totalRatings = (o.likes || 0) + (o.dislikes || 0);
+                    const hasRatings = totalRatings > 0;
+                    const effectiveIndex = hasRatings ? Math.round(((o.likes || 0) / totalRatings) * 100) : null;
 
                     let ratingColor = 'bg-gov-success';
                     let ratingText = 'text-gov-success';
-                    if (o.index < 71) {
-                      ratingColor = 'bg-gov-danger';
-                      ratingText = 'text-gov-danger';
-                    } else if (o.index < 86) {
-                      ratingColor = 'bg-gov-warning';
-                      ratingText = 'text-gov-warning';
+                    if (effectiveIndex !== null) {
+                      if (effectiveIndex < 71) {
+                        ratingColor = 'bg-gov-danger';
+                        ratingText = 'text-gov-danger';
+                      } else if (effectiveIndex < 86) {
+                        ratingColor = 'bg-gov-warning';
+                        ratingText = 'text-gov-warning';
+                      }
                     }
 
                     return (
@@ -1618,12 +1633,21 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                         <td className="px-4 py-3 font-medium text-gov-text">{totalCases}</td>
                         <td className="px-4 py-3 font-medium text-gov-text">{inWork}</td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-bold ${ratingText}`}>{o.index}%</span>
-                            <div className="w-16 bg-gov-border h-1.5 rounded overflow-hidden">
-                              <div className={`${ratingColor} h-full`} style={{ width: `${o.index}%` }} />
+                          {hasRatings ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`font-bold ${ratingText}`}>{effectiveIndex}%</span>
+                              <div className="w-16 bg-gov-border h-1.5 rounded overflow-hidden">
+                                <div className={`${ratingColor} h-full`} style={{ width: `${effectiveIndex}%` }} />
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="flex items-center gap-2" title={lang === 'ru' ? 'Нет оценок' : 'Baholanmagan'}>
+                              <span className="font-semibold text-gov-muted">—</span>
+                              <div className="w-16 bg-gov-border/40 h-1.5 rounded overflow-hidden">
+                                <div className="bg-gov-muted/20 h-full" style={{ width: '0%' }} />
+                              </div>
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <button

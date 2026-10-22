@@ -260,28 +260,28 @@ function App() {
   return (
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
-        <header className={`bg-gov-surface text-gov-text px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3 lg:py-4 flex flex-col md:flex-row justify-between items-center border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
-          <div className="flex items-center gap-3 w-full md:w-auto min-w-0">
+        <header className={`bg-gov-surface text-gov-text px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-3">
             {hasSidebar && (
               <button
                 onClick={() => setSidebarOpen(o => !o)}
-                className="lg:hidden p-2 -ml-2 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
+                className="lg:hidden p-1.5 -ml-1 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-all shrink-0"
                 title={lang === 'ru' ? 'Меню' : 'Menyu'}
               >
                 <MenuIcon className="h-5 w-5" />
               </button>
             )}
-            <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-11 sm:w-11 lg:h-12 lg:w-12 shrink-0 object-contain" />
-            <div className="min-w-0 flex-1">
-              <p className="text-[9.5px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-tight sm:leading-snug line-clamp-none">
+            <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-10 sm:w-10 lg:h-11 lg:w-11 shrink-0 object-contain" />
+            <div className="min-w-0">
+              <h1 className="text-[10px] sm:text-xs lg:text-[13px] text-gov-navy font-bold uppercase tracking-tight leading-snug line-clamp-2">
                 {currentSubtitle}
-              </p>
+              </h1>
             </div>
           </div>
 
-          <div className="flex items-center justify-between md:justify-start gap-1.5 sm:gap-3 lg:gap-4 mt-2.5 md:mt-0 w-full md:w-auto flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-nowrap">
             {/* Language Selector */}
-            <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold shrink-0">
+            <div className="flex bg-gov-light p-0.5 sm:p-1 rounded-full text-xs font-semibold shrink-0">
               <button
                 onClick={() => setLang('ru')}
                 className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
@@ -317,31 +317,33 @@ function App() {
               </button>
             )}
 
+            <div className="h-6 w-px bg-gov-border/60 shrink-0 mx-0.5" />
+
             {/* User display */}
-            <div className="flex items-center gap-1.5 sm:gap-3 border-l border-gov-border pl-2 sm:pl-4 min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               <button
                 onClick={() => setShowProfile(true)}
-                className="flex items-center gap-1.5 sm:gap-2.5 hover:bg-gov-light rounded-lg px-1 sm:px-2 py-1.5 -my-1.5 transition-colors min-w-0"
+                className="flex items-center gap-2 hover:bg-gov-light rounded-lg p-1 transition-colors min-w-0"
                 title={lang === 'ru' ? 'Мой профиль' : 'Mening profilim'}
               >
                 {kioskInfo ? (
-                  <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
+                  <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 border border-gov-border">
                     <kioskInfo.Icon className="h-4 w-4" />
                   </span>
                 ) : (
-                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8 sm:w-10 sm:h-10" textSize="text-[10px] sm:text-xs" className="border border-gov-border shrink-0" />
+                  <Avatar src={user.avatar} initials={user.photo || user.name[0]} size="w-8 h-8 sm:w-9 sm:h-9" textSize="text-[10px] sm:text-xs" className="border border-gov-border shrink-0" />
                 )}
-                <div className="text-left min-w-0">
-                  <p className="text-xs font-semibold text-gov-text truncate max-w-[7rem] sm:max-w-none">{displayName}</p>
-                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider truncate max-w-[7rem] sm:max-w-none">{displayRoleLabel}</p>
+                <div className={`${hasSidebar ? 'hidden xl:block' : 'block'} text-left min-w-0`}>
+                  <p className="text-xs font-semibold text-gov-text truncate max-w-[8rem] sm:max-w-[12rem]">{displayName}</p>
+                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider truncate max-w-[8rem] sm:max-w-[12rem]">{displayRoleLabel}</p>
                 </div>
               </button>
               <button
                 onClick={handleLogout}
                 className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded-lg transition-all shrink-0"
-                title="Exit"
+                title={lang === 'ru' ? 'Выйти' : 'Chiqish'}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-4.5 sm:w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
               </button>

@@ -688,8 +688,13 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
               <StatCard icon={<TrendUpIcon />} tone="info" value={newCases} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendTotal} onClick={() => goToMaterials('new')} />
               <StatCard icon={<ClockIcon />} tone="warning" value={activeCases} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} onClick={() => goToMaterials('active')} />
               <StatCard icon={<DashboardIcon />} tone="success" value={closedCases} label={lang === 'ru' ? 'Исполнено' : 'Bajarildi'} trend={trendClosed} onClick={() => goToMaterials('closed')} />
-              <StatCard icon={<ClockIcon />} tone="danger" value={overdueCases} label={lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'} trend={trendOverdue} onClick={() => goToMaterials('overdue')} />
-              <StatCard icon={<ScaleIcon />} tone="info" value={`${officer ? officer.index : 0}%`} label={lang === 'ru' ? 'Индекс граждан' : 'Fuqarolar indeksi'} className="col-span-2 md:col-span-1" />
+              <StatCard
+                icon={<ScaleIcon />}
+                tone="info"
+                value={officer && ((officer.likes || 0) + (officer.dislikes || 0)) > 0 ? `${Math.round(((officer.likes || 0) / ((officer.likes || 0) + (officer.dislikes || 0))) * 100)}%` : '—'}
+                label={lang === 'ru' ? 'Индекс граждан' : 'Fuqarolar indeksi'}
+                className="col-span-2 md:col-span-1"
+              />
             </div>
 
             {/* Table 1: overall status counters */}
@@ -738,7 +743,11 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
                           </button>
                         </td>
                         <td className="px-3 py-3">
-                          <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold text-sm">{officer ? officer.index : 0}%</span>
+                          <span className="px-2 py-0.5 rounded bg-gov-blue/10 text-gov-blue font-bold text-sm">
+                            {officer && ((officer.likes || 0) + (officer.dislikes || 0)) > 0
+                              ? `${Math.round(((officer.likes || 0) / ((officer.likes || 0) + (officer.dislikes || 0))) * 100)}%`
+                              : '—'}
+                          </span>
                         </td>
                       </tr>
                     );
