@@ -62,27 +62,53 @@ def parse_difficulty(value):
     return parsed if 1 <= parsed <= 5 else 3
 
 
+def get_request_department(request):
+    """Extract active department/district from request headers or query params."""
+    if not request:
+        return ''
+    dept = request.headers.get('x-department') or request.META.get('HTTP_X_DEPARTMENT')
+    if not dept:
+        dept = request.query_params.get('department')
+    if dept:
+        dept = dept.strip().lower()
+    return dept or ''
+
+
 class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
 
 class OfficerViewSet(viewsets.ModelViewSet):
-    queryset = Officer.objects.all()
     serializer_class = OfficerSerializer
+
+    def get_queryset(self):
+        qs = Officer.objects.all()
+        dept = get_request_department(self.request)
+        if dept:
+            if dept == 'olmazor':
+                qs = qs.filter(Q(department_id='olmazor') | Q(department_id__isnull=True) | Q(department_id='so'))
+            else:
+                qs = qs.filter(department_id=dept)
+        return qs
 
     def create(self, request, *args, **kwargs):
         password = (request.data.get('password') or '').strip()
         if password and len(password) < 6:
             return Response({'error': 'Password must be at least 6 characters'}, status=status.HTTP_400_BAD_REQUEST)
 
+        dept_id = request.data.get('department') or get_request_department(request) or 'olmazor'
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        if not data.get('department'):
+            data['department'] = dept_id
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
         try:
-            response = super().create(request, *args, **kwargs)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            response = Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except IntegrityError:
-            # DRF's uniqueness check (a SELECT) and the actual INSERT aren't atomic,
-            # so a double-submit (e.g. an impatient double-click) can slip both
-            # requests past validation before either commits, and the second one
-            # then hits the real DB constraint. Surface that as a clean 400 instead
-            # of an uncaught 500.
             return Response({'id': ['officer with this id already exists.']}, status=status.HTTP_400_BAD_REQUEST)
 
         if password:
@@ -177,8 +203,17 @@ class OfficerViewSet(viewsets.ModelViewSet):
         return Response(RatingSerializer(ratings, many=True).data)
 
 class MaterialViewSet(viewsets.ModelViewSet):
-    queryset = Material.objects.all()
     serializer_class = MaterialSerializer
+
+    def get_queryset(self):
+        qs = Material.objects.all()
+        dept = get_request_department(self.request)
+        if dept:
+            if dept == 'olmazor':
+                qs = qs.filter(Q(department_id='olmazor') | Q(department_id__isnull=True) | Q(department_id='so'))
+            else:
+                qs = qs.filter(department_id=dept)
+        return qs
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -194,7 +229,9 @@ class MaterialViewSet(viewsets.ModelViewSet):
         
         officer_id = request.data.get('officer')
         officer = Officer.objects.filter(id=officer_id).first()
-        dept_id = officer.department_id if officer else 'so'
+        dept_id = request.data.get('department') or get_request_department(request)
+        if not dept_id:
+            dept_id = officer.department_id if officer else 'olmazor'
 
         # Use the manually entered ID if provided, otherwise auto-generate one
         custom_id = (request.data.get('id') or '').strip()
@@ -203,8 +240,9 @@ class MaterialViewSet(viewsets.ModelViewSet):
                 return Response({'error': f'Material with ID "{custom_id}" already exists'}, status=status.HTTP_400_BAD_REQUEST)
             case_id = custom_id
         else:
-            count = Material.objects.count() + 16
-            case_id = f"MAT-2026-{str(count).zfill(4)}"
+            count = Material.objects.filter(department_id=dept_id).count() + 1
+            prefix = "YASH" if dept_id == 'yashnobod' else "MAT"
+            case_id = f"{prefix}-2026-{str(count).zfill(4)}"
 
         new_material = Material.objects.create(
             id=case_id,
@@ -263,6 +301,13 @@ class MaterialViewSet(viewsets.ModelViewSet):
             return Response([])
 
         qs = Material.objects.filter(q)
+        dept = get_request_department(request)
+        if dept:
+            if dept == 'olmazor':
+                qs = qs.filter(Q(department_id='olmazor') | Q(department_id__isnull=True) | Q(department_id='so'))
+            else:
+                qs = qs.filter(department_id=dept)
+
         if exclude_id:
             qs = qs.exclude(id=exclude_id)
 
@@ -375,6 +420,12 @@ class RegistryViewSetMixin:
         material_id = self.request.query_params.get('material')
         if material_id:
             qs = qs.filter(material_id=material_id)
+        dept = get_request_department(self.request)
+        if dept:
+            if dept == 'olmazor':
+                qs = qs.filter(Q(material__department_id='olmazor') | Q(material__department_id__isnull=True) | Q(material__department_id='so') | Q(officer__department_id='olmazor') | Q(officer__department_id__isnull=True))
+            else:
+                qs = qs.filter(Q(material__department_id=dept) | Q(officer__department_id=dept))
         return qs
 
     def create(self, request, *args, **kwargs):
@@ -435,8 +486,17 @@ class TaqiqViewSet(RegistryViewSetMixin, viewsets.ModelViewSet):
     audit_resolve_uz = "{instance.material_id} materiali bo'yicha ta'qiq bekor qilindi"
 
 class ApprovalRequestViewSet(viewsets.ModelViewSet):
-    queryset = ApprovalRequest.objects.all()
     serializer_class = ApprovalRequestSerializer
+
+    def get_queryset(self):
+        qs = ApprovalRequest.objects.all()
+        dept = get_request_department(self.request)
+        if dept:
+            if dept == 'olmazor':
+                qs = qs.filter(Q(case__department_id='olmazor') | Q(case__department_id__isnull=True) | Q(case__department_id='so'))
+            else:
+                qs = qs.filter(case__department_id=dept)
+        return qs
 
     @action(detail=False, methods=['post'], url_path='submit')
     def submit_approval(self, request):
@@ -546,8 +606,17 @@ class AuditLogViewSet(viewsets.ModelViewSet):
     serializer_class = AuditLogSerializer
 
 class ActiveVisitViewSet(viewsets.ModelViewSet):
-    queryset = ActiveVisit.objects.all()
     serializer_class = ActiveVisitSerializer
+
+    def get_queryset(self):
+        qs = ActiveVisit.objects.all()
+        dept = get_request_department(self.request)
+        if dept:
+            if dept == 'olmazor':
+                qs = qs.filter(Q(officer__department_id='olmazor') | Q(officer__department_id__isnull=True) | Q(officer__department_id='so'))
+            else:
+                qs = qs.filter(officer__department_id=dept)
+        return qs
 
 class SMSTemplateViewSet(viewsets.ModelViewSet):
     queryset = SMSTemplate.objects.all()
@@ -567,7 +636,17 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
             return qs.filter(
                 Q(sender_id=user_id, recipient_id=peer_id) | Q(sender_id=peer_id, recipient_id=user_id)
             )
-        return qs.filter(recipient_id__isnull=True)
+
+        # General group chat: filter by sender's department
+        qs = qs.filter(recipient_id__isnull=True)
+        dept = get_request_department(self.request)
+        if dept:
+            officer_ids = list(Officer.objects.filter(department_id=dept).values_list('id', flat=True))
+            if dept == 'olmazor':
+                legacy_ids = list(Officer.objects.filter(Q(department_id__isnull=True) | Q(department_id='so')).values_list('id', flat=True))
+                officer_ids = list(set(officer_ids + legacy_ids))
+            qs = qs.filter(sender_id__in=officer_ids)
+        return qs
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -1137,18 +1216,70 @@ class AiAssistantViewSet(viewsets.ViewSet):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
-    username = request.data.get('username')
+    username = (request.data.get('username') or '').strip()
     password = request.data.get('password')
+    req_dept = (request.data.get('department') or get_request_department(request) or '').strip().lower()
     
     if not username or not password:
         return Response({'error': 'Please provide username and password'}, status=status.HTTP_400_BAD_REQUEST)
 
-    user = authenticate(username=username, password=password)
+    # Kiosk login (planshet / yordam)
+    if username.lower() == 'planshet' and password == 'planshet':
+        dept = req_dept or 'olmazor'
+        return Response({
+            'id': f'off_citizen_{dept}',
+            'username': 'planshet',
+            'role': 'citizen',
+            'department': dept,
+            'name': 'Планшет оценки',
+            'name_ru': 'Планшет оценки',
+            'name_uz': 'Baholash plansheti',
+            'rank_ru': 'Оценка качества',
+            'rank_uz': 'Sifatni baholash',
+            'roleLabel': 'Оценка качества',
+            'photo': 'П',
+            'avatar': None
+        })
+
+    if username.lower() == 'yordam' and password == 'yordam':
+        dept = req_dept or 'olmazor'
+        return Response({
+            'id': f'off_ai_kiosk_{dept}',
+            'username': 'yordam',
+            'role': 'ai_kiosk',
+            'department': dept,
+            'name': 'AI-помощник',
+            'name_ru': 'AI-помощник',
+            'name_uz': 'AI-yordamchi',
+            'rank_ru': 'Приёмная',
+            'rank_uz': 'Qabulxona',
+            'roleLabel': 'Приёмная',
+            'photo': 'AI',
+            'avatar': None
+        })
+
+    # Username alias check for registrator-yashnabod / registrator-yashnobod
+    auth_username = username
+    if username in ('registrator-yashnabod', 'registrator-yashnobod'):
+        if not User.objects.filter(username=username).exists():
+            alternate = 'registrator-yashnobod' if username == 'registrator-yashnabod' else 'registrator-yashnabod'
+            if User.objects.filter(username=alternate).exists():
+                auth_username = alternate
+
+    user = authenticate(username=auth_username, password=password)
     
     if user is not None:
         officer = Officer.objects.filter(user=user).first()
         
         if officer:
+            officer_dept = (officer.department_id or 'olmazor').strip().lower()
+            if req_dept and req_dept != officer_dept and not user.is_superuser:
+                target_name = "Olmazor" if officer_dept == 'olmazor' else "Yashnobod"
+                return Response({
+                    'error': f"Ushbu foydalanuvchi {target_name} tumaniga tegishli. Iltimos, o'z tumaningiz sahifasiga kiring (/{officer_dept}).",
+                    'user_department': officer_dept
+                }, status=status.HTTP_403_FORBIDDEN)
+
             photo = officer.photo
             if not photo:
                 parts = [p for p in officer.name_ru.split(' ') if p]
@@ -1167,6 +1298,7 @@ def login_view(request):
                 'id': officer.id,
                 'username': user.username,
                 'role': officer.role,
+                'department': officer_dept,
                 'name': officer.name_ru,
                 'name_ru': officer.name_ru,
                 'name_uz': officer.name_uz,
@@ -1182,6 +1314,7 @@ def login_view(request):
                     'id': 'off_admin',
                     'username': user.username,
                     'role': 'chief',
+                    'department': req_dept or 'olmazor',
                     'name': 'Администратор системы',
                     'name_ru': 'Администратор системы',
                     'name_uz': 'Tizim administratori',

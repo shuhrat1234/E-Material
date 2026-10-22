@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { API_BASE, TRANSLATIONS } from '../App';
+import { DISTRICTS } from '../config/districts';
 import { KeyIcon, UsersIcon, EyeIcon, EyeOffIcon, SearchIcon } from './Icons';
 
-function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
+function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck, districtId = 'olmazor', onSwitchDistrict }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const currentDistrict = DISTRICTS[districtId] || DISTRICTS.olmazor;
+  const subtitle = lang === 'ru' ? currentDistrict.subtitle_ru : currentDistrict.subtitle_uz;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,7 +34,7 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
     setLoading(true);
     setErrorMsg('');
 
-    axios.post(`${API_BASE}/auth/login/`, { username, password })
+    axios.post(`${API_BASE}/auth/login/`, { username, password, department: districtId })
       .then(res => {
         setLoading(false);
         onLogin(res.data);
@@ -49,7 +53,8 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
     const citizenUser = {
       role: 'citizen',
       name: lang === 'ru' ? 'Планшет оценки' : 'Baholash plansheti',
-      id: 'off_citizen',
+      id: `off_citizen_${districtId}`,
+      department: districtId,
       roleLabel: lang === 'ru' ? 'Оценка качества' : 'Sifatni baholash',
       photo: 'П'
     };
@@ -60,7 +65,8 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
     const aiKioskUser = {
       role: 'ai_kiosk',
       name: lang === 'ru' ? 'AI-помощник' : 'AI-yordamchi',
-      id: 'off_ai_kiosk',
+      id: `off_ai_kiosk_${districtId}`,
+      department: districtId,
       roleLabel: lang === 'ru' ? 'Приёмная' : 'Qabulxona',
       photo: 'AI'
     };
@@ -78,10 +84,43 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
       }}
     >
       <div className="max-w-md w-full">
+        {/* District Switcher Tabs at top */}
+        <div className="flex justify-center mb-5">
+          <div className="inline-flex bg-gov-surface/90 backdrop-blur-sm p-1 rounded-full shadow-card border border-gov-border text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => onSwitchDistrict && onSwitchDistrict('olmazor')}
+              className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+                districtId === 'olmazor'
+                  ? 'bg-gov-primary text-white shadow-sm font-bold'
+                  : 'text-gov-muted hover:text-gov-text'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${districtId === 'olmazor' ? 'bg-white' : 'bg-gov-muted'}`} />
+              Olmazor
+            </button>
+            <button
+              type="button"
+              onClick={() => onSwitchDistrict && onSwitchDistrict('yashnobod')}
+              className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
+                districtId === 'yashnobod'
+                  ? 'bg-gov-primary text-white shadow-sm font-bold'
+                  : 'text-gov-muted hover:text-gov-text'
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${districtId === 'yashnobod' ? 'bg-white' : 'bg-gov-muted'}`} />
+              Yashnobod
+            </button>
+          </div>
+        </div>
+
         <div className="flex flex-col items-center text-center mb-6">
           <img src="/emblem.png" alt="" className="h-20 w-20 object-contain mb-3" />
-          <p className="text-sm text-gov-text font-extrabold uppercase leading-snug">
-            {t.subtitle}
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gov-primaryLight text-gov-primary text-xs font-bold uppercase tracking-wider mb-2 border border-gov-primary/20">
+            {lang === 'ru' ? currentDistrict.name_ru : currentDistrict.name_uz}
+          </div>
+          <p className="text-xs sm:text-sm text-gov-text font-extrabold uppercase leading-snug">
+            {subtitle}
           </p>
         </div>
 
@@ -103,7 +142,7 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
                   id="username-input"
                   type="text"
                   value={username}
-                  placeholder="karimov"
+                  placeholder={districtId === 'yashnobod' ? 'boshliq-yashnobod' : 'boshliq'}
                   onChange={(e) => setUsername(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2.5 rounded-xl bg-gov-light text-sm focus:outline-none focus:ring-2 focus:ring-gov-primary/40 transition-all"
                   required
@@ -160,13 +199,13 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck }) {
           <div className="flex bg-gov-surface shadow-card p-1 rounded-full text-xs font-semibold">
             <button
               onClick={() => setLang('ru')}
-              className={`px-4 py-1.5 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-muted hover:text-gov-text'}`}
+              className={`px-4 py-1.5 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-primaryLight text-gov-primary font-bold' : 'text-gov-muted hover:text-gov-text'}`}
             >
               РУССКИЙ
             </button>
             <button
               onClick={() => setLang('uz')}
-              className={`px-4 py-1.5 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-primaryLight text-gov-primary' : 'text-gov-muted hover:text-gov-text'}`}
+              className={`px-4 py-1.5 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-primaryLight text-gov-primary font-bold' : 'text-gov-muted hover:text-gov-text'}`}
             >
               O'ZBEKCHA
             </button>

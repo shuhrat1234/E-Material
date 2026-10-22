@@ -4,23 +4,24 @@ import MahallaMap from './MahallaMap';
 import Select from './Select';
 import { MapIcon, CloseIcon } from '../Icons';
 import { useSettings } from '../../settingsContext';
-import { OLMAZOR_MAHALLAS } from '../../data/olmazorMahallas';
+import { getDistrictMahallas } from '../../data/districtMahallas';
 import { useVoronoiCells } from '../../mahallaVoronoi';
 
 // Interactive Voronoi mahalla picker matching Boshliq styling — each mahalla is an
 // actual geographic district zone that lights up on hover/click with smooth camera focus.
-function MahallaPicker({ value, onChange, lang, error }) {
+function MahallaPicker({ value, onChange, lang, error, districtId = 'olmazor' }) {
   const [hoveredId, setHoveredId] = useState(null);
   const { isDark } = useSettings();
-  const cells = useVoronoiCells();
+  const cells = useVoronoiCells(districtId);
+  const mahallas = useMemo(() => getDistrictMahallas(districtId), [districtId]);
 
-  const selected = value ? OLMAZOR_MAHALLAS.find(m => m.id === value) : null;
+  const selected = value ? mahallas.find(m => m.id === value) : null;
 
   const options = useMemo(
-    () => [...OLMAZOR_MAHALLAS]
+    () => [...mahallas]
       .sort((a, b) => (lang === 'ru' ? a.name_ru.localeCompare(b.name_ru) : a.name_uz.localeCompare(b.name_uz)))
       .map(m => ({ value: m.id, label: lang === 'ru' ? m.name_ru : m.name_uz })),
-    [lang]
+    [mahallas, lang]
   );
 
   const emptyFill = isDark ? [30, 41, 59] : [226, 232, 240];
@@ -114,6 +115,7 @@ function MahallaPicker({ value, onChange, lang, error }) {
           boundsPadding={0.003}
           overlayLayers={overlayLayers}
           focusLocation={selected ? { lat: selected.lat, lon: selected.lon, zoom: 14 } : null}
+          districtId={districtId}
         />
 
         {/* Floating helper chip on top right of map */}

@@ -6,7 +6,7 @@ import Card, { CardHeader } from './ui/Card';
 import { MapIcon, SearchIcon, CloseIcon, EyeIcon } from './Icons';
 import { useSettings } from '../settingsContext';
 import { MATERIAL_TYPES } from '../materialTaxonomy';
-import { OLMAZOR_MAHALLAS } from '../data/olmazorMahallas';
+import { getDistrictMahallas } from '../data/districtMahallas';
 import {
   useVoronoiCells,
   severityStyle,
@@ -16,8 +16,10 @@ import {
   hexToRgb,
 } from '../mahallaVoronoi';
 
-function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
+function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olmazor' }) {
   const { isDark } = useSettings();
+  const districtMahallas = useMemo(() => getDistrictMahallas(districtId), [districtId]);
+  const cells = useVoronoiCells(districtId);
   const [selectedId, setSelectedId] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,8 +32,6 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   const [labelMode, setLabelMode] = useState('badges'); // 'badges' | 'simple' | 'none'
   const [focusLocation, setFocusLocation] = useState(null);
   const [resetCounter, setResetCounter] = useState(0);
-
-  const cells = useVoronoiCells();
   const detailsRef = useRef(null);
   const searchContainerRef = useRef(null);
 
@@ -87,13 +87,13 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   }, [materials]);
 
   const maxCount = useMemo(
-    () => Math.max(1, ...OLMAZOR_MAHALLAS.map(m => (byMahalla[m.id] || []).length)),
-    [byMahalla]
+    () => Math.max(1, ...districtMahallas.map(m => (byMahalla[m.id] || []).length)),
+    [byMahalla, districtMahallas]
   );
 
   // Mahalla analytics & classification
   const mahallaStats = useMemo(() => {
-    return OLMAZOR_MAHALLAS.map(m => {
+    return districtMahallas.map(m => {
       const list = byMahalla[m.id] || [];
       const totalList = totalByMahalla[m.id] || [];
       const count = list.length;
@@ -106,7 +106,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         zone,
       };
     }).sort((a, b) => b.count - a.count);
-  }, [byMahalla, totalByMahalla, maxCount]);
+  }, [byMahalla, totalByMahalla, maxCount, districtMahallas]);
 
   // District-wide summary metrics
   const districtMetrics = useMemo(() => {
@@ -150,7 +150,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
   }, [searchQuery, mahallaStats]);
 
   const handleSelectMahalla = (mahallaId) => {
-    const found = OLMAZOR_MAHALLAS.find(m => m.id === mahallaId);
+    const found = districtMahallas.find(m => m.id === mahallaId);
     if (!found) return;
     setSelectedId(mahallaId);
     setSearchQuery('');
@@ -296,7 +296,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         })}
 
         {/* Mode B: Hotspot Bubbles with pulsing radial glow */}
-        {viewMode === 'bubbles' && OLMAZOR_MAHALLAS.map(mahalla => {
+        {viewMode === 'bubbles' && districtMahallas.map(mahalla => {
           const list = byMahalla[mahalla.id] || [];
           const count = list.length;
           const isSelected = mahalla.id === selectedId;
@@ -353,7 +353,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
         })}
 
         {/* Labels & Count Badges */}
-        {labelMode !== 'none' && OLMAZOR_MAHALLAS.map(mahalla => {
+        {labelMode !== 'none' && districtMahallas.map(mahalla => {
           const list = byMahalla[mahalla.id] || [];
           const count = list.length;
           const isSelected = mahalla.id === selectedId;
@@ -757,6 +757,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList }) {
             focusLocation={focusLocation}
             resetTrigger={resetCounter}
             overlayLayers={overlayLayers}
+            districtId={districtId}
           />
 
           {/* Bottom Bar: Legend & Untagged note */}

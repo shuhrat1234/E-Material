@@ -3,6 +3,7 @@ import { Delaunay } from 'd3-delaunay';
 import polygonClipping from 'polygon-clipping';
 import { OLMAZOR_MAHALLAS } from './data/olmazorMahallas';
 import { OLMAZOR_BOUNDARY, OLMAZOR_BOUNDS } from './data/olmazorBoundary';
+import { getDistrictMahallas, getDistrictBoundary, getDistrictBounds } from './data/districtMahallas';
 
 // Shared by CrimeMapPanel (full page) and CrimeMapMini (dashboard preview) so the
 // Voronoi/severity-color logic lives in exactly one place.
@@ -80,19 +81,22 @@ export function shortName(name) {
 // most of them. A Voronoi tessellation of the 64 points gives every mahalla a
 // real, derived "zone" — the area closer to it than to any other mahalla — so
 // hovering highlights a whole area with a border, not just a small dot.
-export function useVoronoiCells() {
+export function useVoronoiCells(districtId = 'olmazor') {
   return useMemo(() => {
+    const mahallas = getDistrictMahallas(districtId);
+    const boundary = getDistrictBoundary(districtId);
+    const bounds = getDistrictBounds(districtId);
     const pad = 0.02;
-    const points = OLMAZOR_MAHALLAS.map(m => [m.lon, m.lat]);
+    const points = mahallas.map(m => [m.lon, m.lat]);
     const delaunay = Delaunay.from(points);
     const voronoi = delaunay.voronoi([
-      OLMAZOR_BOUNDS.west - pad, OLMAZOR_BOUNDS.south - pad,
-      OLMAZOR_BOUNDS.east + pad, OLMAZOR_BOUNDS.north + pad,
+      bounds.west - pad, bounds.south - pad,
+      bounds.east + pad, bounds.north + pad,
     ]);
-    const boundaryLonLat = [OLMAZOR_BOUNDARY.map(([lat, lon]) => [lon, lat])];
+    const boundaryLonLat = [boundary.map(([lat, lon]) => [lon, lat])];
 
     const cells = [];
-    OLMAZOR_MAHALLAS.forEach((mahalla, i) => {
+    mahallas.forEach((mahalla, i) => {
       const cell = voronoi.cellPolygon(i);
       if (!cell) return;
       const clipped = polygonClipping.intersection([cell], boundaryLonLat);
@@ -102,7 +106,7 @@ export function useVoronoiCells() {
       });
     });
     return cells;
-  }, []);
+  }, [districtId]);
 }
 
 // count -> { fillRgb: [r,g,b], baseFillOpacity } using the SEVERITY ramp.

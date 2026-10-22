@@ -13,7 +13,7 @@ import { exportToExcel } from '../exportExcel';
 import { notify } from '../toastService';
 import { confirm } from '../confirmService';
 import { MATERIAL_TYPES, getSourceOptions } from '../materialTaxonomy';
-import { OLMAZOR_MAHALLAS } from '../data/olmazorMahallas';
+import { getDistrictMahallas } from '../data/districtMahallas';
 import { findCitizenMaterials, buildCitizenRepeatIndex } from '../citizenUtils';
 
 const MONTH_NAMES_RU = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
@@ -77,7 +77,8 @@ function RegistratorView({ lang, onViewDetails, user }) {
     if (!officerId) {
       next.officerId = lang === 'ru' ? 'Выберите исполнителя' : 'Ijrochini tanlang';
     }
-    if (!mahalla || !OLMAZOR_MAHALLAS.some(m => m.id === mahalla)) {
+    const currentMahallas = getDistrictMahallas(user?.department || 'olmazor');
+    if (!mahalla || !currentMahallas.some(m => m.id === mahalla)) {
       next.mahalla = lang === 'ru' ? 'Выберите махаллю из списка или на карте' : 'Ro\'yxatdan yoki xaritada mahallani tanlang';
     }
     const days = parseInt(deadlineDays, 10);
@@ -124,6 +125,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
       title_ru: titleRu.trim(),
       title_uz: titleUz.trim(),
       officer: officerId,
+      department: user?.department || 'olmazor',
       deadline_days: parseInt(deadlineDays, 10),
       difficulty,
       material_type: materialType,
@@ -625,7 +627,7 @@ function RegistratorView({ lang, onViewDetails, user }) {
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-gov-muted mb-1.5">
                   {lang === 'ru' ? 'Махалля' : 'Mahalla'}
                 </label>
-                <MahallaPicker value={mahalla} onChange={setMahalla} lang={lang} error={!!errors.mahalla} />
+                <MahallaPicker value={mahalla} onChange={setMahalla} lang={lang} error={!!errors.mahalla} districtId={user?.department || 'olmazor'} />
                 {errors.mahalla && <p className="text-[11px] text-gov-danger mt-1">{errors.mahalla}</p>}
               </div>
 

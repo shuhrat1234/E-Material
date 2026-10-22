@@ -17,16 +17,23 @@ import ConfirmHost from './components/ConfirmHost';
 import ToastHost from './components/ToastHost';
 import Avatar from './components/ui/Avatar';
 import { confirm } from './confirmService';
+import { DISTRICTS, getActiveDistrictId, getActiveDistrict } from './config/districts';
 import axios from 'axios';
 
 // API Base URL.
-// Production build (npm run build): same-origin /api — nginx proxies it to the backend,
-// so it works over both http and https without extra open ports.
-// Dev (npm run dev): direct to the backend on port 8000 of the same host/IP,
-// so the app works on the server machine itself and from other PCs on the LAN.
 export const API_BASE = import.meta.env.PROD
   ? `${window.location.protocol}//${window.location.host}/api`
   : `http://${window.location.hostname}:8000/api`;
+
+// Automatically attach active district to all outgoing requests
+axios.interceptors.request.use((config) => {
+  const activeDept = getActiveDistrictId(window.location.pathname);
+  config.headers = config.headers || {};
+  if (!config.headers['X-Department']) {
+    config.headers['X-Department'] = activeDept;
+  }
+  return config;
+});
 
 export const TRANSLATIONS = {
   ru: {
@@ -38,8 +45,8 @@ export const TRANSLATIONS = {
     logout_confirm: "Вы действительно хотите выйти?",
     citizen_tab: "Планшет оценки",
     registrator_tab: "Регистратор",
-    investigator_tab: "Следователь: Каримов С.",
-    chief_tab: "Начальник отделения: Махмудов Ж.",
+    investigator_tab: "Следователь",
+    chief_tab: "Начальник отделения",
     status_study: "Изучаемый",
     status_closed: "Закрыт в срок",
     status_approaching: "Срок приближается",
@@ -62,8 +69,8 @@ export const TRANSLATIONS = {
     logout_confirm: "Tizimdan chiqishni xohlaysizmi?",
     citizen_tab: "Baholash plansheti",
     registrator_tab: "Materiallar registratori",
-    investigator_tab: "Tergovchi: Karimov S.",
-    chief_tab: "Bo'lim boshlig'i: Maxmudov J.",
+    investigator_tab: "Tergovchi",
+    chief_tab: "Bo'lim boshlig'i",
     status_study: "O'rganilmoqda",
     status_closed: "Muddatida yopildi",
     status_approaching: "Yaqinlashmoqda",
@@ -81,19 +88,43 @@ export const TRANSLATIONS = {
 
 function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('em_lang') || 'ru');
+  const [route, setRoute] = useState(() => window.location.pathname);
+
+  // Active district configuration
+  const districtId = getActiveDistrictId(route);
+  const currentDistrict = DISTRICTS[districtId] || DISTRICTS.olmazor;
+  const currentSubtitle = lang === 'ru' ? currentDistrict.subtitle_ru : currentDistrict.subtitle_uz;
+
+  // Auto-redirect root URL '/' to '/olmazor'
+  useEffect(() => {
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      window.history.replaceState({}, '', '/olmazor');
+      setRoute('/olmazor');
+    }
+  }, []);
+
   const [user, setUser] = useState(() => {
     try {
-      const raw = localStorage.getItem('em_user');
-      return raw ? JSON.parse(raw) : null;
+      const activeDept = getActiveDistrictId(window.location.pathname);
+      const scoped = localStorage.getItem(`em_user_${activeDept}`);
+      if (scoped) return JSON.parse(scoped);
+      const legacy = localStorage.getItem('em_user');
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        if (!parsed.department || parsed.department === activeDept) {
+          return parsed;
+        }
+      }
+      return null;
     } catch {
       return null;
     }
-  }); // { role, name, id, avatar, roleLabel }
+  });
+
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [route, setRoute] = useState(() => window.location.pathname);
 
   useEffect(() => {
     const onPopState = () => setRoute(window.location.pathname);
@@ -106,57 +137,97 @@ function App() {
     setRoute(path);
   };
 
+  // Switch active district (preserves subpath if useful, or navigates to root of district)
+  const switchDistrict = (targetDeptId) => {
+    navigate(`/${targetDeptId}`);
+  };
+
+  // Sync user state per district
   useEffect(() => {
-    if (user) localStorage.setItem('em_user', JSON.stringify(user));
-    else localStorage.removeItem('em_user');
-  }, [user]);
+    if (user) {
+      localStorage.setItem(`em_user_${districtId}`, JSON.stringify(user));
+      if (districtId === 'olmazor') localStorage.setItem('em_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem(`em_user_${districtId}`);
+      if (districtId === 'olmazor') localStorage.removeItem('em_user');
+    }
+  }, [user, districtId]);
+
+  // When switching between /olmazor and /yashnobod, load that district's active user
+  useEffect(() => {
+    try {
+      const scoped = localStorage.getItem(`em_user_${districtId}`);
+      if (scoped) {
+        setUser(JSON.parse(scoped));
+      } else {
+        const legacy = localStorage.getItem('em_user');
+        if (legacy) {
+          const parsed = JSON.parse(legacy);
+          if (parsed.department === districtId || (!parsed.department && districtId === 'olmazor')) {
+            setUser(parsed);
+            return;
+          }
+        }
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    }
+  }, [districtId]);
 
   useEffect(() => {
     localStorage.setItem('em_lang', lang);
   }, [lang]);
 
-  // Public, no-login page for citizens tracking their own case — reachable
-  // independent of auth state. Checked after all hooks above (Rules of Hooks:
-  // an early return before them would skip hooks on some renders but not others).
-  if (route.startsWith('/arizalarim')) {
-    // Pre-fills the Material ID when reached via the QR code printed on a
-    // citizen's registration receipt (?id=MAT-...), so scanning it is enough
-    // instead of retyping the ID.
+  // Public, no-login page for citizens tracking their own case
+  if (route.includes('/arizalarim')) {
     const initialMaterialId = new URLSearchParams(window.location.search).get('id') || '';
-    return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate('/')} initialMaterialId={initialMaterialId} />;
+    return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate(`/${districtId}`)} initialMaterialId={initialMaterialId} />;
   }
 
-  if (route.startsWith('/avatar-demo')) {
-    return <AvatarDemo lang={lang} onBack={() => navigate('/')} />;
+  if (route.includes('/avatar-demo')) {
+    return <AvatarDemo lang={lang} onBack={() => navigate(`/${districtId}`)} />;
   }
 
   const handleLogin = (selectedUser) => {
     setUser(selectedUser);
-    // Log audit login
     axios.post(`${API_BASE}/audit-logs/`, {
       time: new Date().toISOString(),
       user_name: selectedUser.name,
-      action_ru: "Авторизация в системе",
-      action_uz: "Tizimga kirish muvaffaqiyatli yakunlandi"
+      action_ru: `Авторизация в системе (${currentDistrict.name_ru})`,
+      action_uz: `Tizimga kirish (${currentDistrict.name_uz})`
     }).catch(err => console.error("Audit log failed", err));
   };
 
   const handleLogout = async () => {
     const ok = await confirm(TRANSLATIONS[lang].logout_confirm);
     if (ok) {
-      axios.post(`${API_BASE}/audit-logs/`, {
-        time: new Date().toISOString(),
-        user_name: user.name,
-        action_ru: "Выход из системы",
-        action_uz: "Tizimdan chiqish"
-      }).catch(err => console.error("Audit log failed", err));
+      if (user) {
+        axios.post(`${API_BASE}/audit-logs/`, {
+          time: new Date().toISOString(),
+          user_name: user.name,
+          action_ru: `Выход из системы (${currentDistrict.name_ru})`,
+          action_uz: `Tizimdan chiqish (${currentDistrict.name_uz})`
+        }).catch(err => console.error("Audit log failed", err));
+      }
+      localStorage.removeItem(`em_user_${districtId}`);
+      if (districtId === 'olmazor') localStorage.removeItem('em_user');
       setUser(null);
     }
   };
 
   const renderView = () => {
     if (!user) {
-      return <LoginScreen onLogin={handleLogin} lang={lang} setLang={setLang} onOpenStatusCheck={() => navigate('/arizalarim')} />;
+      return (
+        <LoginScreen
+          onLogin={handleLogin}
+          lang={lang}
+          setLang={setLang}
+          districtId={districtId}
+          onSwitchDistrict={switchDistrict}
+          onOpenStatusCheck={() => navigate(`/${districtId}/arizalarim`)}
+        />
+      );
     }
 
     switch (user.role) {
@@ -179,9 +250,6 @@ function App() {
   const t = TRANSLATIONS[lang];
   const hasSidebar = user && (user.role === 'chief' || user.role === 'investigator');
 
-  // Kiosk roles (citizen tablet, AI reception) have no real person behind them —
-  // their name/role label must follow the live language toggle, not the value
-  // frozen into `user` at login time.
   const KIOSK_LABELS = {
     citizen: { name: { ru: 'Планшет оценки', uz: 'Baholash plansheti' }, roleLabel: { ru: 'Оценка качества', uz: 'Sifatni baholash' }, Icon: ScaleIcon },
     ai_kiosk: { name: { ru: 'AI-помощник', uz: 'AI-yordamchi' }, roleLabel: { ru: 'Приёмная', uz: 'Qabulxona' }, Icon: AiIcon },
@@ -206,11 +274,36 @@ function App() {
             )}
             <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-11 sm:w-11 lg:h-12 lg:w-12 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
-              <p className="text-[9.5px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-tight sm:leading-snug line-clamp-none">{t.subtitle}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gov-primaryLight text-gov-primary uppercase tracking-wide border border-gov-primary/20 shrink-0">
+                  {currentDistrict.badge}
+                </span>
+                <p className="text-[9.5px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-tight sm:leading-snug line-clamp-none">
+                  {currentSubtitle}
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center justify-between md:justify-start gap-1.5 sm:gap-3 lg:gap-4 mt-2.5 md:mt-0 w-full md:w-auto flex-wrap">
+            {/* District Switcher */}
+            <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold shrink-0">
+              <button
+                onClick={() => switchDistrict('olmazor')}
+                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${districtId === 'olmazor' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
+                title="Olmazor tumani"
+              >
+                Olmazor
+              </button>
+              <button
+                onClick={() => switchDistrict('yashnobod')}
+                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${districtId === 'yashnobod' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
+                title="Yashnobod tumani"
+              >
+                Yashnobod
+              </button>
+            </div>
+
             {/* Language Selector */}
             <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold shrink-0">
               <button
@@ -237,7 +330,7 @@ function App() {
               <DislikeAlertNotifications lang={lang} user={user} />
             )}
 
-            {/* Settings — moved into the sidebar for roles that have one */}
+            {/* Settings */}
             {!hasSidebar && (
               <button
                 onClick={() => setShowSettings(true)}

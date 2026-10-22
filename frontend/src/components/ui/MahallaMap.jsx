@@ -1,14 +1,13 @@
 import React, { useMemo, useEffect } from 'react';
 import { MapContainer, TileLayer, Polygon, CircleMarker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { OLMAZOR_MAHALLAS } from '../../data/olmazorMahallas';
-import { OLMAZOR_BOUNDARY, OLMAZOR_BOUNDS } from '../../data/olmazorBoundary';
+import { getDistrictMahallas, getDistrictBoundary, getDistrictBounds } from '../../data/districtMahallas';
 import { useSettings } from '../../settingsContext';
 
 // ~1km padding around the district outline so edge mahallas aren't clipped by the view.
 const PAD = 0.01;
 
-// Outer world ring masking everything outside Olmazor
+// Outer world ring masking everything outside the district
 const WORLD_MASK_OUTER = [[-85, -180], [-85, 180], [85, 180], [85, -180]];
 
 // Internal controller component for smooth programmatic camera movements
@@ -62,13 +61,18 @@ function MahallaMap({
   focusLocation = null,
   resetTrigger = null,
   boundsPadding = 0.004,
+  districtId = 'olmazor',
 }) {
   const { isDark } = useSettings();
 
+  const currentBounds = useMemo(() => getDistrictBounds(districtId), [districtId]);
+  const currentBoundary = useMemo(() => getDistrictBoundary(districtId), [districtId]);
+  const currentMahallas = useMemo(() => getDistrictMahallas(districtId), [districtId]);
+
   const bounds = useMemo(() => [
-    [OLMAZOR_BOUNDS.south - boundsPadding, OLMAZOR_BOUNDS.west - boundsPadding],
-    [OLMAZOR_BOUNDS.north + boundsPadding, OLMAZOR_BOUNDS.east + boundsPadding],
-  ], [boundsPadding]);
+    [currentBounds.south - boundsPadding, currentBounds.west - boundsPadding],
+    [currentBounds.north + boundsPadding, currentBounds.east + boundsPadding],
+  ], [currentBounds, boundsPadding]);
 
   // Multi-basemap support
   const tileConfig = useMemo(() => {
@@ -106,6 +110,7 @@ function MahallaMap({
   return (
     <div className={`relative isolate rounded-xl overflow-hidden border border-gov-border w-full min-w-0 ${className}`} style={{ height, minHeight: height }}>
       <MapContainer
+        key={`${districtId}_${bounds[0][0]}`}
         bounds={bounds}
         maxBounds={bounds}
         maxBoundsViscosity={0.9}
@@ -121,10 +126,10 @@ function MahallaMap({
 
         {overlayLayers}
 
-        {/* Mask out areas outside Olmazor */}
+        {/* Mask out areas outside active district */}
         <Polygon
           interactive={false}
-          positions={[WORLD_MASK_OUTER, OLMAZOR_BOUNDARY]}
+          positions={[WORLD_MASK_OUTER, currentBoundary]}
           pathOptions={{
             stroke: false,
             fillColor: maskFillColor,
@@ -132,10 +137,10 @@ function MahallaMap({
           }}
         />
 
-        {/* Highlighted Olmazor district boundary */}
+        {/* Highlighted district boundary */}
         <Polygon
           interactive={false}
-          positions={OLMAZOR_BOUNDARY}
+          positions={currentBoundary}
           pathOptions={{
             color: boundaryBorderColor,
             weight: 2.5,
@@ -144,7 +149,7 @@ function MahallaMap({
           }}
         />
 
-        {OLMAZOR_MAHALLAS.map(m => {
+        {currentMahallas.map(m => {
           const props = getMarkerProps(m);
           if (!props) return null;
           if (renderMarker) return renderMarker(m, props, onMarkerClick);

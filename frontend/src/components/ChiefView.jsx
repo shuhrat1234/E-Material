@@ -218,6 +218,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       rank_ru: newUser.rank_ru || '-',
       rank_uz: newUser.rank_uz || '-',
       role: newUser.role,
+      department: user?.department || 'olmazor',
       phone: newUser.phone.trim(),
       password,
       photo
@@ -1540,7 +1541,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             <h3 className="font-semibold text-base text-gov-text border-b border-gov-border pb-3 mb-6 text-left">
               {lang === 'ru' ? 'Карта преступлений по махаллям' : 'Mahallalar bo\'yicha jinoyatlar xaritasi'}
             </h3>
-            <CrimeMapPanel materials={materials} lang={lang} onOpenMaterialsList={openMaterialsList} />
+            <CrimeMapPanel materials={materials} lang={lang} onOpenMaterialsList={openMaterialsList} districtId={user?.department || 'olmazor'} />
           </div>
         )}
 
