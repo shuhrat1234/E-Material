@@ -213,7 +213,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(Q(department_id='olmazor') | Q(department_id__isnull=True) | Q(department_id='so'))
             else:
                 qs = qs.filter(department_id=dept)
-        return qs
+        return qs.order_by('id')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
