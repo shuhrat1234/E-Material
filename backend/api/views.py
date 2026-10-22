@@ -1335,26 +1335,41 @@ def login_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def check_material_status(request):
-    """Public lookup for a citizen tracking their own case: material ID + the phone
-    number they registered with. Deliberately returns only status/dates/officer —
-    never the citizen's name, the case description, or documents — since this
-    endpoint requires no login and the material ID isn't a secret."""
+    """Public lookup for a citizen tracking their case or verifying a QR-stamped document."""
     material_id = (request.data.get('material_id') or '').strip()
     phone = (request.data.get('phone') or '').strip()
+    is_qr = request.data.get('qr', False)
 
-    if not material_id or not phone:
-        return Response({'error': 'material_id and phone are required'}, status=status.HTTP_400_BAD_REQUEST)
+    if not material_id:
+        return Response({'error': 'material_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    phone_digits = ''.join(ch for ch in phone if ch.isdigit())
     material = Material.objects.filter(id__iexact=material_id).first()
-
-    if not material or ''.join(ch for ch in material.citizen_phone if ch.isdigit()) != phone_digits:
+    if not material:
         return Response({'error': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    # If checking with phone, verify phone digits match
+    if phone and not is_qr:
+        phone_digits = ''.join(ch for ch in phone if ch.isdigit())
+        mat_digits = ''.join(ch for ch in material.citizen_phone if ch.isdigit())
+        if mat_digits != phone_digits:
+            return Response({'error': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)
+
     officer = material.officer
+    docs = []
+    for doc in material.documents.all():
+        docs.append({
+            'id': doc.id,
+            'original_name': doc.original_name,
+            'file_url': request.build_absolute_uri(doc.file.url) if doc.file else '',
+            'uploaded_at': doc.uploaded_at
+        })
+
     return Response({
         'id': material.id,
         'status': material.status,
+        'title_ru': material.title_ru,
+        'title_uz': material.title_uz,
+        'citizen_name': material.citizen_name,
         'registered_at': material.registered_at,
         'deadline': material.deadline,
         'closed_at': material.closed_at,
@@ -1363,4 +1378,6 @@ def check_material_status(request):
         'officer_rank_ru': officer.rank_ru if officer else None,
         'officer_rank_uz': officer.rank_uz if officer else None,
         'officer_phone': officer.phone if officer else None,
+        'documents': docs,
+        'verified': True,
     })

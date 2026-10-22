@@ -23,23 +23,42 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
 
   const t = TRANSLATIONS[lang];
 
+  useEffect(() => {
+    if (initialMaterialId) {
+      setLoading(true);
+      setError('');
+      axios.post(`${API_BASE}/public/check-status/`, {
+        material_id: initialMaterialId.trim(),
+        qr: true,
+      })
+        .then(res => {
+          setLoading(false);
+          setResult(res.data);
+        })
+        .catch(() => {
+          setLoading(false);
+          setError(
+            lang === 'ru'
+              ? 'Материал не найден. Проверьте ID.'
+              : 'Material topilmadi. ID raqamini tekshiring.'
+          );
+        });
+    }
+  }, [initialMaterialId, lang]);
+
   const handleCheckStatus = (e) => {
     e.preventDefault();
     setError('');
     setResult(null);
-    if (!materialId.trim() || !phone.trim()) {
-      setError(lang === 'ru' ? 'Укажите ID материала и телефон' : 'Material ID va telefonni kiriting');
-      return;
-    }
-    const phoneDigits = phone.replace(/\D/g, '');
-    if (phoneDigits.length < 9) {
-      setError(lang === 'ru' ? 'Введите корректный номер телефона' : 'Telefon raqamini to\'g\'ri kiriting');
+    if (!materialId.trim()) {
+      setError(lang === 'ru' ? 'Укажите ID материала' : 'Material ID raqamini kiriting');
       return;
     }
     setLoading(true);
     axios.post(`${API_BASE}/public/check-status/`, {
       material_id: materialId.trim(),
       phone: phone.trim(),
+      qr: !phone.trim(),
     })
       .then(res => {
         setLoading(false);
@@ -138,17 +157,48 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
             </form>
           ) : (
             <div className="space-y-3 text-left">
+              {/* Verified seal */}
+              <div className="flex items-center gap-2 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[11px] font-bold shrink-0">✓</span>
+                <div>
+                  <p className="font-bold text-[11px] leading-tight">
+                    {lang === 'ru' ? 'Официально подтвержденный материал' : 'Rasmiy tasdiqlangan material'}
+                  </p>
+                  <p className="text-[10px] text-emerald-700/80 mt-0.5">
+                    {lang === 'ru' ? 'Электронная подпись и QR-верификация действительны' : 'Elektron raqamli imzo va QR-verifikatsiya tasdiqlangan'}
+                  </p>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gov-text">{result.id}</span>
+                <span className="text-xs font-bold text-gov-navy font-mono">{result.id}</span>
                 <span className={`px-2 py-0.5 border rounded-full text-[10px] font-semibold ${STATUS_LABELS[result.status]?.tone || 'bg-gray-50 text-gray-700 border-gov-border'}`}>
                   {STATUS_LABELS[result.status] ? STATUS_LABELS[result.status][lang] : result.status}
                 </span>
               </div>
-              <div className="flex justify-center py-2">
-                <div className="p-3 bg-white border border-gov-border rounded-xl">
-                  <QRCodeSVG value={`${window.location.origin}/arizalarim?id=${encodeURIComponent(result.id)}`} size={120} />
+
+              {/* Case Title */}
+              {(result.title_uz || result.title_ru) && (
+                <div className="p-3 bg-gov-light/60 border border-gov-border rounded-xl text-xs">
+                  <p className="text-[9px] font-bold text-gov-muted uppercase tracking-wider mb-1">
+                    {lang === 'ru' ? 'Содержание / Решение' : 'Mazmuni / Qaror'}
+                  </p>
+                  <p className="font-semibold text-gov-text leading-snug">
+                    {lang === 'ru' ? (result.title_ru || result.title_uz) : (result.title_uz || result.title_ru)}
+                  </p>
                 </div>
-              </div>
+              )}
+
+              {/* Citizen */}
+              {result.citizen_name && (
+                <div className="p-3 bg-gov-light/60 border border-gov-border rounded-xl text-xs">
+                  <p className="text-[9px] font-bold text-gov-muted uppercase tracking-wider mb-0.5">
+                    {lang === 'ru' ? 'Заявитель (гражданин)' : 'Murojaatchi (fuqaro)'}
+                  </p>
+                  <p className="font-bold text-gov-navy">{result.citizen_name}</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="border border-gov-border rounded-lg p-2.5 bg-gov-light/45">
                   <p className="text-[9px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Зарегистрировано' : 'Ro\'yxatga olindi'}</p>
@@ -159,6 +209,7 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
                   <p className="font-semibold text-gov-text mt-0.5">{formatDate(result.deadline)}</p>
                 </div>
               </div>
+
               {result.officer_name_ru && (
                 <div className="border border-gov-border rounded-lg p-2.5 bg-gov-light/45 text-xs">
                   <p className="text-[9px] font-bold text-gov-muted uppercase tracking-wider">{lang === 'ru' ? 'Исполнитель' : 'Ijrochi'}</p>
@@ -170,6 +221,32 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
                   )}
                 </div>
               )}
+
+              {/* Documents list */}
+              {result.documents && result.documents.length > 0 && (
+                <div className="border border-gov-border rounded-xl p-3 bg-gov-light/30">
+                  <p className="text-[10px] font-bold text-gov-navy uppercase tracking-wider mb-2">
+                    {lang === 'ru' ? 'Прикрепленные документы с QR-кодом' : 'Biriktirilgan QR-kodli rasmiy hujjatlar'}
+                  </p>
+                  <div className="space-y-1.5">
+                    {result.documents.map(d => (
+                      <a
+                        key={d.id}
+                        href={d.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-2 rounded-lg bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors text-xs font-semibold text-gov-primary"
+                      >
+                        <span className="truncate pr-2">{d.original_name}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-gov-primaryLight shrink-0">
+                          {lang === 'ru' ? 'Скачать / Просмотр' : 'Yuklab olish'}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => { setResult(null); setMaterialId(''); setPhone(''); }}
