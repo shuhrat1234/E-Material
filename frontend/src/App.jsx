@@ -175,7 +175,8 @@ function App() {
 
   // Public, no-login page for citizens tracking their own case
   if (route.includes('/arizalarim')) {
-    const initialMaterialId = new URLSearchParams(window.location.search).get('id') || '';
+    const rawId = new URLSearchParams(window.location.search).get('id') || '';
+    const initialMaterialId = rawId.replace(/\s+/g, '').trim();
     return <MaterialStatusPage lang={lang} setLang={setLang} onBack={() => navigate(`/${districtId}`)} initialMaterialId={initialMaterialId} />;
   }
 

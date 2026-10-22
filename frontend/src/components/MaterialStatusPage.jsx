@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
@@ -16,7 +16,8 @@ const STATUS_LABELS = {
 // the phone number they registered with. Reached at /arizalarim, independent of the
 // normal login flow — see App.jsx's manual route check.
 function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
-  const [materialId, setMaterialId] = useState(initialMaterialId);
+  const cleanInitialId = (initialMaterialId || '').replace(/\s+/g, '').trim();
+  const [materialId, setMaterialId] = useState(cleanInitialId);
   const [phone, setPhone] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -26,11 +27,11 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '' }) {
   const t = TRANSLATIONS[lang];
 
   useEffect(() => {
-    if (initialMaterialId) {
+    if (cleanInitialId) {
       setLoading(true);
       setError('');
       axios.post(`${API_BASE}/public/check-status/`, {
-        material_id: initialMaterialId.trim(),
+        material_id: cleanInitialId,
         qr: true,
       })
         .then(res => {
