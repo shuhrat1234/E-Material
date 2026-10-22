@@ -17,7 +17,7 @@ import ConfirmHost from './components/ConfirmHost';
 import ToastHost from './components/ToastHost';
 import Avatar from './components/ui/Avatar';
 import { confirm } from './confirmService';
-import { DISTRICTS, getActiveDistrictId, getActiveDistrict } from './config/districts';
+import { DISTRICTS, getActiveDistrictId } from './config/districts';
 import axios from 'axios';
 
 // API Base URL.
@@ -25,12 +25,14 @@ export const API_BASE = import.meta.env.PROD
   ? `${window.location.protocol}//${window.location.host}/api`
   : `http://${window.location.hostname}:8000/api`;
 
-// Automatically attach active district to all outgoing requests
+// Automatically attach active district to all outgoing requests via header and query parameter
 axios.interceptors.request.use((config) => {
   const activeDept = getActiveDistrictId(window.location.pathname);
   config.headers = config.headers || {};
-  if (!config.headers['X-Department']) {
-    config.headers['X-Department'] = activeDept;
+  config.headers['X-Department'] = activeDept;
+  config.params = config.params || {};
+  if (!config.params.department) {
+    config.params.department = activeDept;
   }
   return config;
 });
@@ -90,7 +92,7 @@ function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('em_lang') || 'ru');
   const [route, setRoute] = useState(() => window.location.pathname);
 
-  // Active district configuration
+  // Active district configuration derived from current URL pathname
   const districtId = getActiveDistrictId(route);
   const currentDistrict = DISTRICTS[districtId] || DISTRICTS.olmazor;
   const currentSubtitle = lang === 'ru' ? currentDistrict.subtitle_ru : currentDistrict.subtitle_uz;
@@ -103,22 +105,38 @@ function App() {
     }
   }, []);
 
-  const [user, setUser] = useState(() => {
+  // Strict per-district session management (2 isolated branches)
+  const getSessionUserForDistrict = (deptId) => {
     try {
-      const activeDept = getActiveDistrictId(window.location.pathname);
-      const scoped = localStorage.getItem(`em_user_${activeDept}`);
-      if (scoped) return JSON.parse(scoped);
-      const legacy = localStorage.getItem('em_user');
-      if (legacy) {
-        const parsed = JSON.parse(legacy);
-        if (!parsed.department || parsed.department === activeDept) {
+      const raw = localStorage.getItem(`em_user_${deptId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.department === deptId) {
           return parsed;
+        }
+      }
+      // Only for Olmazor, migrate legacy storage if it belonged to Olmazor
+      if (deptId === 'olmazor') {
+        const legacy = localStorage.getItem('em_user');
+        if (legacy) {
+          const parsed = JSON.parse(legacy);
+          if (parsed && (!parsed.department || parsed.department === 'olmazor')) {
+            parsed.department = 'olmazor';
+            localStorage.setItem('em_user_olmazor', JSON.stringify(parsed));
+            localStorage.removeItem('em_user');
+            return parsed;
+          }
         }
       }
       return null;
     } catch {
       return null;
     }
+  };
+
+  const [user, setUser] = useState(() => {
+    const activeDept = getActiveDistrictId(window.location.pathname);
+    return getSessionUserForDistrict(activeDept);
   });
 
   const [selectedCaseId, setSelectedCaseId] = useState(null);
@@ -137,42 +155,18 @@ function App() {
     setRoute(path);
   };
 
-  // Switch active district (preserves subpath if useful, or navigates to root of district)
-  const switchDistrict = (targetDeptId) => {
-    navigate(`/${targetDeptId}`);
-  };
-
   // Sync user state per district
   useEffect(() => {
-    if (user) {
+    if (user && user.department === districtId) {
       localStorage.setItem(`em_user_${districtId}`, JSON.stringify(user));
-      if (districtId === 'olmazor') localStorage.setItem('em_user', JSON.stringify(user));
-    } else {
+    } else if (!user) {
       localStorage.removeItem(`em_user_${districtId}`);
-      if (districtId === 'olmazor') localStorage.removeItem('em_user');
     }
   }, [user, districtId]);
 
-  // When switching between /olmazor and /yashnobod, load that district's active user
+  // When pathname / district changes, load that branch's authenticated user
   useEffect(() => {
-    try {
-      const scoped = localStorage.getItem(`em_user_${districtId}`);
-      if (scoped) {
-        setUser(JSON.parse(scoped));
-      } else {
-        const legacy = localStorage.getItem('em_user');
-        if (legacy) {
-          const parsed = JSON.parse(legacy);
-          if (parsed.department === districtId || (!parsed.department && districtId === 'olmazor')) {
-            setUser(parsed);
-            return;
-          }
-        }
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    }
+    setUser(getSessionUserForDistrict(districtId));
   }, [districtId]);
 
   useEffect(() => {
@@ -190,7 +184,14 @@ function App() {
   }
 
   const handleLogin = (selectedUser) => {
-    setUser(selectedUser);
+    // Explicitly enforce that user is assigned to the current district
+    const userWithDept = {
+      ...selectedUser,
+      department: districtId
+    };
+    setUser(userWithDept);
+    localStorage.setItem(`em_user_${districtId}`, JSON.stringify(userWithDept));
+
     axios.post(`${API_BASE}/audit-logs/`, {
       time: new Date().toISOString(),
       user_name: selectedUser.name,
@@ -211,7 +212,6 @@ function App() {
         }).catch(err => console.error("Audit log failed", err));
       }
       localStorage.removeItem(`em_user_${districtId}`);
-      if (districtId === 'olmazor') localStorage.removeItem('em_user');
       setUser(null);
     }
   };
@@ -224,7 +224,6 @@ function App() {
           lang={lang}
           setLang={setLang}
           districtId={districtId}
-          onSwitchDistrict={switchDistrict}
           onOpenStatusCheck={() => navigate(`/${districtId}/arizalarim`)}
         />
       );
@@ -274,47 +273,24 @@ function App() {
             )}
             <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-11 sm:w-11 lg:h-12 lg:w-12 shrink-0 object-contain" />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gov-primaryLight text-gov-primary uppercase tracking-wide border border-gov-primary/20 shrink-0">
-                  {currentDistrict.badge}
-                </span>
-                <p className="text-[9.5px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-tight sm:leading-snug line-clamp-none">
-                  {currentSubtitle}
-                </p>
-              </div>
+              <p className="text-[9.5px] sm:text-xs lg:text-sm text-gov-navy font-semibold uppercase leading-tight sm:leading-snug line-clamp-none">
+                {currentSubtitle}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center justify-between md:justify-start gap-1.5 sm:gap-3 lg:gap-4 mt-2.5 md:mt-0 w-full md:w-auto flex-wrap">
-            {/* District Switcher */}
-            <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold shrink-0">
-              <button
-                onClick={() => switchDistrict('olmazor')}
-                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${districtId === 'olmazor' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
-                title="Olmazor tumani"
-              >
-                Olmazor
-              </button>
-              <button
-                onClick={() => switchDistrict('yashnobod')}
-                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${districtId === 'yashnobod' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
-                title="Yashnobod tumani"
-              >
-                Yashnobod
-              </button>
-            </div>
-
             {/* Language Selector */}
             <div className="flex bg-gov-light p-1 rounded-full text-xs font-semibold shrink-0">
               <button
                 onClick={() => setLang('ru')}
-                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 RU
               </button>
               <button
                 onClick={() => setLang('uz')}
-                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 UZ
               </button>

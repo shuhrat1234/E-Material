@@ -84,41 +84,8 @@ function LoginScreen({ onLogin, lang, setLang, onOpenStatusCheck, districtId = '
       }}
     >
       <div className="max-w-md w-full">
-        {/* District Switcher Tabs at top */}
-        <div className="flex justify-center mb-5">
-          <div className="inline-flex bg-gov-surface/90 backdrop-blur-sm p-1 rounded-full shadow-card border border-gov-border text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => onSwitchDistrict && onSwitchDistrict('olmazor')}
-              className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
-                districtId === 'olmazor'
-                  ? 'bg-gov-primary text-white shadow-sm font-bold'
-                  : 'text-gov-muted hover:text-gov-text'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${districtId === 'olmazor' ? 'bg-white' : 'bg-gov-muted'}`} />
-              Olmazor
-            </button>
-            <button
-              type="button"
-              onClick={() => onSwitchDistrict && onSwitchDistrict('yashnobod')}
-              className={`px-4 py-1.5 rounded-full transition-all flex items-center gap-1.5 ${
-                districtId === 'yashnobod'
-                  ? 'bg-gov-primary text-white shadow-sm font-bold'
-                  : 'text-gov-muted hover:text-gov-text'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${districtId === 'yashnobod' ? 'bg-white' : 'bg-gov-muted'}`} />
-              Yashnobod
-            </button>
-          </div>
-        </div>
-
         <div className="flex flex-col items-center text-center mb-6">
           <img src="/emblem.png" alt="" className="h-20 w-20 object-contain mb-3" />
-          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gov-primaryLight text-gov-primary text-xs font-bold uppercase tracking-wider mb-2 border border-gov-primary/20">
-            {lang === 'ru' ? currentDistrict.name_ru : currentDistrict.name_uz}
-          </div>
           <p className="text-xs sm:text-sm text-gov-text font-extrabold uppercase leading-snug">
             {subtitle}
           </p>
