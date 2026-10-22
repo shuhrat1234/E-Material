@@ -2,6 +2,9 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
 import random
+import sqlite3
+import os
+from django.conf import settings
 from api.models import Officer, Rating
 from backend.db_router import set_current_branch
 
@@ -58,81 +61,115 @@ YASHNOBOD_OFFICER_IDS = [
 ]
 
 class Command(BaseCommand):
-    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days'
+    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days using atomic batch insert'
 
     def handle(self, *args, **options):
-        set_current_branch('yashnobod')
-        officers = Officer.objects.filter(id__in=YASHNOBOD_OFFICER_IDS)
-        if not officers.exists():
-            officers = Officer.objects.filter(role='investigator')
-        if not officers.exists():
-            self.stdout.write(self.style.ERROR('No Yashnobod investigators found!'))
-            return
-
-        self.stdout.write(f'Found {officers.count()} Yashnobod investigators.')
-
-        # Delete existing ratings for these officers to avoid duplicate accumulation
-        Rating.objects.filter(officer__in=officers).delete()
-        self.stdout.write('Cleared previous ratings for Yashnobod investigators.')
+        base_dir = settings.BASE_DIR
+        db_paths = [
+            os.path.join(base_dir, 'db_yashnobod.sqlite3'),
+            os.path.join(base_dir, 'db.sqlite3')
+        ]
 
         now = timezone.now()
-        total_created = 0
-        likes_created = 0
-        dislikes_created = 0
 
-        # Distribution: 3 days breakdown
-        # Day 0 (today): 370 ratings
+        # Distribution: 3 days breakdown (> 1,000 ratings total)
+        # Day 0 (today): 380 ratings
         # Day 1 (yesterday): 360 ratings
         # Day 2 (2 days ago): 340 ratings
-        # Total: 1,070 ratings (> 1,000!)
+        # Total: 1,080 ratings
         day_buckets = [
-            (0, 370),
+            (0, 380),
             (1, 360),
             (2, 340),
         ]
 
-        officers_list = list(officers)
+        # Generate the dataset in memory
+        ratings_data = []
+        officer_stats = {oid: {'likes': 0, 'dislikes': 0} for oid in YASHNOBOD_OFFICER_IDS}
+        total_likes = 0
+        total_dislikes = 0
 
         for day_offset, count_for_day in day_buckets:
-            batch_ratings = []
             for _ in range(count_for_day):
-                officer = random.choice(officers_list)
-                is_like = random.random() < 0.918  # ~91.8% positive satisfaction
+                officer_id = random.choice(YASHNOBOD_OFFICER_IDS)
+                is_like = random.random() < 0.918  # ~91.8% positive
 
                 citizen = random.choice(CITIZEN_NAMES)
                 if is_like:
                     reason_uz, reason_ru = random.choice(LIKE_REASONS)
-                    likes_created += 1
+                    total_likes += 1
+                    officer_stats[officer_id]['likes'] += 1
                 else:
                     reason_uz, reason_ru = random.choice(DISLIKE_REASONS)
-                    dislikes_created += 1
+                    total_dislikes += 1
+                    officer_stats[officer_id]['dislikes'] += 1
 
                 hour = random.randint(9, 19)
                 minute = random.randint(0, 59)
                 second = random.randint(0, 59)
                 rating_time = (now - timedelta(days=day_offset)).replace(hour=hour, minute=minute, second=second)
+                time_str = rating_time.strftime('%Y-%m-%d %H:%M:%S')
 
-                r = Rating.objects.create(
-                    officer=officer,
-                    citizen_name=citizen,
-                    is_like=is_like,
-                    reason_ru=reason_ru,
-                    reason_uz=reason_uz,
+                ratings_data.append((
+                    citizen,
+                    1 if is_like else 0,
+                    reason_ru,
+                    reason_uz,
+                    time_str,
+                    officer_id
+                ))
+
+        total_created = len(ratings_data)
+        self.stdout.write(f'Generated {total_created} ratings ({total_likes} likes, {total_dislikes} dislikes).')
+
+        for db_path in db_paths:
+            if not os.path.exists(db_path):
+                continue
+
+            self.stdout.write(f'Updating database: {db_path}...')
+            conn = sqlite3.connect(db_path, timeout=30.0)
+            cur = conn.cursor()
+
+            try:
+                # Enable WAL mode for concurrency
+                cur.execute("PRAGMA journal_mode=WAL;")
+
+                # Delete existing ratings for these officers
+                placeholders = ','.join(['?'] * len(YASHNOBOD_OFFICER_IDS))
+                cur.execute(f"DELETE FROM api_rating WHERE officer_id IN ({placeholders});", YASHNOBOD_OFFICER_IDS)
+
+                # Batch insert all ratings in a single transaction
+                cur.executemany(
+                    """
+                    INSERT INTO api_rating (citizen_name, is_like, reason_ru, reason_uz, created_at, officer_id)
+                    VALUES (?, ?, ?, ?, ?, ?);
+                    """,
+                    ratings_data
                 )
-                Rating.objects.filter(id=r.id).update(created_at=rating_time)
-                total_created += 1
 
-            self.stdout.write(f'  Created {count_for_day} ratings for day offset {day_offset}')
+                # Update officer table stats
+                for oid, stats in officer_stats.items():
+                    l = stats['likes']
+                    d = stats['dislikes']
+                    tot = l + d
+                    idx = round((l / tot) * 100) if tot > 0 else 0
+                    cur.execute(
+                        """
+                        UPDATE api_officer
+                        SET likes = ?, dislikes = ?, "index" = ?
+                        WHERE id = ?;
+                        """,
+                        (l, d, idx, oid)
+                    )
 
-        # Recalculate rating stats on all officers
-        self.stdout.write('Recalculating officer ratings...')
-        for officer in officers_list:
-            officer.recalculate_ratings()
-            self.stdout.write(
-                f'  {officer.name_uz}: {officer.likes} likes, {officer.dislikes} dislikes, index: {officer.index}%'
-            )
+                conn.commit()
+                self.stdout.write(self.style.SUCCESS(f'Successfully updated {db_path}!'))
+            except Exception as e:
+                conn.rollback()
+                self.stdout.write(self.style.ERROR(f'Failed on {db_path}: {e}'))
+            finally:
+                conn.close()
 
         self.stdout.write(self.style.SUCCESS(
-            f'Successfully seeded {total_created} ratings for Yashnobod! '
-            f'Likes: {likes_created}, Dislikes: {dislikes_created} (1000+ total).'
+            f'All finished! Seeded {total_created} ratings across 14 Yashnobod investigators.'
         ))
