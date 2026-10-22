@@ -12,6 +12,7 @@ import requests
 from django.db import transaction, IntegrityError
 from django.db.models import Q, Count
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
