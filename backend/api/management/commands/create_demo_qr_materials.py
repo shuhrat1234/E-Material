@@ -184,11 +184,8 @@ class Command(BaseCommand):
             for idx, (step_title, step_status) in enumerate(config["steps"]):
                 AppealStep.objects.create(
                     material=material,
-                    step_order=idx + 1,
-                    title_uz=step_title,
-                    title_ru=step_title,
-                    status=step_status,
-                    created_at=reg_date + timedelta(days=idx)
+                    status=step_title,
+                    time=reg_date + timedelta(days=idx)
                 )
 
             # Generate QR Code image
