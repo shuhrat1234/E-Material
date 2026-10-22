@@ -33,7 +33,7 @@ export const YASHNOBOD_MAHALLAS = [
   { id: "olmos_mahallasi", name_ru: "Махалля Олмос", name_uz: "Olmos mahallasi", lat: 41.297, lon: 69.365 },
   { id: "oltinkol_mahallasi", name_ru: "Махалля Олтинкол", name_uz: "Oltinko'l mahallasi", lat: 41.289, lon: 69.318 },
   { id: "oydinkol_mahallasi", name_ru: "Махалля Ойдинкол", name_uz: "Oydinko'l mahallasi", lat: 41.293, lon: 69.347 },
-  { id: "parkent_mahallasi", name_ru: "Махалля Паркент", name_uz: "Parkent mahallasi", lat: 41.318, lon: 69.328 },
+  { id: "parkent_mahallasi", name_ru: "Махалля Паркент", name_uz: "Parkent mahallasi", lat: 41.314, lon: 69.328 },
   { id: "qoshchinor_mahallasi", name_ru: "Махалля Кошчинор", name_uz: "Qo'shchinor mahallasi", lat: 41.281, lon: 69.346 },
   { id: "semurg_mahallasi", name_ru: "Махалля Семург", name_uz: "Semurg' mahallasi", lat: 41.303, lon: 69.312 },
   { id: "shirinobod_mahallasi", name_ru: "Махалля Ширинабад", name_uz: "Shirinobod mahallasi", lat: 41.290, lon: 69.334 },
@@ -54,22 +54,10 @@ export const YASHNOBOD_MAHALLAS = [
   { id: "yangiobod_mahallasi", name_ru: "Махалля Янгиабад", name_uz: "Yangiobod mahallasi", lat: 41.273, lon: 69.347 },
   { id: "yashil_makon_mahallasi", name_ru: "Махалля Яшил Макон", name_uz: "Yashil Makon mahallasi", lat: 41.294, lon: 69.371 },
   { id: "yashnobod_mahallasi", name_ru: "Махалля Яшнабад", name_uz: "Yashnobod mahallasi", lat: 41.304, lon: 69.340 },
-  { id: "yorboshi_mahallasi", name_ru: "Махалля Ёрбоши", name_uz: "Yorboshi mahallasi", lat: 41.313, lon: 69.306 },
+  { id: "yorboshi_mahallasi", name_ru: "Махалля Ёрбоши", name_uz: "Yorboshi mahallasi", lat: 41.312, lon: 69.307 },
   { id: "zafar_mahallasi", name_ru: "Махалля Зафар", name_uz: "Zafar mahallasi", lat: 41.281, lon: 69.362 },
   { id: "zilola_mahallasi", name_ru: "Махалля Зилола", name_uz: "Zilola mahallasi", lat: 41.288, lon: 69.328 },
   { id: "ziyo_yashnobod_mahallasi", name_ru: "Махалля Зиё (Яшнабад)", name_uz: "Ziyo mahallasi", lat: 41.308, lon: 69.337 },
 ];
 
-export const YASHNOBOD_BOUNDARY = [
-  [41.325, 69.315], [41.322, 69.335], [41.312, 69.358], [41.305, 69.375],
-  [41.295, 69.382], [41.280, 69.378], [41.265, 69.360], [41.260, 69.340],
-  [41.264, 69.325], [41.272, 69.310], [41.285, 69.300], [41.300, 69.298],
-  [41.315, 69.305], [41.325, 69.315]
-];
-
-export const YASHNOBOD_BOUNDS = {
-  south: 41.260,
-  north: 41.325,
-  west: 69.298,
-  east: 69.382,
-};
+export { YASHNOBOD_BOUNDARY, YASHNOBOD_BOUNDS } from './yashnobodBoundary';
