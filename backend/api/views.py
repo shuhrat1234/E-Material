@@ -1273,6 +1273,7 @@ def login_view(request):
 
     user = authenticate(username=auth_username, password=password)
     
+    if user is not None:
         officer = Officer.objects.filter(user=user).first()
         if not officer and auth_username in ('registrator-yashnabod', 'registrator-yashnobod'):
             officer = Officer.objects.filter(id='off_registrator_yashnobod').first()
