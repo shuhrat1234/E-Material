@@ -335,7 +335,14 @@ function App() {
                 )}
                 <div className={`${hasSidebar ? 'hidden xl:block' : 'block'} text-left min-w-0`}>
                   <p className="text-xs font-semibold text-gov-text truncate max-w-[8rem] sm:max-w-[12rem]">{displayName}</p>
-                  <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider truncate max-w-[8rem] sm:max-w-[12rem]">{displayRoleLabel}</p>
+                  {displayRoleLabel &&
+                    displayRoleLabel !== '-' &&
+                    displayRoleLabel !== 'Начальник отделения' &&
+                    displayRoleLabel !== "Bo'lim boshlig'i" &&
+                    displayRoleLabel !== 'Начальник' &&
+                    displayRoleLabel !== 'Boshliq' && (
+                    <p className="text-[10px] text-gov-muted font-medium uppercase tracking-wider truncate max-w-[8rem] sm:max-w-[12rem]">{displayRoleLabel}</p>
+                  )}
                 </div>
               </button>
               <button

@@ -731,9 +731,16 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               <Avatar src={user?.avatar} initials={user?.photo || (user?.name ? user.name[0] : 'М')} />
               <div className="min-w-0">
                 <h4 className="font-semibold text-xs text-gov-text leading-snug">{user?.name || ''}</h4>
-                <p className="text-[10px] text-gov-muted mt-0.5 uppercase tracking-wider font-bold">
-                  {user?.roleLabel || (lang === 'ru' ? 'Начальник' : 'Boshliq')}
-                </p>
+                {user?.roleLabel &&
+                  user.roleLabel !== '-' &&
+                  user.roleLabel !== 'Начальник отделения' &&
+                  user.roleLabel !== "Bo'lim boshlig'i" &&
+                  user.roleLabel !== 'Начальник' &&
+                  user.roleLabel !== 'Boshliq' && (
+                  <p className="text-[10px] text-gov-muted mt-0.5 uppercase tracking-wider font-bold">
+                    {user.roleLabel}
+                  </p>
+                )}
               </div>
             </div>
             <button

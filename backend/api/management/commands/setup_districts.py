@@ -70,8 +70,8 @@ class Command(BaseCommand):
                     'user': u_boshliq,
                     'name_uz': "Yashnobod bo'lim boshlig'i",
                     'name_ru': "Начальник отделения Яшнабад",
-                    'rank_uz': "Bo'lim boshlig'i",
-                    'rank_ru': "Начальник отделения",
+                    'rank_uz': "",
+                    'rank_ru': "",
                     'role': 'chief',
                     'department': dept_yashnobod,
                     'photo': 'Б'
@@ -81,6 +81,8 @@ class Command(BaseCommand):
                 off_boshliq.user = u_boshliq
                 off_boshliq.department = dept_yashnobod
                 off_boshliq.role = 'chief'
+                off_boshliq.rank_uz = ""
+                off_boshliq.rank_ru = ""
                 off_boshliq.save()
             self.stdout.write('✓ Yashnobod Chief: boshliq-yashnobod / boshliq-yashnobod')
 
