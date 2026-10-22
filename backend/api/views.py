@@ -1335,7 +1335,7 @@ def login_view(request):
 @permission_classes([AllowAny])
 def check_material_status(request):
     """Public lookup for a citizen tracking their case or verifying a QR-stamped document."""
-    material_id = (request.data.get('material_id') or '').strip()
+    material_id = ''.join((request.data.get('material_id') or '').split())
     phone = (request.data.get('phone') or '').strip()
     is_qr = request.data.get('qr', False)
 
