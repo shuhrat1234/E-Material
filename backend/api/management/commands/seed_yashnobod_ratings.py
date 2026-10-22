@@ -49,12 +49,22 @@ DISLIKE_REASONS = [
     ("Telefon orqali bog'lanish qiyin bo'ldi", "Было трудно дозвониться по телефону"),
 ]
 
+YASHNOBOD_OFFICER_IDS = [
+    'off_asror_xazratov', 'off_azizjon_umarjonov', 'off_asliddin_qodirov',
+    'off_muzaffarjon_ashurov', 'off_nodirbek_alijonov', 'off_elmurod_ziyobekov',
+    'off_olouddin_ibrohimov', 'off_qilichbek_omonov', 'off_shayxzod_shayxov',
+    'off_doniyor_qahramonov', 'off_xojiakbar_alimjonov', 'off_alina_kaderkayeva',
+    'off_javohir_mirzoqulov', 'off_oybek_xudoyorov'
+]
+
 class Command(BaseCommand):
     help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days'
 
     def handle(self, *args, **options):
         set_current_branch('yashnobod')
-        officers = Officer.objects.filter(role='investigator')
+        officers = Officer.objects.filter(id__in=YASHNOBOD_OFFICER_IDS)
+        if not officers.exists():
+            officers = Officer.objects.filter(role='investigator')
         if not officers.exists():
             self.stdout.write(self.style.ERROR('No Yashnobod investigators found!'))
             return
