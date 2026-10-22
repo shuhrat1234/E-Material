@@ -61,7 +61,7 @@ class Command(BaseCommand):
                 username='boshliq-yashnobod',
                 defaults={'first_name': 'Boshliq', 'last_name': 'Yashnobod'}
             )
-            u_boshliq.set_password('boshliq123')
+            u_boshliq.set_password('boshliq-yashnobod')
             u_boshliq.save()
 
             off_boshliq, o_created = Officer.objects.get_or_create(
@@ -82,7 +82,7 @@ class Command(BaseCommand):
                 off_boshliq.department = dept_yashnobod
                 off_boshliq.role = 'chief'
                 off_boshliq.save()
-            self.stdout.write('✓ Yashnobod Chief: boshliq-yashnobod / boshliq123')
+            self.stdout.write('✓ Yashnobod Chief: boshliq-yashnobod / boshliq-yashnobod')
 
             # 6. Create Yashnobod Registrator: registrator-yashnabod (and alias registrator-yashnobod)
             for reg_uname in ['registrator-yashnabod', 'registrator-yashnobod']:
@@ -90,7 +90,7 @@ class Command(BaseCommand):
                     username=reg_uname,
                     defaults={'first_name': 'Registrator', 'last_name': 'Yashnobod'}
                 )
-                u_reg.set_password('registrator123')
+                u_reg.set_password(reg_uname)
                 u_reg.save()
 
             u_primary_reg = User.objects.get(username='registrator-yashnabod')
@@ -112,6 +112,6 @@ class Command(BaseCommand):
                 off_reg.department = dept_yashnobod
                 off_reg.role = 'registrator'
                 off_reg.save()
-            self.stdout.write('✓ Yashnobod Registrator: registrator-yashnabod (and registrator-yashnobod) / registrator123')
+            self.stdout.write('✓ Yashnobod Registrator: registrator-yashnabod (and registrator-yashnobod) / [same as username]')
 
         self.stdout.write(self.style.SUCCESS('District setup completed successfully!'))
