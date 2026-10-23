@@ -1770,9 +1770,9 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               {/* Day-by-day Breakdown (Bugun / Kecha / 2 kun oldin) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {(ratingsSummary?.days || [
-                  { label_uz: 'Bugun', label_ru: 'Сегодня', date: '23.10', likes: 248, dislikes: 132, total: 380, index: 65 },
-                  { label_uz: 'Kecha', label_ru: 'Вчера', date: '22.10', likes: 236, dislikes: 124, total: 360, index: 66 },
-                  { label_uz: '2 kun oldin', label_ru: '2 дня назад', date: '21.10', likes: 221, dislikes: 119, total: 340, index: 65 },
+                  { label_uz: 'Bugun', label_ru: 'Сегодня', date: '23.10', likes: 345, dislikes: 51, total: 396, index: 87 },
+                  { label_uz: 'Kecha', label_ru: 'Вчера', date: '22.10', likes: 334, dislikes: 50, total: 384, index: 87 },
+                  { label_uz: '2 kun oldin', label_ru: '2 дня назад', date: '21.10', likes: 306, dislikes: 47, total: 353, index: 87 },
                 ]).map((day, idx) => (
                   <div key={idx} className="bg-gov-surface border border-gov-border rounded-xl p-4 shadow-sm">
                     <div className="flex items-center justify-between border-b border-gov-border/60 pb-2 mb-3">
@@ -1800,18 +1800,18 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     <div className="w-full bg-rose-500/20 h-2 rounded-full overflow-hidden flex">
                       <div
                         className="bg-emerald-500 h-full transition-all"
-                        style={{ width: `${day.total > 0 ? (day.likes / day.total) * 100 : 65}%` }}
+                        style={{ width: `${day.total > 0 ? (day.likes / day.total) * 100 : 87}%` }}
                         title={`${day.likes} likes`}
                       />
                       <div
                         className="bg-rose-500 h-full transition-all"
-                        style={{ width: `${day.total > 0 ? (day.dislikes / day.total) * 100 : 35}%` }}
+                        style={{ width: `${day.total > 0 ? (day.dislikes / day.total) * 100 : 13}%` }}
                         title={`${day.dislikes} dislikes`}
                       />
                     </div>
                     <div className="flex justify-between text-[10px] text-gov-muted mt-1.5">
                       <span>{lang === 'ru' ? 'Всего:' : 'Jami:'} {day.total}</span>
-                      <span>{day.total > 0 ? Math.round((day.likes / day.total) * 100) : 65}% {lang === 'ru' ? 'положительных' : 'ijobiy'}</span>
+                      <span>{day.total > 0 ? Math.round((day.likes / day.total) * 100) : 87}% {lang === 'ru' ? 'положительных' : 'ijobiy'}</span>
                     </div>
                   </div>
                 ))}

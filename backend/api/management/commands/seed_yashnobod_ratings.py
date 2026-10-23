@@ -50,27 +50,27 @@ DISLIKE_REASONS = [
     ("Telefon orqali bog'lanish qiyin bo'ldi", "Было трудно дозвониться по телефону"),
 ]
 
-# Exact target counts for each officer ensuring 60% - 70% satisfaction rating
+# Target counts ensuring 80% - 90+% satisfaction ratings
 # (likes, dislikes)
 OFFICERS_TARGET = {
-    'off_asror_xazratov': (50, 28),     # 64%
-    'off_azizjon_umarjonov': (53, 25),  # 68%
-    'off_asliddin_qodirov': (54, 23),   # 70%
-    'off_muzaffarjon_ashurov': (48, 29),# 62%
-    'off_nodirbek_alijonov': (55, 24),  # 70%
-    'off_elmurod_ziyobekov': (51, 26),  # 66%
-    'off_olouddin_ibrohimov': (49, 28), # 64%
-    'off_qilichbek_omonov': (47, 30),   # 61%
-    'off_shayxzod_shayxov': (50, 27),   # 65%
-    'off_doniyor_qahramonov': (55, 24), # 70%
-    'off_xojiakbar_alimjonov': (51, 27),# 65%
-    'off_alina_kaderkayeva': (52, 26),  # 67%
-    'off_javohir_mirzoqulov': (48, 29), # 62%
-    'off_oybek_xudoyorov': (53, 25),    # 68%
+    'off_asror_xazratov': (68, 12),     # 85%
+    'off_azizjon_umarjonov': (70, 11),  # 86%
+    'off_asliddin_qodirov': (74, 9),    # 89%
+    'off_muzaffarjon_ashurov': (65, 14),# 82%
+    'off_nodirbek_alijonov': (76, 7),   # 92%
+    'off_elmurod_ziyobekov': (71, 10),  # 88%
+    'off_olouddin_ibrohimov': (67, 13), # 84%
+    'off_qilichbek_omonov': (65, 15),   # 81%
+    'off_shayxzod_shayxov': (69, 12),   # 85%
+    'off_doniyor_qahramonov': (77, 6),  # 93%
+    'off_xojiakbar_alimjonov': (70, 10),# 88%
+    'off_alina_kaderkayeva': (73, 8),   # 90%
+    'off_javohir_mirzoqulov': (66, 13), # 84%
+    'off_oybek_xudoyorov': (74, 8),     # 90%
 }
 
 class Command(BaseCommand):
-    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers with ratings strictly in 60-70% range'
+    help = 'Seeds 1000+ realistic ratings for Yashnobod officers with ratings strictly in 80-90+% range'
 
     def handle(self, *args, **options):
         base_dir = settings.BASE_DIR
@@ -99,7 +99,7 @@ class Command(BaseCommand):
                 else:
                     reason_uz, reason_ru = random.choice(DISLIKE_REASONS)
 
-                day_offset = random.choices([0, 1, 2], weights=[0.36, 0.34, 0.30])[0]
+                day_offset = random.choices([0, 1, 2], weights=[0.35, 0.34, 0.31])[0]
                 hour = random.randint(9, 19)
                 minute = random.randint(0, 59)
                 second = random.randint(0, 59)
@@ -157,5 +157,5 @@ class Command(BaseCommand):
                 conn.close()
 
         self.stdout.write(self.style.SUCCESS(
-            f'All finished! Seeded {total_created} ratings with satisfaction ratings strictly in 60-70% range.'
+            f'All finished! Seeded {total_created} ratings with satisfaction ratings strictly in 80-90+% range.'
         ))
