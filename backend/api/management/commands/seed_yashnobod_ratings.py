@@ -60,8 +60,26 @@ YASHNOBOD_OFFICER_IDS = [
     'off_javohir_mirzoqulov', 'off_oybek_xudoyorov'
 ]
 
+# Ratings 60% - 70% range with significantly more dislikes
+OFFICER_TARGET_RATIOS = {
+    'off_asror_xazratov': 0.63,
+    'off_azizjon_umarjonov': 0.67,
+    'off_asliddin_qodirov': 0.70,
+    'off_muzaffarjon_ashurov': 0.61,
+    'off_nodirbek_alijonov': 0.69,
+    'off_elmurod_ziyobekov': 0.65,
+    'off_olouddin_ibrohimov': 0.62,
+    'off_qilichbek_omonov': 0.60,
+    'off_shayxzod_shayxov': 0.64,
+    'off_doniyor_qahramonov': 0.70,
+    'off_xojiakbar_alimjonov': 0.63,
+    'off_alina_kaderkayeva': 0.66,
+    'off_javohir_mirzoqulov': 0.61,
+    'off_oybek_xudoyorov': 0.68,
+}
+
 class Command(BaseCommand):
-    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days using atomic batch insert'
+    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days with ratings in 60-70% range'
 
     def handle(self, *args, **options):
         base_dir = settings.BASE_DIR
@@ -92,7 +110,8 @@ class Command(BaseCommand):
         for day_offset, count_for_day in day_buckets:
             for _ in range(count_for_day):
                 officer_id = random.choice(YASHNOBOD_OFFICER_IDS)
-                is_like = random.random() < 0.918  # ~91.8% positive
+                target_ratio = OFFICER_TARGET_RATIOS.get(officer_id, 0.65)
+                is_like = random.random() < target_ratio
 
                 citizen = random.choice(CITIZEN_NAMES)
                 if is_like:

@@ -1770,9 +1770,9 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               {/* Day-by-day Breakdown (Bugun / Kecha / 2 kun oldin) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {(ratingsSummary?.days || [
-                  { label_uz: 'Bugun', label_ru: 'Сегодня', date: '22.10', likes: 372, dislikes: 31, total: 403, index: 92 },
-                  { label_uz: 'Kecha', label_ru: 'Вчера', date: '21.10', likes: 358, dislikes: 29, total: 387, index: 93 },
-                  { label_uz: '2 kun oldin', label_ru: '2 дня назад', date: '20.10', likes: 341, dislikes: 28, total: 369, index: 92 },
+                  { label_uz: 'Bugun', label_ru: 'Сегодня', date: '23.10', likes: 248, dislikes: 132, total: 380, index: 65 },
+                  { label_uz: 'Kecha', label_ru: 'Вчера', date: '22.10', likes: 236, dislikes: 124, total: 360, index: 66 },
+                  { label_uz: '2 kun oldin', label_ru: '2 дня назад', date: '21.10', likes: 221, dislikes: 119, total: 340, index: 65 },
                 ]).map((day, idx) => (
                   <div key={idx} className="bg-gov-surface border border-gov-border rounded-xl p-4 shadow-sm">
                     <div className="flex items-center justify-between border-b border-gov-border/60 pb-2 mb-3">
@@ -1780,7 +1780,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                         <span className="font-bold text-xs text-gov-text">{lang === 'ru' ? day.label_ru : day.label_uz}</span>
                         <span className="text-[10px] text-gov-muted ml-1.5 font-medium">({day.date})</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${day.index < 71 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-600'}`}>
                         {day.index}% {lang === 'ru' ? 'индекс' : 'indeks'}
                       </span>
                     </div>
@@ -1800,18 +1800,18 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     <div className="w-full bg-rose-500/20 h-2 rounded-full overflow-hidden flex">
                       <div
                         className="bg-emerald-500 h-full transition-all"
-                        style={{ width: `${day.total > 0 ? (day.likes / day.total) * 100 : 90}%` }}
+                        style={{ width: `${day.total > 0 ? (day.likes / day.total) * 100 : 65}%` }}
                         title={`${day.likes} likes`}
                       />
                       <div
                         className="bg-rose-500 h-full transition-all"
-                        style={{ width: `${day.total > 0 ? (day.dislikes / day.total) * 100 : 10}%` }}
+                        style={{ width: `${day.total > 0 ? (day.dislikes / day.total) * 100 : 35}%` }}
                         title={`${day.dislikes} dislikes`}
                       />
                     </div>
                     <div className="flex justify-between text-[10px] text-gov-muted mt-1.5">
                       <span>{lang === 'ru' ? 'Всего:' : 'Jami:'} {day.total}</span>
-                      <span>{day.total > 0 ? Math.round((day.likes / day.total) * 100) : 92}% {lang === 'ru' ? 'положительных' : 'ijobiy'}</span>
+                      <span>{day.total > 0 ? Math.round((day.likes / day.total) * 100) : 65}% {lang === 'ru' ? 'положительных' : 'ijobiy'}</span>
                     </div>
                   </div>
                 ))}
@@ -1865,9 +1865,9 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       <span className="font-bold text-emerald-600">✓ {lang === 'ru' ? 'Частые причины Likes:' : 'Likes uchun asosiy sabablar:'}</span>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         {(ratingsSummary?.top_like_reasons?.length ? ratingsSummary.top_like_reasons : [
-                          { reason_ru: 'Вежливое отношение', reason_uz: 'Xushmuomala munosabat', cnt: 412 },
-                          { reason_ru: 'Быстро и качественно', reason_uz: 'Tezkor va sifatli ko\'rib chiqildi', cnt: 315 },
-                          { reason_ru: 'Разъяснено по закону', reason_uz: 'Qonun doirasida tushuntirish', cnt: 237 },
+                          { reason_ru: 'Вежливое отношение', reason_uz: 'Xushmuomala munosabat', cnt: 285 },
+                          { reason_ru: 'Быстро и качественно', reason_uz: 'Tezkor va sifatli ko\'rib chiqildi', cnt: 230 },
+                          { reason_ru: 'Разъяснено по закону', reason_uz: 'Qonun doirasida tushuntirish', cnt: 190 },
                         ]).map((item, rIdx) => (
                           <span key={rIdx} className="px-2 py-0.5 bg-gov-surface border border-gov-border rounded text-[10px] text-gov-text">
                             {lang === 'ru' ? item.reason_ru : item.reason_uz} ({item.cnt})
@@ -1879,8 +1879,9 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       <span className="font-bold text-rose-600">✕ {lang === 'ru' ? 'Частые причины Dislikes:' : 'Dislikes sabablari:'}</span>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         {(ratingsSummary?.top_dislike_reasons?.length ? ratingsSummary.top_dislike_reasons : [
-                          { reason_ru: 'Время ожидания приема', reason_uz: 'Qabulga kirishda kutish vaqti', cnt: 48 },
-                          { reason_ru: 'Дополнительные справки', reason_uz: 'Qo\'shimcha hujjatlar talab qilindi', cnt: 22 },
+                          { reason_ru: 'Время ожидания приема', reason_uz: 'Qabulga kirishda kutish vaqti', cnt: 154 },
+                          { reason_ru: 'Дополнительные справки', reason_uz: 'Qo\'shimcha hujjatlar talab qilindi', cnt: 118 },
+                          { reason_ru: 'Срок ответа затянулся', reason_uz: 'Javob berish muddati biroz cho\'zildi', cnt: 95 },
                         ]).map((item, rIdx) => (
                           <span key={rIdx} className="px-2 py-0.5 bg-gov-surface border border-gov-border rounded text-[10px] text-gov-text">
                             {lang === 'ru' ? item.reason_ru : item.reason_uz} ({item.cnt})
