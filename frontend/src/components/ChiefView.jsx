@@ -2260,10 +2260,6 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             {/* Slide 15: SMS Shablonlari — Real telefon ekranida */}
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 border border-slate-700/80 rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
               <div className="max-w-3xl mb-8 text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[11px] font-bold uppercase tracking-wider mb-2 border border-blue-500/30">
-                  <SendIcon className="h-3.5 w-3.5" />
-                  <span>{lang === 'ru' ? 'SMS-уведомления' : 'SMS xabarnomalar'}</span>
-                </div>
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white mb-1.5">
                   {lang === 'ru' ? 'SMS шаблоны — на реальном экране телефона' : 'SMS shablonlari — real telefon ekranida'}
                 </h2>
