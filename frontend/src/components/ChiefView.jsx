@@ -318,43 +318,58 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
     return buildCitizenRepeatIndex(materials);
   }, [materials]);
 
-  const filteredMaterials = materials.filter(c => {
-    if (onlyRepeatFilter && !citizenRepeatIndex.isRepeat(c)) return false;
-    if (!matchesNonDateFilters(c)) return false;
-    if (statusFilter && c.status !== statusFilter) return false;
-    if (quickStatusGroup === 'new') {
-      const d = new Date(c.registered_at);
-      if ((new Date() - d) >= 86400000 * 3) return false;
-    } else if (quickStatusGroup === 'active' && c.status === 'закрыт_в_срок') return false;
-    else if (quickStatusGroup === 'closed' && c.status !== 'закрыт_в_срок') return false;
-    else if (quickStatusGroup === 'overdue' && c.status !== 'срок_нарушен') return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      const haystack = `${c.id} ${c.citizen_name} ${c.citizen_phone}`.toLowerCase();
-      if (!haystack.includes(q)) return false;
-    }
-    if (monthFilter) {
-      if (c.registered_at.substring(0, 7) !== monthFilter) return false;
-    } else if (dateRange !== 'all') {
-      const regDate = new Date(c.registered_at);
-      const now = new Date();
-      const diffDays = (now - regDate) / (1000 * 60 * 60 * 24);
-      if (dateRange === 'today') {
-        if (regDate.toDateString() !== now.toDateString()) return false;
-      } else if (dateRange === 'days3') {
-        if (diffDays > 3) return false;
-      } else if (dateRange === 'week') {
-        if (diffDays > 7) return false;
-      } else if (dateRange === 'month') {
-        if (diffDays > 30) return false;
+  // Base materials filtered by all user filters EXCEPT the quickStatusGroup drilldown
+  const baseFilteredMaterials = useMemo(() => {
+    return materials.filter(c => {
+      if (onlyRepeatFilter && !citizenRepeatIndex.isRepeat(c)) return false;
+      if (!matchesNonDateFilters(c)) return false;
+      if (statusFilter && c.status !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const haystack = `${c.id} ${c.citizen_name} ${c.citizen_phone}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
       }
-    }
-    return true;
-  });
+      if (monthFilter) {
+        if (c.registered_at.substring(0, 7) !== monthFilter) return false;
+      } else if (dateRange !== 'all') {
+        const regDate = new Date(c.registered_at);
+        const now = new Date();
+        const diffDays = (now - regDate) / (1000 * 60 * 60 * 24);
+        if (dateRange === 'today') {
+          if (regDate.toDateString() !== now.toDateString()) return false;
+        } else if (dateRange === 'days3') {
+          if (diffDays > 3) return false;
+        } else if (dateRange === 'week') {
+          if (diffDays > 7) return false;
+        } else if (dateRange === 'month') {
+          if (diffDays > 30) return false;
+        }
+      }
+      return true;
+    });
+  }, [materials, onlyRepeatFilter, citizenRepeatIndex, statusFilter, searchQuery, monthFilter, dateRange, officerFilter, difficulty, materialType, sourceFrom]);
 
-  if (sortOrder === 'closest') {
-    filteredMaterials.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-  }
+  // Filtered materials for the table view (applies quickStatusGroup drilldown if active)
+  const filteredMaterials = useMemo(() => {
+    const list = baseFilteredMaterials.filter(c => {
+      if (quickStatusGroup === 'new') {
+        const d = new Date(c.registered_at);
+        return (new Date() - d) < (86400000 * 3);
+      } else if (quickStatusGroup === 'active') {
+        return c.status !== 'закрыт_в_срок';
+      } else if (quickStatusGroup === 'closed') {
+        return c.status === 'закрыт_в_срок';
+      } else if (quickStatusGroup === 'overdue') {
+        return c.status === 'срок_нарушен';
+      }
+      return true;
+    });
+
+    if (sortOrder === 'closest') {
+      return [...list].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+    }
+    return list;
+  }, [baseFilteredMaterials, quickStatusGroup, sortOrder]);
 
   const materialsPageCount = Math.max(1, Math.ceil(filteredMaterials.length / MATERIALS_PAGE_SIZE));
   const pagedMaterials = filteredMaterials.slice((materialsPage - 1) * MATERIALS_PAGE_SIZE, materialsPage * MATERIALS_PAGE_SIZE);
@@ -376,15 +391,16 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       return { value: key, label: `${name} ${y}` };
     });
 
-  const total = filteredMaterials.length;
-  const newCount = filteredMaterials.filter(m => {
+  const total = baseFilteredMaterials.length;
+  const newCount = baseFilteredMaterials.filter(m => {
     const d = new Date(m.registered_at);
     const now = new Date();
     return (now - d) < (86400000 * 3);
   }).length;
-  const activeCount = filteredMaterials.filter(m => m.status !== 'закрыт_в_срок').length;
-  const closedCount = filteredMaterials.filter(m => m.status === 'закрыт_в_срок').length;
-  const overdueCount = filteredMaterials.filter(m => m.status === 'срок_нарушен').length;
+  const activeCount = baseFilteredMaterials.filter(m => m.status !== 'закрыт_в_срок').length;
+  const closedCount = baseFilteredMaterials.filter(m => m.status === 'закрыт_в_срок').length;
+  const overdueCount = baseFilteredMaterials.filter(m => m.status === 'срок_нарушен').length;
+  const executionRate = total > 0 ? Math.round((closedCount / total) * 100) : 0;
 
   const goToMaterials = (group = '') => {
     setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType('');
@@ -454,7 +470,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
       d.setDate(d.getDate() - i);
       days.push(d.toISOString().substring(0, 10));
     }
-    return days.map(day => filteredMaterials.filter(m => m.registered_at.substring(0, 10) === day && matchFn(m)).length);
+    return days.map(day => baseFilteredMaterials.filter(m => m.registered_at.substring(0, 10) === day && matchFn(m)).length);
   };
 
   const trendTotal = getTrend(() => true);
@@ -462,6 +478,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
   const trendActive = getTrend(m => m.status !== 'закрыт_в_срок');
   const trendClosed = getTrend(m => m.status === 'закрыт_в_срок');
   const trendOverdue = getTrend(m => m.status === 'срок_нарушен');
+  const trendRate = trendTotal.map((t, idx) => t > 0 ? Math.round((trendClosed[idx] / t) * 100) : 50);
 
   const heroTrend = getTrend(() => true, 30);
   const heroFirstHalf = heroTrend.slice(0, 15).reduce((a, b) => a + b, 0);
@@ -761,7 +778,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             icon={<DashboardIcon />}
             label={lang === 'ru' ? 'Панель управления' : 'Boshqaruv paneli'}
             active={activePanel === 'dashboard'}
-            onClick={() => setActivePanel('dashboard')}
+            onClick={() => { setQuickStatusGroup(''); setActivePanel('dashboard'); }}
           />
           <SidebarLink
             icon={<FolderIcon />}
@@ -1006,7 +1023,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <StatCard icon={<UsersIcon />} tone="cyan" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} onClick={() => setActivePanel('ratings')} />
               <StatCard icon={<ApprovalIcon />} tone="warning" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} onClick={() => setActivePanel('approvals')} />
-              <StatCard icon={<TrendUpIcon />} tone="info" value={`${total > 0 ? Math.round((closedCount / total) * 100) : 0}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} className="col-span-2 sm:col-span-1" onClick={() => goToMaterials('closed')} />
+              <StatCard icon={<TrendUpIcon />} tone="info" value={`${executionRate}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} trend={trendRate} className="col-span-2 sm:col-span-1" onClick={() => goToMaterials('closed')} />
             </div>
 
             {/* Hero chart + type breakdown, one row */}
@@ -2238,6 +2255,149 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
         {activePanel === 'sms' && (
           <div className="space-y-6">
+            {/* Slide 15: SMS Shablonlari — Real telefon ekranida */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 border border-slate-700/80 rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
+              <div className="max-w-3xl mb-8 text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[11px] font-bold uppercase tracking-wider mb-2 border border-blue-500/30">
+                  <SendIcon className="h-3.5 w-3.5" />
+                  <span>{lang === 'ru' ? 'SMS-уведомления' : 'SMS xabarnomalar'}</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white mb-1.5">
+                  {lang === 'ru' ? 'SMS шаблоны — на реальном экране телефона' : 'SMS shablonlari — real telefon ekranida'}
+                </h2>
+                <p className="text-slate-400 text-xs sm:text-sm">
+                  {lang === 'ru' ? 'Два основных типа шаблонов: вызов (повестка) и ответное письмо' : 'Ikki asosiy shablon turi: chaqiruv (povestka) va javob xati'}
+                </p>
+              </div>
+
+              {/* 3 Phones Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
+                {/* Phone 1: POVESTKA */}
+                <div className="w-full max-w-[320px] flex flex-col items-center">
+                  <div className="w-full mb-3 text-center">
+                    <span className="inline-block px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow-lg">
+                      {lang === 'ru' ? 'ПОВЕСТКА' : 'POVESTKA'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#0b1329] rounded-[2.5rem] p-4 border-[3px] border-slate-700/80 shadow-2xl relative text-left">
+                    <div className="flex items-center justify-between px-3 pt-1 pb-3 text-[10px] text-slate-400 font-semibold">
+                      <span>9:41</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-bold tracking-wider">LTE</span>
+                        <div className="w-4 h-2 rounded-sm border border-slate-400 flex items-center p-0.5">
+                          <div className="w-full h-full bg-slate-300 rounded-2xs" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-800">
+                      <div className="w-8 h-8 rounded-full bg-slate-700/90 flex items-center justify-center text-slate-200 text-xs font-bold">
+                        🏛️
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">
+                          {department === 'yashnobod' ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
+                        </p>
+                        <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 text-center mb-2.5 font-medium">SMS · bugun, 09:12</p>
+                    <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
+                      {lang === 'ru'
+                        ? 'Уважаемый гражданин! Просим вас прибыть 20 августа 2026 года в 10:00 в УКД ОВД, каб. 204. Причина: дача показаний по делу МАТ-2026-0037. При себе иметь паспорт.'
+                        : `Hurmatli fuqaro! Sizni 2026-yil 20-avgust kuni soat 10:00 da ${department === 'yashnobod' ? 'Yashnobod' : 'Olmazor'} tumani IIO FMB, 204-xonaga tashrif buyurishingizni so'raymiz. Sabab: MAT-2026-0037 ishi bo'yicha ko'rsatma berish. O'zingiz bilan pasport olib keling.`}
+                    </div>
+                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
+                      <span className="text-emerald-400">✓✓</span>
+                      <span>{lang === 'ru' ? 'Доставлено' : 'Yetkazildi'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone 2: JAVOB XATI · IJOBIY */}
+                <div className="w-full max-w-[320px] flex flex-col items-center">
+                  <div className="w-full mb-3 text-center">
+                    <span className="inline-block px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500 text-white shadow-lg">
+                      {lang === 'ru' ? 'ОТВЕТ · ПОЛОЖИТЕЛЬНЫЙ' : 'JAVOB XATI · IJOBIY'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#0b1329] rounded-[2.5rem] p-4 border-[3px] border-slate-700/80 shadow-2xl relative text-left">
+                    <div className="flex items-center justify-between px-3 pt-1 pb-3 text-[10px] text-slate-400 font-semibold">
+                      <span>9:41</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-bold tracking-wider">LTE</span>
+                        <div className="w-4 h-2 rounded-sm border border-slate-400 flex items-center p-0.5">
+                          <div className="w-full h-full bg-slate-300 rounded-2xs" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-800">
+                      <div className="w-8 h-8 rounded-full bg-slate-700/90 flex items-center justify-center text-slate-200 text-xs font-bold">
+                        ⚖️
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">
+                          {department === 'yashnobod' ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
+                        </p>
+                        <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 text-center mb-2.5 font-medium">SMS · bugun, 11:47</p>
+                    <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
+                      {lang === 'ru'
+                        ? 'Уважаемый гражданин! По вашему обращению № МАТ-2026-0037 возбуждено уголовное дело (ст. 169 УК). О результатах вам будет сообщено дополнительно по SMS.'
+                        : "Hurmatli fuqaro! Sizning MAT-2026-0037-sonli murojaatingiz yuzasidan jinoyat ishi qo'zg'atildi (JK 169-modda). Natija haqida qo'shimcha SMS orqali xabardor qilinasiz."}
+                    </div>
+                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
+                      <span className="text-emerald-400">✓✓</span>
+                      <span>{lang === 'ru' ? 'Доставлено' : 'Yetkazildi'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone 3: JAVOB XATI · RAD ETILDI */}
+                <div className="w-full max-w-[320px] flex flex-col items-center">
+                  <div className="w-full mb-3 text-center">
+                    <span className="inline-block px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-500 text-white shadow-lg">
+                      {lang === 'ru' ? 'ОТВЕТ · ОТКАЗАНО' : 'JAVOB XATI · RAD ETILDI'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-[#0b1329] rounded-[2.5rem] p-4 border-[3px] border-slate-700/80 shadow-2xl relative text-left">
+                    <div className="flex items-center justify-between px-3 pt-1 pb-3 text-[10px] text-slate-400 font-semibold">
+                      <span>9:41</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-bold tracking-wider">LTE</span>
+                        <div className="w-4 h-2 rounded-sm border border-slate-400 flex items-center p-0.5">
+                          <div className="w-full h-full bg-slate-300 rounded-2xs" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-800">
+                      <div className="w-8 h-8 rounded-full bg-slate-700/90 flex items-center justify-center text-slate-200 text-xs font-bold">
+                        📋
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">
+                          {department === 'yashnobod' ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
+                        </p>
+                        <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-500 text-center mb-2.5 font-medium">SMS · ertaga, 08:30</p>
+                    <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
+                      {lang === 'ru'
+                        ? 'Уважаемый гражданин! В возбуждении уголовного дела по вашему обращению № МАТ-2026-0037 отказано (основание: отсутствие состава). Для получения копии решения обратитесь в орган.'
+                        : "Hurmatli fuqaro! Sizning MAT-2026-0037-sonli murojaatingiz yuzasidan jinoyat ishini qo'zg'atishdan rad etildi (asos: tarkib yo'qligi). Qaror nusxasini olish uchun idoraga murojaat qiling."}
+                    </div>
+                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
+                      <span className="text-emerald-400">✓✓</span>
+                      <span>{lang === 'ru' ? 'Доставлено' : 'Yetkazildi'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stat Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <StatCard icon={<SendIcon />} tone="cyan" value={smsTemplates.length} label={lang === 'ru' ? 'Всего текстов' : 'Jami matnlar'} />
               <StatCard icon={<ClockIcon />} tone="pink" value={smsTemplates.filter(t => t.status === 'на_модерации').length} label={lang === 'ru' ? 'На модерации' : 'Moderatsiyada'} />
@@ -2246,75 +2406,85 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               <StatCard icon={<CloseIcon />} tone="danger" value={smsTemplates.filter(t => t.status === 'отказан').length} label={lang === 'ru' ? 'Отказано' : 'Rad etilgan'} />
             </div>
 
-          <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
-            <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
-              <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Тексты SMS-сообщений' : 'SMS xabar matnlari'}</h3>
-              <button
-                onClick={() => setTemplateModalOpen(true)}
-                className="px-3 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
-              >
-                + {lang === 'ru' ? 'Добавить текст' : 'Matn qo\'shish'}
-              </button>
-            </div>
-
-            {smsTemplates.length === 0 ? (
-              <div className="text-center py-12 text-gov-muted text-xs font-semibold">
-                {lang === 'ru' ? 'Текстов пока нет' : 'Hozircha matnlar yo\'q'}
+            {/* Management Table */}
+            <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
+              <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
+                <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Тексты SMS-сообщений' : 'SMS xabar matnlari'}</h3>
+                <button
+                  onClick={() => setTemplateModalOpen(true)}
+                  className="px-3 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
+                >
+                  + {lang === 'ru' ? 'Добавить текст' : 'Matn qo\'shish'}
+                </button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {smsTemplates.map(t => (
-                  <div key={t.template_id} className="border border-gov-border rounded-xl p-4 space-y-2 text-left">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        {t.trigger_ru && <p className="text-[10px] font-bold text-gov-muted uppercase tracking-wider mb-1">{t.trigger_ru}</p>}
-                        <p className="text-xs text-gov-text leading-relaxed whitespace-pre-line">{t.content_ru}</p>
+
+              {smsTemplates.length === 0 ? (
+                <div className="text-center py-12 text-gov-muted text-xs font-semibold">
+                  {lang === 'ru' ? 'Текстов пока нет' : 'Hozircha matnlar yo\'q'}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {smsTemplates.map(t => {
+                    const triggerText = lang === 'ru' ? (t.trigger_ru || t.trigger_uz) : (t.trigger_uz || t.trigger_ru);
+                    const contentText = lang === 'ru' ? (t.content_ru || t.content_uz) : (t.content_uz || t.content_ru);
+
+                    return (
+                      <div key={t.template_id} className="border border-gov-border rounded-xl p-4 space-y-2 text-left bg-gov-surface hover:border-gov-primary/40 transition-colors">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            {triggerText && (
+                              <p className="text-[10px] font-bold text-gov-primary uppercase tracking-wider mb-1">
+                                {triggerText}
+                              </p>
+                            )}
+                            <p className="text-xs text-gov-text leading-relaxed whitespace-pre-line">{contentText}</p>
+                          </div>
+                          <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none shrink-0 ${getTemplateStatusBadge(t.status)}`}>
+                            {getTemplateStatusText(t.status)}
+                          </span>
+                        </div>
+
+                        {t.status === 'отказан' && t.rejection_reason && (
+                          <p className="text-[11px] text-gov-danger bg-rose-50 border border-rose-100 rounded p-2">
+                            {lang === 'ru' ? 'Причина отказа' : 'Rad etish sababi'}: {t.rejection_reason}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <Select
+                            value={t.status}
+                            onChange={val => handleTemplateStatusChange(t.template_id, { status: val, ...(val !== 'отказан' ? { rejection_reason: '' } : {}) })}
+                            className="text-[11px] p-1.5 border border-gov-border rounded bg-gov-light"
+                            options={[
+                              { value: 'на_модерации', label: getTemplateStatusText('на_модерации') },
+                              { value: 'в_процессе', label: getTemplateStatusText('в_процессе') },
+                              { value: 'одобрено', label: getTemplateStatusText('одобрено') },
+                              { value: 'отказан', label: getTemplateStatusText('отказан') },
+                            ]}
+                          />
+                          {t.status === 'отказан' && (
+                            <input
+                              type="text"
+                              defaultValue={t.rejection_reason}
+                              placeholder={lang === 'ru' ? 'Причина отказа...' : 'Rad etish sababi...'}
+                              onBlur={e => handleTemplateStatusChange(t.template_id, { rejection_reason: e.target.value })}
+                              className="flex-1 text-[11px] p-1.5 border border-gov-border rounded bg-gov-light"
+                            />
+                          )}
+                          <button
+                            onClick={() => handleDeleteTemplate(t.template_id)}
+                            className="ml-auto p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors"
+                            title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                          >
+                            <CloseIcon className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <span className={`px-2 py-0.5 border rounded text-[10px] font-semibold leading-none shrink-0 ${getTemplateStatusBadge(t.status)}`}>
-                        {getTemplateStatusText(t.status)}
-                      </span>
-                    </div>
-
-                    {t.status === 'отказан' && t.rejection_reason && (
-                      <p className="text-[11px] text-gov-danger bg-rose-50 border border-rose-100 rounded p-2">
-                        {lang === 'ru' ? 'Причина отказа' : 'Rad etish sababi'}: {t.rejection_reason}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-2 pt-1">
-                      <Select
-                        value={t.status}
-                        onChange={val => handleTemplateStatusChange(t.template_id, { status: val, ...(val !== 'отказан' ? { rejection_reason: '' } : {}) })}
-                        className="text-[11px] p-1.5 border border-gov-border rounded bg-gov-light"
-                        options={[
-                          { value: 'на_модерации', label: getTemplateStatusText('на_модерации') },
-                          { value: 'в_процессе', label: getTemplateStatusText('в_процессе') },
-                          { value: 'одобрено', label: getTemplateStatusText('одобрено') },
-                          { value: 'отказан', label: getTemplateStatusText('отказан') },
-                        ]}
-                      />
-                      {t.status === 'отказан' && (
-                        <input
-                          type="text"
-                          defaultValue={t.rejection_reason}
-                          placeholder={lang === 'ru' ? 'Причина отказа...' : 'Rad etish sababi...'}
-                          onBlur={e => handleTemplateStatusChange(t.template_id, { rejection_reason: e.target.value })}
-                          className="flex-1 text-[11px] p-1.5 border border-gov-border rounded bg-gov-light"
-                        />
-                      )}
-                      <button
-                        onClick={() => handleDeleteTemplate(t.template_id)}
-                        className="ml-auto p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors"
-                        title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
-                      >
-                        <CloseIcon className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
