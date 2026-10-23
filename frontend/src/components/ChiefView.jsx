@@ -44,6 +44,8 @@ const MONTH_NAMES_SHORT_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 
 const MONTH_NAMES_SHORT_UZ = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
 
 function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onCloseSidebar }) {
+  const currentDept = user?.department || (typeof window !== 'undefined' && window.location.pathname.includes('yashnobod') ? 'yashnobod' : 'olmazor');
+  const isYashnobod = currentDept === 'yashnobod';
   const { isDark } = useSettings();
   const { textColor, gridColor } = chartTheme(isDark);
   const [activePanel, setActivePanel] = useState('dashboard'); // dashboard, materials, ratings, approvals, users
@@ -2295,7 +2297,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">
-                          {department === 'yashnobod' ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
+                          {isYashnobod ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
                         </p>
                         <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
                       </div>
@@ -2304,7 +2306,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
                       {lang === 'ru'
                         ? 'Уважаемый гражданин! Просим вас прибыть 20 августа 2026 года в 10:00 в УКД ОВД, каб. 204. Причина: дача показаний по делу МАТ-2026-0037. При себе иметь паспорт.'
-                        : `Hurmatli fuqaro! Sizni 2026-yil 20-avgust kuni soat 10:00 da ${department === 'yashnobod' ? 'Yashnobod' : 'Olmazor'} tumani IIO FMB, 204-xonaga tashrif buyurishingizni so'raymiz. Sabab: MAT-2026-0037 ishi bo'yicha ko'rsatma berish. O'zingiz bilan pasport olib keling.`}
+                        : `Hurmatli fuqaro! Sizni 2026-yil 20-avgust kuni soat 10:00 da ${isYashnobod ? 'Yashnobod' : 'Olmazor'} tumani IIO FMB, 204-xonaga tashrif buyurishingizni so'raymiz. Sabab: MAT-2026-0037 ishi bo'yicha ko'rsatma berish. O'zingiz bilan pasport olib keling.`}
                     </div>
                     <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
                       <span className="text-emerald-400">✓✓</span>
@@ -2336,7 +2338,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">
-                          {department === 'yashnobod' ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
+                          {isYashnobod ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
                         </p>
                         <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
                       </div>
@@ -2377,7 +2379,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                       </div>
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">
-                          {department === 'yashnobod' ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
+                          {isYashnobod ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
                         </p>
                         <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
                       </div>
