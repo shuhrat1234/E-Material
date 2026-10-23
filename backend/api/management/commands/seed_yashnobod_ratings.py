@@ -1,12 +1,10 @@
+import os
+import sqlite3
+import random
+from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import timedelta
-import random
-import sqlite3
-import os
 from django.conf import settings
-from api.models import Officer, Rating
-from backend.db_router import set_current_branch
 
 CITIZEN_NAMES = [
     "Alimov Jasur Baxtiyorovich", "Karimov Sardor Rustamovich", "Rahmonov Bobur Alisherovich",
@@ -52,34 +50,27 @@ DISLIKE_REASONS = [
     ("Telefon orqali bog'lanish qiyin bo'ldi", "Было трудно дозвониться по телефону"),
 ]
 
-YASHNOBOD_OFFICER_IDS = [
-    'off_asror_xazratov', 'off_azizjon_umarjonov', 'off_asliddin_qodirov',
-    'off_muzaffarjon_ashurov', 'off_nodirbek_alijonov', 'off_elmurod_ziyobekov',
-    'off_olouddin_ibrohimov', 'off_qilichbek_omonov', 'off_shayxzod_shayxov',
-    'off_doniyor_qahramonov', 'off_xojiakbar_alimjonov', 'off_alina_kaderkayeva',
-    'off_javohir_mirzoqulov', 'off_oybek_xudoyorov'
-]
-
-# Ratings 60% - 70% range with significantly more dislikes
-OFFICER_TARGET_RATIOS = {
-    'off_asror_xazratov': 0.63,
-    'off_azizjon_umarjonov': 0.67,
-    'off_asliddin_qodirov': 0.70,
-    'off_muzaffarjon_ashurov': 0.61,
-    'off_nodirbek_alijonov': 0.69,
-    'off_elmurod_ziyobekov': 0.65,
-    'off_olouddin_ibrohimov': 0.62,
-    'off_qilichbek_omonov': 0.60,
-    'off_shayxzod_shayxov': 0.64,
-    'off_doniyor_qahramonov': 0.70,
-    'off_xojiakbar_alimjonov': 0.63,
-    'off_alina_kaderkayeva': 0.66,
-    'off_javohir_mirzoqulov': 0.61,
-    'off_oybek_xudoyorov': 0.68,
+# Exact target counts for each officer ensuring 60% - 70% satisfaction rating
+# (likes, dislikes)
+OFFICERS_TARGET = {
+    'off_asror_xazratov': (50, 28),     # 64%
+    'off_azizjon_umarjonov': (53, 25),  # 68%
+    'off_asliddin_qodirov': (54, 23),   # 70%
+    'off_muzaffarjon_ashurov': (48, 29),# 62%
+    'off_nodirbek_alijonov': (55, 24),  # 70%
+    'off_elmurod_ziyobekov': (51, 26),  # 66%
+    'off_olouddin_ibrohimov': (49, 28), # 64%
+    'off_qilichbek_omonov': (47, 30),   # 61%
+    'off_shayxzod_shayxov': (50, 27),   # 65%
+    'off_doniyor_qahramonov': (55, 24), # 70%
+    'off_xojiakbar_alimjonov': (51, 27),# 65%
+    'off_alina_kaderkayeva': (52, 26),  # 67%
+    'off_javohir_mirzoqulov': (48, 29), # 62%
+    'off_oybek_xudoyorov': (53, 25),    # 68%
 }
 
 class Command(BaseCommand):
-    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers across the last 3 days with ratings in 60-70% range'
+    help = 'Seeds 1000+ realistic likes and dislikes ratings for Yashnobod officers with ratings strictly in 60-70% range'
 
     def handle(self, *args, **options):
         base_dir = settings.BASE_DIR
@@ -89,40 +80,26 @@ class Command(BaseCommand):
         ]
 
         now = timezone.now()
-
-        # Distribution: 3 days breakdown (> 1,000 ratings total)
-        # Day 0 (today): 380 ratings
-        # Day 1 (yesterday): 360 ratings
-        # Day 2 (2 days ago): 340 ratings
-        # Total: 1,080 ratings
-        day_buckets = [
-            (0, 380),
-            (1, 360),
-            (2, 340),
-        ]
-
-        # Generate the dataset in memory
         ratings_data = []
-        officer_stats = {oid: {'likes': 0, 'dislikes': 0} for oid in YASHNOBOD_OFFICER_IDS}
         total_likes = 0
         total_dislikes = 0
 
-        for day_offset, count_for_day in day_buckets:
-            for _ in range(count_for_day):
-                officer_id = random.choice(YASHNOBOD_OFFICER_IDS)
-                target_ratio = OFFICER_TARGET_RATIOS.get(officer_id, 0.65)
-                is_like = random.random() < target_ratio
+        # Generate individual items for each officer matching target counts
+        for officer_id, (target_likes, target_dislikes) in OFFICERS_TARGET.items():
+            total_likes += target_likes
+            total_dislikes += target_dislikes
 
+            items = [True] * target_likes + [False] * target_dislikes
+            random.shuffle(items)
+
+            for is_like in items:
                 citizen = random.choice(CITIZEN_NAMES)
                 if is_like:
                     reason_uz, reason_ru = random.choice(LIKE_REASONS)
-                    total_likes += 1
-                    officer_stats[officer_id]['likes'] += 1
                 else:
                     reason_uz, reason_ru = random.choice(DISLIKE_REASONS)
-                    total_dislikes += 1
-                    officer_stats[officer_id]['dislikes'] += 1
 
+                day_offset = random.choices([0, 1, 2], weights=[0.36, 0.34, 0.30])[0]
                 hour = random.randint(9, 19)
                 minute = random.randint(0, 59)
                 second = random.randint(0, 59)
@@ -150,14 +127,11 @@ class Command(BaseCommand):
             cur = conn.cursor()
 
             try:
-                # Enable WAL mode for concurrency
                 cur.execute("PRAGMA journal_mode=WAL;")
+                officer_ids = list(OFFICERS_TARGET.keys())
+                placeholders = ','.join(['?'] * len(officer_ids))
+                cur.execute(f"DELETE FROM api_rating WHERE officer_id IN ({placeholders});", officer_ids)
 
-                # Delete existing ratings for these officers
-                placeholders = ','.join(['?'] * len(YASHNOBOD_OFFICER_IDS))
-                cur.execute(f"DELETE FROM api_rating WHERE officer_id IN ({placeholders});", YASHNOBOD_OFFICER_IDS)
-
-                # Batch insert all ratings in a single transaction
                 cur.executemany(
                     """
                     INSERT INTO api_rating (citizen_name, is_like, reason_ru, reason_uz, created_at, officer_id)
@@ -166,18 +140,11 @@ class Command(BaseCommand):
                     ratings_data
                 )
 
-                # Update officer table stats
-                for oid, stats in officer_stats.items():
-                    l = stats['likes']
-                    d = stats['dislikes']
+                for oid, (l, d) in OFFICERS_TARGET.items():
                     tot = l + d
                     idx = round((l / tot) * 100) if tot > 0 else 0
                     cur.execute(
-                        """
-                        UPDATE api_officer
-                        SET likes = ?, dislikes = ?, "index" = ?
-                        WHERE id = ?;
-                        """,
+                        "UPDATE api_officer SET likes = ?, dislikes = ?, \"index\" = ? WHERE id = ?;",
                         (l, d, idx, oid)
                     )
 
@@ -190,5 +157,5 @@ class Command(BaseCommand):
                 conn.close()
 
         self.stdout.write(self.style.SUCCESS(
-            f'All finished! Seeded {total_created} ratings across 14 Yashnobod investigators.'
+            f'All finished! Seeded {total_created} ratings with satisfaction ratings strictly in 60-70% range.'
         ))
