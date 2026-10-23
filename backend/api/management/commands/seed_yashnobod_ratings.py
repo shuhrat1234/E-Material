@@ -50,22 +50,24 @@ DISLIKE_REASONS = [
     ("Telefon orqali bog'lanish qiyin bo'ldi", "Было трудно дозвониться по телефону"),
 ]
 
-# Target counts ensuring 80% - 90+% satisfaction ratings
+# Target counts:
+# 11 officers in 80% - 90+% range
+# 3 officers (Ashurov, Omonov, Mirzoqulov) strictly less than 70% (64% - 66%)
 # (likes, dislikes)
 OFFICERS_TARGET = {
     'off_asror_xazratov': (68, 12),     # 85%
     'off_azizjon_umarjonov': (70, 11),  # 86%
     'off_asliddin_qodirov': (74, 9),    # 89%
-    'off_muzaffarjon_ashurov': (65, 14),# 82%
+    'off_muzaffarjon_ashurov': (52, 27),# 66% (< 70%)
     'off_nodirbek_alijonov': (76, 7),   # 92%
     'off_elmurod_ziyobekov': (71, 10),  # 88%
     'off_olouddin_ibrohimov': (67, 13), # 84%
-    'off_qilichbek_omonov': (65, 15),   # 81%
+    'off_qilichbek_omonov': (51, 29),   # 64% (< 70%)
     'off_shayxzod_shayxov': (69, 12),   # 85%
     'off_doniyor_qahramonov': (77, 6),  # 93%
     'off_xojiakbar_alimjonov': (70, 10),# 88%
     'off_alina_kaderkayeva': (73, 8),   # 90%
-    'off_javohir_mirzoqulov': (66, 13), # 84%
+    'off_javohir_mirzoqulov': (53, 27), # 66% (< 70%)
     'off_oybek_xudoyorov': (74, 8),     # 90%
 }
 
