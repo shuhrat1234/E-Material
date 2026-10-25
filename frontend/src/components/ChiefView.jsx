@@ -1012,8 +1012,8 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
         {/* Panel 1: Dashboard */}
         {activePanel === 'dashboard' && (
           <div className="space-y-6">
-            {/* Cards - Unified responsive grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
+            {/* Cards - 4 cards per line */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <StatCard icon={<FolderIcon />} tone="primary" value={total} label={lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'} trend={trendTotal} onClick={() => goToMaterials('')} />
               <StatCard icon={<TrendUpIcon />} tone="info" value={newCount} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendNew} onClick={() => goToMaterials('new')} />
               <StatCard icon={<ClockIcon />} tone="warning" value={activeCount} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} onClick={() => goToMaterials('active')} />
