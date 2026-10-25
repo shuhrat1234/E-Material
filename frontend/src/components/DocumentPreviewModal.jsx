@@ -8,13 +8,8 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Zoom and fit controls
   const [scale, setScale] = useState(1);
-  const [fitScale, setFitScale] = useState(1);
-  const [zoomMode, setZoomMode] = useState('fit'); // 'fit' | '100' | 'custom'
-  const [docDimensions, setDocDimensions] = useState({ width: 794, height: 1123 });
-  const [totalPages, setTotalPages] = useState(1);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [docDimensions, setDocDimensions] = useState({ width: 816, height: 1100 });
 
   if (!doc) return null;
 
@@ -26,41 +21,34 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
   const isPdf = ext === 'pdf';
   const isImage = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'].includes(ext);
 
-  // Measure page and calculate exact fit scale to avoid any scrolling
+  // Measure full content height and calculate exact scale to fit completely inside viewport with zero scroll
   const measureAndFit = useCallback(() => {
     if (!containerRef.current || !bodyRef.current) return;
-    const pages = containerRef.current.querySelectorAll('.docx');
-    if (!pages || pages.length === 0) return;
+    const page = containerRef.current.querySelector('.docx') || containerRef.current;
+    if (!page) return;
 
-    setTotalPages(pages.length);
+    // Get true width and height including all paragraphs, tables, seals
+    const pageW = page.offsetWidth || page.scrollWidth || 816;
+    let pageH = page.scrollHeight || page.offsetHeight || 1100;
 
-    // Multi-page handling: show only current page in fit mode
-    if (pages.length > 1) {
-      pages.forEach((p, idx) => {
-        p.style.display = idx === currentPage ? 'block' : 'none';
-        p.style.margin = '0 auto';
+    // Ensure the entire bottom element (table, QR code seal) is completely included
+    if (page.children && page.children.length > 0) {
+      Array.from(page.children).forEach(child => {
+        const bottom = child.offsetTop + child.offsetHeight + 24;
+        if (bottom > pageH) pageH = bottom;
       });
     }
 
-    const activePage = pages[Math.min(currentPage, pages.length - 1)];
-    if (!activePage) return;
+    if (pageH <= 0 || pageW <= 0) return;
 
-    const pageW = activePage.offsetWidth || 794;
-    const pageH = activePage.scrollHeight || activePage.offsetHeight || 1123;
+    // Available space inside the modal body with padding
+    const availW = Math.max(200, bodyRef.current.clientWidth - 32);
+    const availH = Math.max(200, bodyRef.current.clientHeight - 32);
+
+    const s = Math.min(availH / pageH, availW / pageW);
     setDocDimensions({ width: pageW, height: pageH });
-
-    // Deduct padding to guarantee zero scroll
-    const availW = Math.max(200, bodyRef.current.clientWidth - 20);
-    const availH = Math.max(200, bodyRef.current.clientHeight - 20);
-
-    if (availH > 0 && pageH > 0) {
-      const s = Math.min(availH / pageH, availW / pageW);
-      setFitScale(s);
-      if (zoomMode === 'fit') {
-        setScale(s);
-      }
-    }
-  }, [currentPage, zoomMode]);
+    setScale(s);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -81,8 +69,8 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
             className: 'docx-render',
             inWrapper: true,
             ignoreWidth: false,
-            ignoreHeight: false,
-            breakPages: true,
+            ignoreHeight: true,
+            breakPages: false,
             experimental: true,
             useBase64URL: true,
           });
@@ -90,8 +78,19 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
         .then(() => {
           if (active) {
             setLoading(false);
-            // Trigger calculation after render completes
-            setTimeout(measureAndFit, 60);
+            // Trigger calculation at several intervals to capture font/image rendering
+            setTimeout(measureAndFit, 30);
+            setTimeout(measureAndFit, 120);
+            setTimeout(measureAndFit, 350);
+
+            if (containerRef.current) {
+              const imgs = containerRef.current.querySelectorAll('img');
+              imgs.forEach(img => {
+                if (!img.complete) {
+                  img.onload = measureAndFit;
+                }
+              });
+            }
           }
         })
         .catch(err => {
@@ -120,29 +119,6 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
     return () => ro.disconnect();
   }, [measureAndFit]);
 
-  const handleSetFit = () => {
-    setZoomMode('fit');
-    setScale(fitScale);
-  };
-
-  const handleSet100 = () => {
-    setZoomMode('100');
-    setScale(1.0);
-  };
-
-  const handleZoomIn = () => {
-    setZoomMode('custom');
-    setScale(prev => Math.min(2.5, +(prev * 1.15).toFixed(2)));
-  };
-
-  const handleZoomOut = () => {
-    setZoomMode('custom');
-    setScale(prev => Math.max(0.3, +(prev * 0.85).toFixed(2)));
-  };
-
-  // Only allow scrolling if user zoomed in significantly beyond fit
-  const isOverflowAllowed = scale > fitScale * 1.08;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-full max-w-5xl h-[94vh] overflow-hidden border border-gov-border">
@@ -163,89 +139,6 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
             </div>
           </div>
 
-          {/* Center: Zoom & Page Controls */}
-          {isDocx && !loading && !error && (
-            <div className="hidden md:flex items-center gap-1.5 px-2 py-1 bg-white border border-gov-border rounded-xl shadow-2xs">
-              {/* Multi-page controls */}
-              {totalPages > 1 && (
-                <div className="flex items-center gap-1 mr-2 pr-2 border-r border-gov-border text-xs font-semibold text-gov-text">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                    disabled={currentPage === 0}
-                    className="p-1 rounded hover:bg-gov-light disabled:opacity-30 disabled:hover:bg-transparent"
-                    title={lang === 'ru' ? 'Предыдущая страница' : 'Oldingi sahifa'}
-                  >
-                    ◀
-                  </button>
-                  <span className="text-[11px] px-1 font-mono">
-                    {currentPage + 1} / {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                    disabled={currentPage >= totalPages - 1}
-                    className="p-1 rounded hover:bg-gov-light disabled:opacity-30 disabled:hover:bg-transparent"
-                    title={lang === 'ru' ? 'Следующая страница' : 'Keyingi sahifa'}
-                  >
-                    ▶
-                  </button>
-                </div>
-              )}
-
-              {/* Fit button (No scroll mode) */}
-              <button
-                type="button"
-                onClick={handleSetFit}
-                className={`text-[11px] font-bold px-2 py-1 rounded-lg transition-colors ${
-                  zoomMode === 'fit'
-                    ? 'bg-gov-primary text-white shadow-2xs'
-                    : 'text-gov-text hover:bg-gov-light'
-                }`}
-                title={lang === 'ru' ? 'Вписать в экран (без прокрутки)' : 'Ekranga moslash (aylantirishsiz)'}
-              >
-                {lang === 'ru' ? 'По экрану' : 'Ekranga mos'}
-              </button>
-
-              {/* Zoom Out */}
-              <button
-                type="button"
-                onClick={handleZoomOut}
-                className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gov-text hover:bg-gov-light rounded"
-                title={lang === 'ru' ? 'Уменьшить' : 'Kichraytirish'}
-              >
-                −
-              </button>
-
-              {/* Percent */}
-              <span className="text-[11px] font-mono font-semibold text-gov-muted w-10 text-center">
-                {Math.round(scale * 100)}%
-              </span>
-
-              {/* Zoom In */}
-              <button
-                type="button"
-                onClick={handleZoomIn}
-                className="w-6 h-6 flex items-center justify-center text-xs font-bold text-gov-text hover:bg-gov-light rounded"
-                title={lang === 'ru' ? 'Увеличить' : 'Kattalashtirish'}
-              >
-                +
-              </button>
-
-              {/* 100% button */}
-              <button
-                type="button"
-                onClick={handleSet100}
-                className={`text-[11px] font-bold px-2 py-1 rounded-lg transition-colors ${
-                  zoomMode === '100'
-                    ? 'bg-gov-primary text-white shadow-2xs'
-                    : 'text-gov-text hover:bg-gov-light'
-                }`}
-                title={lang === 'ru' ? 'Реальный размер 100%' : 'Haqiqiy o‘lcham 100%'}
-              >
-                100%
-              </button>
-            </div>
-          )}
-
           {/* Right Action buttons */}
           <div className="flex items-center gap-2 shrink-0">
             <a
@@ -259,7 +152,7 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
             </a>
             <button
               onClick={onClose}
-              className="p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-colors"
+              className="p-1.5 text-gov-muted hover:text-gov-text hover:bg-gov-light rounded-lg transition-colors cursor-pointer"
               title={lang === 'ru' ? 'Закрыть' : 'Yopish'}
             >
               <CloseIcon className="h-5 w-5" />
@@ -270,9 +163,7 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
         {/* Content body */}
         <div
           ref={bodyRef}
-          className={`flex-1 w-full h-full bg-slate-200/90 flex items-center justify-center p-2.5 relative ${
-            isOverflowAllowed ? 'overflow-auto' : 'overflow-hidden'
-          }`}
+          className="flex-1 w-full bg-slate-200/90 flex items-center justify-center p-3 sm:p-4 relative overflow-y-auto overflow-x-hidden"
         >
           {loading && (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-xs">
@@ -300,19 +191,17 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gov-primary text-white text-xs font-bold hover:bg-gov-primaryDark transition-colors"
               >
                 <DownloadIcon className="h-4 w-4" />
-                {lang === 'ru' ? 'Скачать файл' : 'Faylni yuklab olish'}
+                {lang === 'ru' ? 'Скачать файл' : 'Yuklab olish'}
               </a>
             </div>
           ) : isDocx ? (
-            /* Outer sizing box prevents any overflow outside the available container */
             <div
               style={{
                 width: `${Math.round(docDimensions.width * scale)}px`,
                 height: `${Math.round(docDimensions.height * scale)}px`,
                 position: 'relative',
-                overflow: 'hidden',
                 margin: 'auto',
-                transition: 'width 0.1s ease-out, height 0.1s ease-out',
+                transition: 'width 0.15s ease-out, height 0.15s ease-out',
               }}
               className="shadow-2xl rounded-sm bg-white"
             >
@@ -320,7 +209,6 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
               <div
                 style={{
                   width: `${docDimensions.width}px`,
-                  height: `${docDimensions.height}px`,
                   transform: `scale(${scale})`,
                   transformOrigin: 'top left',
                   position: 'absolute',
@@ -332,7 +220,7 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
               >
                 <div
                   ref={containerRef}
-                  className="docx-preview-container [&_.docx-wrapper]:bg-transparent [&_.docx-wrapper]:p-0 [&_.docx]:bg-white [&_.docx]:shadow-none [&_.docx]:m-0 [&_.docx]:border-0 [&_.docx]:box-border"
+                  className="docx-preview-container [&_.docx-wrapper]:bg-transparent [&_.docx-wrapper]:p-0 [&_.docx]:bg-white [&_.docx]:shadow-none [&_.docx]:m-0 [&_.docx]:border-0 [&_.docx]:box-border [&_.docx]:h-auto [&_.docx]:overflow-visible"
                 />
               </div>
             </div>
