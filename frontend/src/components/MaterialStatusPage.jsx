@@ -283,12 +283,12 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
                               </div>
                             </div>
 
-                            {/* Full-width Action Buttons */}
-                            <div className="grid grid-cols-3 gap-2 w-full pt-1">
+                            {/* Action Buttons: View and Download */}
+                            <div className="grid grid-cols-2 gap-2 w-full pt-1">
                               <button
                                 type="button"
                                 onClick={() => setPreviewDoc(d)}
-                                className="w-full flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-gov-light hover:bg-gov-primaryLight text-gov-primary text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                                className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-gov-light hover:bg-gov-primaryLight text-gov-primary text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
                                 title={lang === 'ru' ? 'Предварительный просмотр документа' : 'Hujjatni oldindan ko‘rish'}
                               >
                                 <EyeIcon className="h-3.5 w-3.5 shrink-0" />
@@ -297,45 +297,30 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
                               <a
                                 href={docUrl}
                                 download={d.original_name || 'hujjat.docx'}
-                                className="w-full flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg bg-gov-primary hover:bg-gov-primaryDark text-white text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
+                                className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-gov-primary hover:bg-gov-primaryDark text-white text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
                                 title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
                               >
                                 <DownloadIcon className="h-3.5 w-3.5 shrink-0" />
                                 <span className="truncate">{lang === 'ru' ? 'Скачать' : 'Yuklab olish'}</span>
                               </a>
-                              <button
-                                type="button"
-                                onClick={() => setOpenQrDocId(prev => prev === d.id ? false : d.id)}
-                                className={`w-full flex items-center justify-center gap-1.5 py-2 px-2 rounded-lg border text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
-                                  isQrOpen
-                                    ? 'bg-gov-navy text-white border-gov-navy shadow-sm'
-                                    : 'bg-gov-light text-gov-navy border-gov-border hover:bg-slate-200'
-                                }`}
-                                title="QR-kod"
-                              >
-                                <span className="text-xs">📱</span>
-                                <span>QR</span>
-                              </button>
                             </div>
 
                             {/* QR Code preview container */}
-                            {isQrOpen && (
-                              <div className="mt-2.5 pt-2.5 border-t border-gov-border/70 flex items-center justify-center gap-3 bg-slate-50/80 p-2.5 rounded-xl">
-                                <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-200 shrink-0">
-                                  <QRCodeSVG value={docUrl} size={110} level="M" />
-                                </div>
-                                <div className="text-left">
-                                  <p className="text-[11px] font-bold text-gov-navy">
-                                    {lang === 'ru' ? 'Официальный QR-код' : 'Rasmiy QR-kod'}
-                                  </p>
-                                  <p className="text-[10px] text-gov-muted mt-0.5 leading-snug">
-                                    {lang === 'ru'
-                                      ? 'Отсканируйте камерой телефона для проверки документа'
-                                      : 'Hujjatni tekshirish uchun telefon orqali skanerlang'}
-                                  </p>
-                                </div>
+                            <div className="mt-2.5 pt-2.5 border-t border-gov-border/70 flex items-center justify-center gap-3 bg-slate-50/80 p-2.5 rounded-xl">
+                              <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-200 shrink-0">
+                                <QRCodeSVG value={docUrl} size={110} level="M" />
                               </div>
-                            )}
+                              <div className="text-left">
+                                <p className="text-[11px] font-bold text-gov-navy">
+                                  {lang === 'ru' ? 'Официальный QR-код' : 'Rasmiy QR-kod'}
+                                </p>
+                                <p className="text-[10px] text-gov-muted mt-0.5 leading-snug">
+                                  {lang === 'ru'
+                                    ? 'Отсканируйте камерой телефона для проверки документа'
+                                    : 'Hujjatni tekshirish uchun telefon orqali skanerlang'}
+                                </p>
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
