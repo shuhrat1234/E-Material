@@ -3,7 +3,7 @@ import axios from 'axios';
 import { QRCodeSVG } from 'qrcode.react';
 import { API_BASE, TRANSLATIONS } from '../App';
 import { DISTRICTS, getActiveDistrictId } from '../config/districts';
-import { SearchIcon, CloseIcon, DocumentIcon } from './Icons';
+import { SearchIcon, CloseIcon, DocumentIcon, EyeIcon, DownloadIcon } from './Icons';
 import DocumentPreviewModal from './DocumentPreviewModal';
 
 const STATUS_LABELS = {
@@ -254,46 +254,53 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
                       return (
                         <div
                           key={d.id}
-                          className="p-2.5 rounded-xl bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors text-xs font-semibold text-gov-primary"
+                          className="p-3 sm:p-3.5 rounded-xl bg-gov-surface border border-gov-border hover:border-gov-primary/50 transition-colors shadow-xs"
                         >
-                          <div className="flex items-center justify-between gap-1.5">
+                          {/* Document Name - Full Width, No Truncation */}
+                          <div className="flex items-start gap-2.5 mb-2.5">
+                            <span className="w-8 h-8 rounded-lg bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 mt-0.5">
+                              <DocumentIcon className="h-4 w-4" />
+                            </span>
+                            <div className="min-w-0 flex-1 text-left">
+                              <p className="text-xs sm:text-sm font-bold text-gov-navy leading-snug break-words">
+                                {d.original_name}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Full-width Action Buttons */}
+                          <div className="grid grid-cols-3 gap-2 w-full pt-1">
                             <button
                               type="button"
                               onClick={() => setPreviewDoc(d)}
-                              className="flex items-center gap-2 min-w-0 flex-1 text-left text-gov-navy font-semibold truncate hover:text-gov-primary cursor-pointer"
-                              title={d.original_name}
+                              className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-gov-light hover:bg-gov-primaryLight text-gov-primary text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                              title={lang === 'ru' ? 'Предварительный просмотр документа' : 'Hujjatni oldindan ko‘rish'}
                             >
-                              <DocumentIcon className="h-4 w-4 text-gov-primary shrink-0" />
-                              <span className="truncate">{d.original_name}</span>
+                              <EyeIcon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}</span>
                             </button>
-                            <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                              <button
-                                type="button"
-                                onClick={() => setPreviewDoc(d)}
-                                className="text-[10px] px-2 py-1 rounded bg-gov-light hover:bg-gov-primaryLight text-gov-primary font-semibold transition-colors cursor-pointer"
-                              >
-                                {lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}
-                              </button>
-                              <a
-                                href={docUrl}
-                                download={d.original_name || 'hujjat.docx'}
-                                className="text-[10px] px-2 py-1 rounded bg-gov-primary text-white font-semibold hover:bg-gov-primaryDark transition-colors"
-                              >
-                                {lang === 'ru' ? 'Скачать' : 'Yuklab olish'}
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => setOpenQrDocId(prev => prev === d.id ? false : d.id)}
-                                className={`text-[10px] px-2 py-1 rounded border font-semibold transition-colors cursor-pointer ${
-                                  isQrOpen
-                                    ? 'bg-gov-navy text-white border-gov-navy shadow-xs'
-                                    : 'bg-gov-light text-gov-text border-gov-border hover:bg-gov-primaryLight hover:text-gov-primary'
-                                }`}
-                                title="QR-kod"
-                              >
-                                QR
-                              </button>
-                            </div>
+                            <a
+                              href={docUrl}
+                              download={d.original_name || 'hujjat.docx'}
+                              className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-gov-primary hover:bg-gov-primaryDark text-white text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
+                              title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
+                            >
+                              <DownloadIcon className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{lang === 'ru' ? 'Скачать' : 'Yuklab olish'}</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setOpenQrDocId(prev => prev === d.id ? false : d.id)}
+                              className={`w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg border text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
+                                isQrOpen
+                                  ? 'bg-gov-navy text-white border-gov-navy shadow-sm'
+                                  : 'bg-gov-light text-gov-navy border-gov-border hover:bg-slate-200'
+                              }`}
+                              title="QR-kod"
+                            >
+                              <span className="text-xs">📱</span>
+                              <span>QR</span>
+                            </button>
                           </div>
 
                           {/* QR Code container matching Image 1 */}
