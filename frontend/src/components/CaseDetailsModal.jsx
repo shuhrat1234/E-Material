@@ -564,14 +564,13 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                         <button
                           type="button"
                           onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
-                          className={`py-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                          className={`py-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center cursor-pointer ${
                             qrDocId === doc.id
                               ? 'bg-gov-navy text-white border-gov-navy shadow-xs'
                               : 'border-gov-border text-gov-text bg-gov-light hover:bg-slate-200'
                           }`}
                           title="QR-kod"
                         >
-                          <span className="text-[10px]">📱</span>
                           <span className="text-[11px]">QR</span>
                         </button>
                         <button
