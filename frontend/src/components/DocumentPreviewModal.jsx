@@ -149,10 +149,10 @@ export default function DocumentPreviewModal({ doc, lang, onClose }) {
               <DocumentIcon className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <h3 className="text-xs sm:text-sm font-bold text-gov-navy truncate" title={fileName}>
+              <h3 className="text-xs sm:text-sm font-bold text-gov-navy leading-snug break-words" title={fileName}>
                 {fileName}
               </h3>
-              <p className="text-[10px] sm:text-[11px] text-gov-muted truncate hidden xs:block">
+              <p className="text-[10px] sm:text-[11px] text-gov-muted truncate hidden sm:block">
                 {lang === 'ru' ? 'Предварительный просмотр документа' : 'Hujjatni oldindan ko‘rish'}
               </p>
             </div>
