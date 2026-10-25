@@ -102,7 +102,7 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
 
   return (
     <div
-      className="w-full min-h-screen flex flex-col items-center justify-center py-4 px-4 sm:px-6"
+      className="w-full min-h-screen flex flex-col items-center justify-center py-4 px-2.5 sm:px-6"
       style={{
         backgroundImage:
           'radial-gradient(circle at 15% 20%, rgba(37,99,235,0.07), transparent 40%), radial-gradient(circle at 85% 80%, rgba(37,99,235,0.06), transparent 40%)',
@@ -116,7 +116,7 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
           </p>
         </div>
 
-        <div className={`bg-gov-surface rounded-2xl shadow-pop transition-all ${result ? 'p-5 sm:p-6 space-y-4' : 'p-8 space-y-6'}`}>
+        <div className={`bg-gov-surface rounded-2xl shadow-pop transition-all ${result ? 'p-3.5 sm:p-6 space-y-4' : 'p-6 sm:p-8 space-y-6'}`}>
           <div className="flex items-center justify-between pb-2 border-b border-gov-border/60">
             <h3 className="text-sm sm:text-base font-bold text-gov-text flex items-center gap-2">
               <SearchIcon className="h-4 w-4 text-gov-primary" />
@@ -283,38 +283,38 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
                               </div>
                             </div>
 
-                            {/* Action Buttons: View and Download */}
-                            <div className="grid grid-cols-2 gap-2 w-full pt-1">
+                            {/* Action Buttons: View and Download (Full width on mobile, 2 cols on tablet/desktop) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full pt-1">
                               <button
                                 type="button"
                                 onClick={() => setPreviewDoc(d)}
-                                className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-gov-light hover:bg-gov-primaryLight text-gov-primary text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-gov-light hover:bg-gov-primaryLight text-gov-primary text-xs font-bold transition-all shadow-xs active:scale-[0.98] cursor-pointer"
                                 title={lang === 'ru' ? 'Предварительный просмотр документа' : 'Hujjatni oldindan ko‘rish'}
                               >
-                                <EyeIcon className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">{lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}</span>
+                                <EyeIcon className="h-4 w-4 shrink-0" />
+                                <span className="whitespace-nowrap">{lang === 'ru' ? 'Просмотр документа' : 'Hujjatni ko‘rish'}</span>
                               </button>
                               <a
                                 href={docUrl}
                                 download={d.original_name || 'hujjat.docx'}
-                                className="w-full flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-gov-primary hover:bg-gov-primaryDark text-white text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg bg-gov-primary hover:bg-gov-primaryDark text-white text-xs font-bold transition-all shadow-xs active:scale-[0.98]"
                                 title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
                               >
-                                <DownloadIcon className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate">{lang === 'ru' ? 'Скачать' : 'Yuklab olish'}</span>
+                                <DownloadIcon className="h-4 w-4 shrink-0" />
+                                <span className="whitespace-nowrap">{lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}</span>
                               </a>
                             </div>
 
                             {/* QR Code preview container */}
-                            <div className="mt-2.5 pt-2.5 border-t border-gov-border/70 flex items-center justify-center gap-3 bg-slate-50/80 p-2.5 rounded-xl">
-                              <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-200 shrink-0">
+                            <div className="mt-3 pt-3 border-t border-gov-border/70 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 bg-slate-50/80 p-3 rounded-xl text-center sm:text-left">
+                              <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 shrink-0">
                                 <QRCodeSVG value={docUrl} size={110} level="M" />
                               </div>
-                              <div className="text-left">
-                                <p className="text-[11px] font-bold text-gov-navy">
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-gov-navy">
                                   {lang === 'ru' ? 'Официальный QR-код' : 'Rasmiy QR-kod'}
                                 </p>
-                                <p className="text-[10px] text-gov-muted mt-0.5 leading-snug">
+                                <p className="text-[11px] text-gov-muted mt-1 leading-relaxed">
                                   {lang === 'ru'
                                     ? 'Отсканируйте камерой телефона для проверки документа'
                                     : 'Hujjatni tekshirish uchun telefon orqali skanerlang'}
@@ -327,19 +327,19 @@ function MaterialStatusPage({ lang, setLang, onBack, initialMaterialId = '', dis
                     </div>
                   </div>
                 ) : (
-                  <div className="border border-gov-border rounded-xl p-3 bg-gov-light/30 flex items-center justify-center gap-3">
-                    <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-200 shrink-0">
+                  <div className="border border-gov-border rounded-xl p-3 bg-gov-light/30 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3.5 text-center sm:text-left">
+                    <div className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 shrink-0">
                       <QRCodeSVG
                         value={`https://tqtb-olmazor.uz/${activeDistrictId}/arizalarim?id=${result.id}`}
                         size={110}
                         level="M"
                       />
                     </div>
-                    <div className="text-left">
-                      <p className="text-[11px] font-bold text-gov-navy">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-gov-navy">
                         {lang === 'ru' ? 'QR-верификация материала' : 'Material QR-verifikatsiyasi'}
                       </p>
-                      <p className="text-[10px] text-gov-muted mt-0.5 leading-snug">
+                      <p className="text-[11px] text-gov-muted mt-1 leading-relaxed">
                         {lang === 'ru'
                           ? 'Отсканируйте для быстрой проверки статуса'
                           : 'Material holatini tekshirish uchun skanerlang'}
