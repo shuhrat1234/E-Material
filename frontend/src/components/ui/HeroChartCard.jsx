@@ -46,8 +46,8 @@ function HeroChartCard({ title, value, delta, caption, data, breakdown = [] }) {
       </div>
 
       {breakdown.length > 0 && (
-        <div className="mt-5 bg-gov-light/60 rounded-xl p-4">
-          <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${breakdown.length}, minmax(0, 1fr))` }}>
+        <div className="mt-5 bg-gov-light/60 rounded-xl p-3 sm:p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             {breakdown.map((b, i) => (
               <div key={i}>
                 <div className="flex items-center gap-2">

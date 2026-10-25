@@ -1012,20 +1012,16 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
         {/* Panel 1: Dashboard */}
         {activePanel === 'dashboard' && (
           <div className="space-y-6">
-            {/* Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {/* Cards - Unified responsive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
               <StatCard icon={<FolderIcon />} tone="primary" value={total} label={lang === 'ru' ? 'Всего материалов' : 'Jami materiallar'} trend={trendTotal} onClick={() => goToMaterials('')} />
               <StatCard icon={<TrendUpIcon />} tone="info" value={newCount} label={lang === 'ru' ? 'Новые' : 'Yangi'} trend={trendNew} onClick={() => goToMaterials('new')} />
               <StatCard icon={<ClockIcon />} tone="warning" value={activeCount} label={lang === 'ru' ? 'В производстве' : 'Ijroda'} trend={trendActive} onClick={() => goToMaterials('active')} />
               <StatCard icon={<ApprovalIcon />} tone="success" value={closedCount} label={lang === 'ru' ? 'Исполнено' : 'Bajarildi'} trend={trendClosed} onClick={() => goToMaterials('closed')} />
-              <StatCard icon={<ClockIcon />} tone="danger" value={overdueCount} label={lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'} trend={trendOverdue} className="col-span-2 md:col-span-1" onClick={() => goToMaterials('overdue')} />
-            </div>
-
-            {/* Secondary stat row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <StatCard icon={<ClockIcon />} tone="danger" value={overdueCount} label={lang === 'ru' ? 'Просрочено' : 'Muddati o\'tgan'} trend={trendOverdue} onClick={() => goToMaterials('overdue')} />
               <StatCard icon={<UsersIcon />} tone="cyan" value={officers.filter(o => o.role === 'investigator').length} label={lang === 'ru' ? 'Следователей' : 'Tergovchilar'} onClick={() => setActivePanel('ratings')} />
               <StatCard icon={<ApprovalIcon />} tone="warning" value={approvalRequests.length} label={lang === 'ru' ? 'На согласовании' : 'Tasdiqlashda'} onClick={() => setActivePanel('approvals')} />
-              <StatCard icon={<TrendUpIcon />} tone="info" value={`${executionRate}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} trend={trendRate} className="col-span-2 sm:col-span-1" onClick={() => goToMaterials('closed')} />
+              <StatCard icon={<TrendUpIcon />} tone="info" value={`${executionRate}%`} label={lang === 'ru' ? 'Доля исполненных' : 'Bajarilganlar ulushi'} trend={trendRate} onClick={() => goToMaterials('closed')} />
             </div>
 
             {/* Hero chart + type breakdown, one row */}
