@@ -2265,128 +2265,47 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               </div>
 
               {/* 3 Phones Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 justify-items-center">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 justify-items-center items-start">
                 {/* Phone 1: POVESTKA */}
-                <div className="w-full max-w-[320px] flex flex-col items-center">
+                <div className="w-full max-w-[280px] sm:max-w-[300px] flex flex-col items-center">
                   <div className="w-full mb-3 text-center">
                     <span className="inline-block px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow-lg">
                       {lang === 'ru' ? 'ПОВЕСТКА' : 'POVESTKA'}
                     </span>
                   </div>
-                  <div className="w-full bg-[#0b1329] rounded-[2.5rem] p-4 border-[3px] border-slate-700/80 shadow-2xl relative text-left">
-                    <div className="flex items-center justify-between px-3 pt-1 pb-3 text-[10px] text-slate-400 font-semibold">
-                      <span>9:41</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-bold tracking-wider">LTE</span>
-                        <div className="w-4 h-2 rounded-sm border border-slate-400 flex items-center p-0.5">
-                          <div className="w-full h-full bg-slate-300 rounded-2xs" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-800">
-                      <div className="w-8 h-8 rounded-full bg-slate-700/90 flex items-center justify-center text-slate-200 text-xs font-bold">
-                        🏛️
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">
-                          {isYashnobod ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
-                        </p>
-                        <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 text-center mb-2.5 font-medium">SMS · bugun, 09:12</p>
-                    <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
-                      {lang === 'ru'
-                        ? 'Уважаемый гражданин! Просим вас прибыть 20 августа 2026 года в 10:00 в УКД ОВД, каб. 204. Причина: дача показаний по делу МАТ-2026-0037. При себе иметь паспорт.'
-                        : `Hurmatli fuqaro! Sizni 2026-yil 20-avgust kuni soat 10:00 da ${isYashnobod ? 'Yashnobod' : 'Olmazor'} tumani IIO FMB, 204-xonaga tashrif buyurishingizni so'raymiz. Sabab: MAT-2026-0037 ishi bo'yicha ko'rsatma berish. O'zingiz bilan pasport olib keling.`}
-                    </div>
-                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
-                      <span className="text-emerald-400">✓✓</span>
-                      <span>{lang === 'ru' ? 'Доставлено' : 'Yetkazildi'}</span>
-                    </div>
-                  </div>
+                  <img
+                    src="/sms_phone_povestka.png"
+                    alt="SMS Povestka"
+                    className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
+                  />
                 </div>
 
                 {/* Phone 2: JAVOB XATI · IJOBIY */}
-                <div className="w-full max-w-[320px] flex flex-col items-center">
+                <div className="w-full max-w-[280px] sm:max-w-[300px] flex flex-col items-center">
                   <div className="w-full mb-3 text-center">
                     <span className="inline-block px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500 text-white shadow-lg">
                       {lang === 'ru' ? 'ОТВЕТ · ПОЛОЖИТЕЛЬНЫЙ' : 'JAVOB XATI · IJOBIY'}
                     </span>
                   </div>
-                  <div className="w-full bg-[#0b1329] rounded-[2.5rem] p-4 border-[3px] border-slate-700/80 shadow-2xl relative text-left">
-                    <div className="flex items-center justify-between px-3 pt-1 pb-3 text-[10px] text-slate-400 font-semibold">
-                      <span>9:41</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-bold tracking-wider">LTE</span>
-                        <div className="w-4 h-2 rounded-sm border border-slate-400 flex items-center p-0.5">
-                          <div className="w-full h-full bg-slate-300 rounded-2xs" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-800">
-                      <div className="w-8 h-8 rounded-full bg-slate-700/90 flex items-center justify-center text-slate-200 text-xs font-bold">
-                        ⚖️
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">
-                          {isYashnobod ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
-                        </p>
-                        <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 text-center mb-2.5 font-medium">SMS · bugun, 11:47</p>
-                    <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
-                      {lang === 'ru'
-                        ? 'Уважаемый гражданин! По вашему обращению № МАТ-2026-0037 возбуждено уголовное дело (ст. 169 УК). О результатах вам будет сообщено дополнительно по SMS.'
-                        : "Hurmatli fuqaro! Sizning MAT-2026-0037-sonli murojaatingiz yuzasidan jinoyat ishi qo'zg'atildi (JK 169-modda). Natija haqida qo'shimcha SMS orqali xabardor qilinasiz."}
-                    </div>
-                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
-                      <span className="text-emerald-400">✓✓</span>
-                      <span>{lang === 'ru' ? 'Доставлено' : 'Yetkazildi'}</span>
-                    </div>
-                  </div>
+                  <img
+                    src="/sms_phone_ijobiy.png"
+                    alt="SMS Javob xati ijobiy"
+                    className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
+                  />
                 </div>
 
                 {/* Phone 3: JAVOB XATI · RAD ETILDI */}
-                <div className="w-full max-w-[320px] flex flex-col items-center">
+                <div className="w-full max-w-[280px] sm:max-w-[300px] flex flex-col items-center">
                   <div className="w-full mb-3 text-center">
                     <span className="inline-block px-5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-rose-500 text-white shadow-lg">
                       {lang === 'ru' ? 'ОТВЕТ · ОТКАЗАНО' : 'JAVOB XATI · RAD ETILDI'}
                     </span>
                   </div>
-                  <div className="w-full bg-[#0b1329] rounded-[2.5rem] p-4 border-[3px] border-slate-700/80 shadow-2xl relative text-left">
-                    <div className="flex items-center justify-between px-3 pt-1 pb-3 text-[10px] text-slate-400 font-semibold">
-                      <span>9:41</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-bold tracking-wider">LTE</span>
-                        <div className="w-4 h-2 rounded-sm border border-slate-400 flex items-center p-0.5">
-                          <div className="w-full h-full bg-slate-300 rounded-2xs" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2.5 pb-3 mb-3 border-b border-slate-800">
-                      <div className="w-8 h-8 rounded-full bg-slate-700/90 flex items-center justify-center text-slate-200 text-xs font-bold">
-                        📋
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">
-                          {isYashnobod ? 'Yashnobod IIO FMB' : 'Olmazor IIO FMB'}
-                        </p>
-                        <p className="text-[9px] text-slate-400">mobil operator SMS markazi</p>
-                      </div>
-                    </div>
-                    <p className="text-[10px] text-slate-500 text-center mb-2.5 font-medium">SMS · ertaga, 08:30</p>
-                    <div className="bg-[#1e293b] rounded-2xl rounded-tl-sm p-3.5 text-[11px] text-slate-100 leading-relaxed border border-slate-700/60 shadow-inner">
-                      {lang === 'ru'
-                        ? 'Уважаемый гражданин! В возбуждении уголовного дела по вашему обращению № МАТ-2026-0037 отказано (основание: отсутствие состава). Для получения копии решения обратитесь в орган.'
-                        : "Hurmatli fuqaro! Sizning MAT-2026-0037-sonli murojaatingiz yuzasidan jinoyat ishini qo'zg'atishdan rad etildi (asos: tarkib yo'qligi). Qaror nusxasini olish uchun idoraga murojaat qiling."}
-                    </div>
-                    <div className="flex items-center justify-end gap-1 text-[9px] text-slate-400 mt-2.5 px-1 font-semibold">
-                      <span className="text-emerald-400">✓✓</span>
-                      <span>{lang === 'ru' ? 'Доставлено' : 'Yetkazildi'}</span>
-                    </div>
-                  </div>
+                  <img
+                    src="/sms_phone_rad.png"
+                    alt="SMS Javob xati rad etildi"
+                    className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300 select-none pointer-events-none"
+                  />
                 </div>
               </div>
             </div>
