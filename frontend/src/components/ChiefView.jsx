@@ -2254,12 +2254,12 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
         {activePanel === 'sms' && (
           <div className="space-y-6">
             {/* Slide 15: SMS Shablonlari — Real telefon ekranida */}
-            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 border border-slate-700/80 rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden">
+            <div className="relative py-2 sm:py-4">
               <div className="max-w-3xl mb-8 text-left">
-                <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white mb-1.5">
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-gov-text mb-1.5">
                   {lang === 'ru' ? 'SMS шаблоны — на реальном экране телефона' : 'SMS shablonlari — real telefon ekranida'}
                 </h2>
-                <p className="text-slate-400 text-xs sm:text-sm">
+                <p className="text-gov-muted text-xs sm:text-sm">
                   {lang === 'ru' ? 'Два основных типа шаблонов: вызов (повестка) и ответное письмо' : 'Ikki asosiy shablon turi: chaqiruv (povestka) va javob xati'}
                 </p>
               </div>
