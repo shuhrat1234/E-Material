@@ -521,52 +521,54 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
                 <div className="space-y-2">
                   {documents.map(doc => (
                     <div key={doc.id} className="border border-gov-border rounded-xl p-3">
-                      <div className="flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-lg bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0">
+                      <div className="flex items-start gap-3">
+                        <span className="w-9 h-9 rounded-lg bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 mt-0.5">
                           <DocumentIcon className="h-4 w-4" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <button
                             type="button"
                             onClick={() => setPreviewDoc(doc)}
-                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors truncate block text-left w-full cursor-pointer"
+                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors break-words text-left block w-full cursor-pointer leading-snug"
                             title={doc.original_name}
                           >
                             {doc.original_name || doc.file_url}
                           </button>
-                          <p className="text-[10px] text-gov-muted mt-0.5">
+                          <p className="text-[10px] text-gov-muted mt-1">
                             {doc.uploaded_by && `${doc.uploaded_by} · `}{formatDate(doc.uploaded_at)}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewDoc(doc)}
-                          className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors shrink-0 flex items-center justify-center"
-                          title={lang === 'ru' ? 'Просмотр документа' : 'Hujjatni ko‘rish'}
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </button>
-                        <a
-                          href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
-                          download={doc.original_name || 'hujjat.docx'}
-                          className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors shrink-0 flex items-center justify-center"
-                          title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
-                        >
-                          <DownloadIcon className="h-4 w-4" />
-                        </a>
-                        <button
-                          onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
-                          className="px-2 py-1.5 border border-gov-border rounded text-[10px] font-semibold text-gov-text hover:bg-gov-light transition-colors shrink-0"
-                        >
-                          QR
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDocument(doc.id)}
-                          className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors shrink-0"
-                          title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setPreviewDoc(doc)}
+                            className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors flex items-center justify-center"
+                            title={lang === 'ru' ? 'Просмотр документа' : 'Hujjatni ko‘rish'}
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </button>
+                          <a
+                            href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
+                            download={doc.original_name || 'hujjat.docx'}
+                            className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors flex items-center justify-center"
+                            title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
+                          >
+                            <DownloadIcon className="h-4 w-4" />
+                          </a>
+                          <button
+                            onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
+                            className="px-2 py-1.5 border border-gov-border rounded text-[10px] font-semibold text-gov-text hover:bg-gov-light transition-colors"
+                          >
+                            QR
+                          </button>
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors"
+                            title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
                       {qrDocId === doc.id && (
                         <div className="mt-3 pt-3 border-t border-gov-border flex flex-col items-center gap-2">
