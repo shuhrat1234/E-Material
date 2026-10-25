@@ -96,6 +96,7 @@ function App() {
   const districtId = getActiveDistrictId(route);
   const currentDistrict = DISTRICTS[districtId] || DISTRICTS.olmazor;
   const currentSubtitle = lang === 'ru' ? currentDistrict.subtitle_ru : currentDistrict.subtitle_uz;
+  const currentShortTitle = lang === 'ru' ? currentDistrict.short_title_ru : currentDistrict.short_title_uz;
 
   // Auto-redirect root URL '/' to '/olmazor'
   useEffect(() => {
@@ -269,8 +270,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gov-light flex flex-col">
       {user && (
-        <header className={`bg-gov-surface text-gov-text px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-3">
+        <header className={`bg-gov-surface text-gov-text px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between border-b border-gov-border shrink-0 ${hasSidebar ? 'lg:pl-[17rem]' : ''}`}>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 mr-2 sm:mr-3">
             {hasSidebar && (
               <button
                 onClick={() => setSidebarOpen(o => !o)}
@@ -282,24 +283,29 @@ function App() {
             )}
             <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-10 sm:w-10 lg:h-11 lg:w-11 shrink-0 object-contain" />
             <div className="min-w-0">
-              <h1 className="text-[10px] sm:text-xs lg:text-[13px] text-gov-navy font-bold uppercase tracking-tight leading-snug line-clamp-2">
+              {/* Mobile: Concise official title without cutting off */}
+              <h1 className="sm:hidden text-[10px] text-gov-navy font-bold uppercase tracking-tight leading-tight break-words">
+                {currentShortTitle}
+              </h1>
+              {/* Desktop & Tablet: Full subtitle */}
+              <h1 className="hidden sm:block text-xs lg:text-[13px] text-gov-navy font-bold uppercase tracking-tight leading-snug line-clamp-2">
                 {currentSubtitle}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0 flex-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 flex-nowrap">
             {/* Language Selector */}
             <div className="flex bg-gov-light p-0.5 sm:p-1 rounded-full text-xs font-semibold shrink-0">
               <button
                 onClick={() => setLang('ru')}
-                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors ${lang === 'ru' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 RU
               </button>
               <button
                 onClick={() => setLang('uz')}
-                className={`px-2.5 sm:px-3 py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
+                className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full transition-colors ${lang === 'uz' ? 'bg-gov-surface text-gov-primary shadow-sm font-bold' : 'text-gov-muted hover:text-gov-text'}`}
               >
                 UZ
               </button>
