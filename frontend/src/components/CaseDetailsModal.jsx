@@ -520,62 +520,77 @@ function CaseDetailsModal({ caseId, lang, user, onSelectCase, onClose }) {
               ) : (
                 <div className="space-y-2">
                   {documents.map(doc => (
-                    <div key={doc.id} className="border border-gov-border rounded-xl p-3">
-                      <div className="flex items-start gap-3">
-                        <span className="w-9 h-9 rounded-lg bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <div key={doc.id} className="border border-gov-border rounded-xl p-3 bg-white">
+                      {/* Top: Icon + Document Title + Uploader info (full width) */}
+                      <div className="flex items-start gap-2.5">
+                        <span className="w-8 h-8 rounded-lg bg-gov-primaryLight text-gov-primary flex items-center justify-center shrink-0 mt-0.5">
                           <DocumentIcon className="h-4 w-4" />
                         </span>
                         <div className="min-w-0 flex-1">
                           <button
                             type="button"
                             onClick={() => setPreviewDoc(doc)}
-                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors break-words text-left block w-full cursor-pointer leading-snug"
+                            className="font-semibold text-gov-text hover:text-gov-primary transition-colors break-words text-left block w-full cursor-pointer leading-snug text-xs sm:text-sm"
                             title={doc.original_name}
                           >
                             {doc.original_name || doc.file_url}
                           </button>
-                          <p className="text-[10px] text-gov-muted mt-1">
+                          <p className="text-[10px] text-gov-muted mt-1 leading-tight">
                             {doc.uploaded_by && `${doc.uploaded_by} · `}{formatDate(doc.uploaded_at)}
                           </p>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setPreviewDoc(doc)}
-                            className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors flex items-center justify-center"
-                            title={lang === 'ru' ? 'Просмотр документа' : 'Hujjatni ko‘rish'}
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                          </button>
-                          <a
-                            href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
-                            download={doc.original_name || 'hujjat.docx'}
-                            className="p-1.5 border border-gov-border rounded text-gov-muted hover:text-gov-primary hover:bg-gov-light transition-colors flex items-center justify-center"
-                            title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
-                          >
-                            <DownloadIcon className="h-4 w-4" />
-                          </a>
-                          <button
-                            onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
-                            className="px-2 py-1.5 border border-gov-border rounded text-[10px] font-semibold text-gov-text hover:bg-gov-light transition-colors"
-                          >
-                            QR
-                          </button>
-                          <button
-                            onClick={() => handleDeleteDocument(doc.id)}
-                            className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 rounded transition-colors"
-                            title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
                       </div>
+
+                      {/* Action buttons toolbar: Full-width row underneath */}
+                      <div className="flex items-center gap-1.5 pt-2.5 mt-2.5 border-t border-gov-border/60">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc(doc)}
+                          className="flex-1 py-1.5 px-2 rounded-lg bg-gov-light hover:bg-gov-primaryLight text-gov-primary border border-gov-border/70 text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                          title={lang === 'ru' ? 'Просмотр документа' : 'Hujjatni ko‘rish'}
+                        >
+                          <EyeIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="text-[11px] truncate">{lang === 'ru' ? 'Просмотр' : 'Ko‘rish'}</span>
+                        </button>
+                        <a
+                          href={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : ''}
+                          download={doc.original_name || 'hujjat.docx'}
+                          className="flex-1 py-1.5 px-2 rounded-lg bg-gov-primary hover:bg-gov-primaryDark text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1 shadow-2xs"
+                          title={lang === 'ru' ? 'Скачать документ' : 'Hujjatni yuklab olish'}
+                        >
+                          <DownloadIcon className="h-3.5 w-3.5 shrink-0" />
+                          <span className="text-[11px] truncate">{lang === 'ru' ? 'Скачать' : 'Yuklab'}</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setQrDocId(prev => (prev === doc.id ? null : doc.id))}
+                          className={`py-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                            qrDocId === doc.id
+                              ? 'bg-gov-navy text-white border-gov-navy shadow-xs'
+                              : 'border-gov-border text-gov-text bg-gov-light hover:bg-slate-200'
+                          }`}
+                          title="QR-kod"
+                        >
+                          <span className="text-[10px]">📱</span>
+                          <span className="text-[11px]">QR</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="p-1.5 text-gov-muted hover:text-gov-danger hover:bg-rose-50 border border-gov-border rounded-lg transition-colors cursor-pointer"
+                          title={lang === 'ru' ? 'Удалить' : 'O\'chirish'}
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* QR Code preview container */}
                       {qrDocId === doc.id && (
-                        <div className="mt-3 pt-3 border-t border-gov-border flex flex-col items-center gap-2">
-                          <div className="p-2 bg-white rounded-lg">
-                            <QRCodeSVG value={doc.file_url} size={140} />
+                        <div className="mt-2.5 pt-2.5 border-t border-gov-border/70 flex flex-col items-center gap-2 bg-slate-50 p-2.5 rounded-lg">
+                          <div className="p-2 bg-white rounded-lg shadow-xs border border-gov-border">
+                            <QRCodeSVG value={doc.file_url ? doc.file_url.replace(/^http:\/\//, 'https://') : window.location.href} size={130} />
                           </div>
-                          <p className="text-[10px] text-gov-muted text-center">
+                          <p className="text-[10px] text-gov-muted text-center font-medium">
                             {lang === 'ru'
                               ? 'Отсканируйте, чтобы открыть документ'
                               : 'Hujjatni ochish uchun skanerlang'}
