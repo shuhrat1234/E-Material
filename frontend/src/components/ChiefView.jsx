@@ -2321,11 +2321,11 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
             {/* Management Table */}
             <div className="bg-gov-surface rounded-2xl shadow-card p-4 sm:p-6">
-              <div className="flex items-center justify-between border-b border-gov-border pb-3 mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gov-border pb-3 mb-6">
                 <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Тексты SMS-сообщений' : 'SMS xabar matnlari'}</h3>
                 <button
                   onClick={() => setTemplateModalOpen(true)}
-                  className="px-3 py-2 bg-gov-primary text-white text-xs font-semibold rounded hover:bg-blue-700 transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 bg-gov-primary text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors text-center shadow-sm"
                 >
                   + {lang === 'ru' ? 'Добавить текст' : 'Matn qo\'shish'}
                 </button>
@@ -2603,13 +2603,13 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
 
       {templateModalOpen && (
         <Modal onClose={() => setTemplateModalOpen(false)} maxWidth="max-w-lg">
-          <div className="p-6">
+          <div className="p-4 sm:p-6 overflow-y-auto max-h-[85vh]">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gov-border">
-              <h3 className="font-semibold text-base text-gov-text">{lang === 'ru' ? 'Добавить текст на модерацию' : 'Moderatsiyaga matn qo\'shish'}</h3>
-              <button onClick={() => setTemplateModalOpen(false)} className="text-gov-muted hover:text-gov-text p-1 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
+              <h3 className="font-semibold text-sm sm:text-base text-gov-text">{lang === 'ru' ? 'Добавить текст на модерацию' : 'Moderatsiyaga matn qo\'shish'}</h3>
+              <button onClick={() => setTemplateModalOpen(false)} className="text-gov-muted hover:text-gov-text p-1.5 -m-1 rounded hover:bg-gov-light transition-colors"><CloseIcon className="h-4 w-4" /></button>
             </div>
 
-            <div className="bg-gov-light/60 border border-gov-border rounded-xl p-3 mb-4 space-y-2 text-[11px] text-gov-muted leading-relaxed max-h-40 overflow-y-auto">
+            <div className="bg-gov-light/60 border border-gov-border rounded-xl p-3 mb-4 space-y-2 text-[11px] text-gov-muted leading-relaxed max-h-36 sm:max-h-40 overflow-y-auto break-words">
               <p>{lang === 'ru'
                 ? 'Вводите текст в точности так, как он будет отправлен получателю — без переменных и масок (их подставит модератор).'
                 : 'Matnni aynan qabul qiluvchiga yuboriladigan holatda kiriting — o\'zgaruvchilarsiz (ularni moderator joylashtiradi).'}</p>
@@ -2630,7 +2630,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                   value={newTemplate.trigger_ru}
                   onChange={e => setNewTemplate({ ...newTemplate, trigger_ru: e.target.value })}
                   placeholder={lang === 'ru' ? 'Например: Уведомление об отказе в ВУД' : 'Masalan: JIQni rad etish haqida xabarnoma'}
-                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
+                  className="w-full text-xs p-2.5 sm:p-2 border border-gov-border rounded-lg bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50"
                 />
               </div>
               <div>
@@ -2640,7 +2640,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                   rows={3}
                   value={newTemplate.content_ru}
                   onChange={e => setNewTemplate({ ...newTemplate, content_ru: e.target.value })}
-                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
+                  className="w-full text-xs p-2.5 sm:p-2 border border-gov-border rounded-lg bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
                 />
               </div>
               <div>
@@ -2649,15 +2649,23 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                   rows={3}
                   value={newTemplate.content_uz}
                   onChange={e => setNewTemplate({ ...newTemplate, content_uz: e.target.value })}
-                  className="w-full text-xs p-2 border border-gov-border rounded bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
+                  className="w-full text-xs p-2.5 sm:p-2 border border-gov-border rounded-lg bg-gov-light focus:outline-none focus:ring-1 focus:ring-gov-blue/50 resize-none"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" onClick={() => setTemplateModalOpen(false)} className="px-4 py-2 text-gov-muted hover:text-gov-text text-xs font-semibold rounded transition-colors">
-                  {lang === 'ru' ? 'Отмена' : 'Bekor qilish'}
-                </button>
-                <button type="submit" disabled={savingTemplate} className="px-4 py-2 bg-gov-primary hover:bg-blue-700 text-white text-xs font-semibold rounded transition-colors disabled:opacity-50">
+              <div className="flex flex-col gap-2 pt-3">
+                <button
+                  type="submit"
+                  disabled={savingTemplate}
+                  className="w-full py-2.5 px-4 bg-gov-primary hover:bg-blue-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 text-center shadow-sm"
+                >
                   {savingTemplate ? '...' : (lang === 'ru' ? 'Отправить на модерацию' : 'Moderatsiyaga yuborish')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTemplateModalOpen(false)}
+                  className="w-full py-2 px-4 text-gov-muted hover:text-gov-text text-xs font-medium rounded-lg transition-colors text-center"
+                >
+                  {lang === 'ru' ? 'Отмена' : 'Bekor qilish'}
                 </button>
               </div>
             </form>
