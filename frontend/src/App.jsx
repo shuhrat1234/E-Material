@@ -284,7 +284,7 @@ function App() {
             <img src="/emblem.png" alt="" className="h-8 w-8 sm:h-10 sm:w-10 lg:h-11 lg:w-11 shrink-0 object-contain" />
             <div className="min-w-0">
               {/* Mobile, tablet, and compact laptop: Concise official title without cutting off */}
-              <h1 className="xl:hidden text-[10px] sm:text-xs text-gov-navy font-bold uppercase tracking-tight leading-tight break-words">
+              <h1 className="hidden sm:block xl:hidden text-[10px] sm:text-xs text-gov-navy font-bold uppercase tracking-tight leading-tight truncate">
                 {currentShortTitle}
               </h1>
               {/* Ultra-wide Desktop: Full subtitle */}

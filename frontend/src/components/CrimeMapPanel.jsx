@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { Marker, Polygon, CircleMarker, Tooltip } from 'react-leaflet';
 import MahallaMap from './ui/MahallaMap';
 import Card, { CardHeader } from './ui/Card';
+import Select from './ui/Select';
 import { MapIcon, SearchIcon, CloseIcon, EyeIcon } from './Icons';
 import { useSettings } from '../settingsContext';
 import { MATERIAL_TYPES } from '../materialTaxonomy';
@@ -619,17 +620,18 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
             </div>
 
             {/* Status Filter */}
-            <select
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-auto px-3 py-2 sm:py-1.5 text-xs rounded-lg bg-gov-light border border-gov-border text-gov-text focus:outline-none font-medium cursor-pointer"
-            >
-              <option value="all">{lang === 'ru' ? 'Все статусы' : 'Barcha holatlar'}</option>
-              <option value="active">{lang === 'ru' ? 'В работе' : 'Ijroda'}</option>
-              <option value="overdue">{lang === 'ru' ? 'Просроченные' : 'Muddati o\'tgan'}</option>
-              <option value="warning">{lang === 'ru' ? 'Срок приближается' : 'Muddati yaqin'}</option>
-              <option value="closed">{lang === 'ru' ? 'Исполнено' : 'Yopilgan'}</option>
-            </select>
+              onChange={(val) => setStatusFilter(val)}
+              className="w-full sm:w-44 text-xs p-1.5 border border-gov-border rounded-lg bg-gov-light font-medium shrink-0"
+              options={[
+                { value: 'all', label: lang === 'ru' ? 'Все статусы' : 'Barcha holatlar' },
+                { value: 'active', label: lang === 'ru' ? 'В работе' : 'Ijroda' },
+                { value: 'overdue', label: lang === 'ru' ? 'Просроченные' : 'Muddati o\'tgan' },
+                { value: 'warning', label: lang === 'ru' ? 'Срок приближается' : 'Muddati yaqin' },
+                { value: 'closed', label: lang === 'ru' ? 'Исполнено' : 'Yopilgan' },
+              ]}
+            />
           </div>
 
           {/* Reset Filters / Clear Selection */}

@@ -29,7 +29,7 @@ function FilterPill({ icon, value, onChange, options, defaultValue = '' }) {
         }`}
       >
         {icon && <span className="shrink-0 opacity-70">{icon}</span>}
-        <span className="max-w-[7.5rem] sm:max-w-[10rem] truncate">{selected ? selected.label : ''}</span>
+        <span className="whitespace-nowrap">{selected ? selected.label : ''}</span>
         <svg className={`w-3 h-3 absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
         </svg>

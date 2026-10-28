@@ -1699,9 +1699,6 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-lg bg-gov-primaryLight text-gov-primary">
-                      <TrendUpIcon className="h-4 w-4" />
-                    </span>
                     <h4 className="font-bold text-sm sm:text-base text-gov-text">
                       {lang === 'ru' ? 'Общая статистика оценок за 3 дня (72 часа)' : 'Oxirgi 3 kunlik umumiy baholar statistikasi (72 soat)'}
                     </h4>
@@ -1846,14 +1843,14 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
                     {(ratingsSummary?.top_officers || officers.filter(o => o.role === 'investigator').slice(0, 3)).map((topOff, rankIdx) => {
                       const medalColors = ['bg-amber-500 text-white', 'bg-slate-400 text-white', 'bg-amber-700 text-white'];
                       return (
-                        <div key={topOff.id || rankIdx} className="flex items-center justify-between p-2.5 bg-gov-surface border border-gov-border rounded-lg">
-                          <div className="flex items-center gap-2.5 min-w-0">
+                        <div key={topOff.id || rankIdx} className="flex items-center justify-between p-2.5 bg-gov-surface border border-gov-border rounded-lg gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${medalColors[rankIdx] || 'bg-gov-border'}`}>
                               {rankIdx + 1}
                             </span>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-xs text-gov-text truncate">{lang === 'ru' ? topOff.name_ru : topOff.name_uz}</p>
-                              <p className="text-[10px] text-gov-muted truncate">{lang === 'ru' ? topOff.rank_ru : topOff.rank_uz}</p>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-xs text-gov-text break-words leading-tight">{lang === 'ru' ? topOff.name_ru : topOff.name_uz}</p>
+                              <p className="text-[10px] text-gov-muted break-words mt-0.5">{lang === 'ru' ? topOff.rank_ru : topOff.rank_uz}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-3 shrink-0 text-xs">
