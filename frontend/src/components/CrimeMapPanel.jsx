@@ -589,14 +589,14 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
         </div>
 
         {/* Quick Multi-Filter Pills */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-gov-border/50">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-gov-border/50">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Document Type Filter */}
-            <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs w-full sm:w-auto">
+            <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
               <button
                 type="button"
                 onClick={() => setTypeFilter('all')}
-                className={`flex-1 sm:flex-initial text-center px-3 py-1.5 sm:py-1 rounded-md font-semibold whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 sm:py-1 rounded-md font-semibold whitespace-nowrap transition-all ${
                   typeFilter === 'all' ? 'bg-gov-surface text-gov-text shadow-sm' : 'text-gov-muted hover:text-gov-text'
                 }`}
               >
@@ -607,7 +607,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
                   key={t.value}
                   type="button"
                   onClick={() => setTypeFilter(t.value)}
-                  className={`flex-1 sm:flex-initial text-center px-3 py-1.5 sm:py-1 rounded-md font-semibold whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 sm:py-1 rounded-md font-semibold whitespace-nowrap transition-all ${
                     typeFilter === t.value ? 'bg-gov-surface text-gov-primary font-bold shadow-sm' : 'text-gov-muted hover:text-gov-text'
                   }`}
                 >
@@ -620,7 +620,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
             <Select
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
-              className="w-full sm:w-44 text-xs p-1.5 border border-gov-border rounded-lg bg-gov-light font-medium shrink-0"
+              className="w-44 text-xs p-1.5 border border-gov-border rounded-lg bg-gov-light font-medium shrink-0"
               options={[
                 { value: 'all', label: lang === 'ru' ? 'Все статусы' : 'Barcha holatlar' },
                 { value: 'active', label: lang === 'ru' ? 'В работе' : 'Ijroda' },
@@ -636,7 +636,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
             <button
               type="button"
               onClick={handleResetView}
-              className="w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 text-xs font-semibold rounded-lg bg-gov-light text-gov-danger hover:bg-gov-dangerLight border border-gov-border transition-colors flex items-center gap-1.5 sm:ml-auto"
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gov-light text-gov-danger hover:bg-gov-dangerLight border border-gov-border transition-colors flex items-center gap-1.5"
             >
               <CloseIcon className="h-3 w-3" />
               <span>{lang === 'ru' ? 'Сбросить фильтры' : 'Filtrlarni tozalash'}</span>
@@ -646,20 +646,20 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
       </div>
 
       {/* 3. Main Map & Analytics Side Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start w-full">
         {/* Map Container Column */}
-        <div className="lg:col-span-7 xl:col-span-8 w-full min-w-0">
-          {/* Integrated Map Controls Header Bar (non-floating, responsive, never overlaps modals) */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 mb-2.5 rounded-xl bg-gov-surface border border-gov-border shadow-sm">
+        <div className="xl:col-span-8 w-full min-w-0">
+          {/* Integrated Map Controls Header Bar (non-floating, responsive, never overlaps modals or columns) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2 mb-2.5 rounded-xl bg-gov-surface border border-gov-border shadow-sm">
             {/* Left: View Mode & Basemap Switchers */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center gap-2">
               {/* View Mode: Zones vs Bubbles */}
-              <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs w-full sm:w-auto">
+              <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
                 <button
                   type="button"
                   onClick={() => setViewMode('zones')}
                   title={lang === 'ru' ? 'Зонирование (полигоны)' : 'Hududlar (poligonlar)'}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 sm:py-1 rounded-md font-semibold text-center whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 sm:py-1 rounded-md font-semibold text-center whitespace-nowrap transition-all ${
                     viewMode === 'zones'
                       ? 'bg-gov-primary text-white shadow-sm'
                       : 'text-gov-muted hover:text-gov-text'
@@ -671,7 +671,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
                   type="button"
                   onClick={() => setViewMode('bubbles')}
                   title={lang === 'ru' ? 'Очаги преступлений (круги)' : 'O\'choqlar (doiralar)'}
-                  className={`flex-1 sm:flex-initial px-3 py-1.5 sm:py-1 rounded-md font-semibold text-center whitespace-nowrap transition-all ${
+                  className={`px-3 py-1.5 sm:py-1 rounded-md font-semibold text-center whitespace-nowrap transition-all ${
                     viewMode === 'bubbles'
                       ? 'bg-gov-primary text-white shadow-sm'
                       : 'text-gov-muted hover:text-gov-text'
@@ -682,12 +682,12 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
               </div>
 
               {/* Basemap Switcher */}
-              <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs w-full sm:w-auto">
+              <div className="flex items-center bg-gov-light p-0.5 rounded-lg border border-gov-border text-xs">
                 <button
                   type="button"
                   onClick={() => setMapType('carto')}
                   title={lang === 'ru' ? 'Минималистичная карта' : 'Oddiy xarita'}
-                  className={`flex-1 sm:flex-initial px-2.5 py-1.5 sm:py-1 rounded-md font-medium text-center whitespace-nowrap transition-all ${
+                  className={`px-2.5 py-1.5 sm:py-1 rounded-md font-medium text-center whitespace-nowrap transition-all ${
                     mapType === 'carto'
                       ? 'bg-gov-surface text-gov-text font-bold shadow-sm'
                       : 'text-gov-muted hover:text-gov-text'
@@ -699,7 +699,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
                   type="button"
                   onClick={() => setMapType('streets')}
                   title={lang === 'ru' ? 'Улицы и дома' : 'Ko\'chalar va binolar'}
-                  className={`flex-1 sm:flex-initial px-2.5 py-1.5 sm:py-1 rounded-md font-medium text-center whitespace-nowrap transition-all ${
+                  className={`px-2.5 py-1.5 sm:py-1 rounded-md font-medium text-center whitespace-nowrap transition-all ${
                     mapType === 'streets'
                       ? 'bg-gov-surface text-gov-text font-bold shadow-sm'
                       : 'text-gov-muted hover:text-gov-text'
@@ -711,7 +711,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
                   type="button"
                   onClick={() => setMapType('satellite')}
                   title={lang === 'ru' ? 'Спутниковые снимки' : 'Sun\'iy yo\'ldosh tasviri'}
-                  className={`flex-1 sm:flex-initial px-2.5 py-1.5 sm:py-1 rounded-md font-medium text-center whitespace-nowrap transition-all ${
+                  className={`px-2.5 py-1.5 sm:py-1 rounded-md font-medium text-center whitespace-nowrap transition-all ${
                     mapType === 'satellite'
                       ? 'bg-gov-surface text-gov-text font-bold shadow-sm'
                       : 'text-gov-muted hover:text-gov-text'
@@ -723,12 +723,12 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
             </div>
 
             {/* Right: Labels Toggle & Reset */}
-            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setLabelMode(prev => (prev === 'badges' ? 'simple' : (prev === 'simple' ? 'none' : 'badges')))}
                 title={lang === 'ru' ? 'Переключить подписи махаллей' : 'Yozuvlarni almashtirish'}
-                className="flex-1 sm:flex-initial justify-center px-3 py-1.5 sm:py-1 text-xs font-semibold text-gov-text bg-gov-light hover:bg-gov-border/60 border border-gov-border rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                className="justify-center px-3 py-1.5 sm:py-1 text-xs font-semibold text-gov-text bg-gov-light hover:bg-gov-border/60 border border-gov-border rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
               >
                 <EyeIcon className="h-3.5 w-3.5 text-gov-primary" />
                 <span>
@@ -793,7 +793,7 @@ function CrimeMapPanel({ materials, lang, onOpenMaterialsList, districtId = 'olm
         </div>
 
         {/* Analytical Side Panel Column */}
-        <div className="lg:col-span-5 xl:col-span-4 w-full" ref={detailsRef}>
+        <div className="xl:col-span-4 w-full min-w-0" ref={detailsRef}>
           <Card className="h-full">
             {/* State A: When No Mahalla is Selected -> District Overview & Hotspots Leaderboard */}
             {!selectedStats ? (
