@@ -96,8 +96,19 @@ def synthesize_uzbekvoice_audio_url(text: str, model: str = 'jasur') -> str:
 
     # 1. Try UzbekVoice.ai (fastest, authentic Jasur voice)
     try:
-        url = synthesize_uzbekvoice_direct(text, model=model or 'jasur')
-        return url
+        remote_url = synthesize_uzbekvoice_direct(text, model=model or 'jasur')
+        ctx = ssl._create_unverified_context()
+        req = urllib.request.Request(remote_url, headers={'User-Agent': 'E-Material/1.0'})
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as r:
+            wav_bytes = r.read()
+
+        media_root = Path(settings.MEDIA_ROOT)
+        tts_dir = media_root / 'tts'
+        tts_dir.mkdir(parents=True, exist_ok=True)
+        filename = f'{uuid.uuid4().hex}.wav'
+        (tts_dir / filename).write_bytes(wav_bytes)
+        public_base = getattr(settings, 'PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz').rstrip('/')
+        return f'{public_base}/media/tts/{filename}'
     except Exception as e:
         logger.warning('UzbekVoice direct synthesis failed (%s), falling back to VoiceLab...', e)
 
