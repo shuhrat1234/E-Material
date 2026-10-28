@@ -2310,7 +2310,7 @@ function ChiefView({ lang, onViewDetails, user, onOpenSettings, sidebarOpen, onC
             </div>
 
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
               <StatCard icon={<SendIcon />} tone="cyan" value={smsTemplates.length} label={lang === 'ru' ? 'Всего текстов' : 'Jami matnlar'} />
               <StatCard icon={<ClockIcon />} tone="pink" value={smsTemplates.filter(t => t.status === 'на_модерации').length} label={lang === 'ru' ? 'На модерации' : 'Moderatsiyada'} />
               <StatCard icon={<ClockIcon />} tone="warning" value={smsTemplates.filter(t => t.status === 'в_процессе').length} label={lang === 'ru' ? 'В процессе' : 'Jarayonda'} />
