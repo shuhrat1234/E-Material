@@ -27,6 +27,7 @@ urlpatterns = [
     path('ai/citizen-chat/', AiAssistantViewSet.as_view({'post': 'citizen_chat'})),
     path('ai/report/', AiAssistantViewSet.as_view({'post': 'report'})),
     path('avatar/session/', AiAssistantViewSet.as_view({'post': 'avatar_session'})),
+    path('avatar/transcribe/', AiAssistantViewSet.as_view({'post': 'avatar_transcribe'})),
     path('avatar/stream-start/', AiAssistantViewSet.as_view({'post': 'stream_start'})),
     path('avatar/stream-sdp/', AiAssistantViewSet.as_view({'post': 'stream_sdp'})),
     path('avatar/stream-ice/', AiAssistantViewSet.as_view({'post': 'stream_ice'})),

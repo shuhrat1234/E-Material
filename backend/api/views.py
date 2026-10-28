@@ -29,7 +29,13 @@ from .serializers import (
 )
 from .deepseek import deepseek_json, deepseek_chat, DeepSeekError
 from .silero_tts import synthesize_pcm16 as silero_synthesize, TtsError
-from .uzbekvoice_tts import synthesize_pcm16 as uzbekvoice_synthesize, synthesize_uzbekvoice_audio_url, ensure_precomputed_file, UzbekVoiceTtsError
+from .uzbekvoice_tts import (
+    synthesize_pcm16 as uzbekvoice_synthesize,
+    synthesize_uzbekvoice_audio_url,
+    ensure_precomputed_file,
+    transcribe_audio_uzbekvoice,
+    UzbekVoiceTtsError
+)
 from .simli_render import render_avatar_video, SimliError
 
 _PRECOMPUTED_ANSWERS = {
@@ -48,6 +54,42 @@ _PRECOMPUTED_ANSWERS = {
     'qabul': {
         'answer_text': "Tergovchi qabuliga yozilish uchun Olmazor tumani IIB qabulxonasiga kelishingiz yoki 102 qisqa raqami orqali bog'lanishingiz mumkin.",
         'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_qabul.wav',
+    },
+    'ogir': {
+        'answer_text': "Telefon yoki buyumingiz o'g'irlangan bo'lsa, darhol 102 ga qo'ng'iroq qiling yoki Olmazor tumani IIB navbatchilik qismiga kelib ariza yozing. Tezkor guruh surishtiruv boshlaydi.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_ariza.wav',
+    },
+    "o'g'ri": {
+        'answer_text': "Telefon yoki buyumingiz o'g'irlangan bo'lsa, darhol 102 ga qo'ng'iroq qiling yoki Olmazor tumani IIB navbatchilik qismiga kelib ariza yozing. Tezkor guruh surishtiruv boshlaydi.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_ariza.wav',
+    },
+    'firibgar': {
+        'answer_text': "Firibgarlik holati bo'yicha darhol bank kartangizni bloklang va Olmazor tumani IIB navbatchilik qismiga kelib ariza qoldiring.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_ariza.wav',
+    },
+    'urish': {
+        'answer_text': "Tan jarohati yoki janjal holati yuzasidan zudlik bilan 102 raqamiga xabar bering, navbatchi guruh va profilaktika inspektori yetib keladi.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_ariza.wav',
+    },
+    'aloqa': {
+        'answer_text': "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_aloqa.wav',
+    },
+    'telefon': {
+        'answer_text': "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_aloqa.wav',
+    },
+    'manzil': {
+        'answer_text': "Olmazor tumani IIB manzili: Toshkent shahri, Olmazor tumani, Qoraqamish mavzesi.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_manzil.wav',
+    },
+    'rahmat': {
+        'answer_text': "Arzimaydi! Tinchlik va xavfsizligingiz biz uchun muhim. Yana savollaringiz bo'lsa, bemalol so'rang.",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_rahmat.wav',
+    },
+    'salom': {
+        'answer_text': "Vaalaykum assalom! Olmazor tumani IIB xizmati sizni eshitmoqda. Qanday yordam bera olaman?",
+        'audio_url': 'https://tqtb-olmazor.uz/media/tts/precomputed_salom.wav',
     },
 }
 
@@ -1112,24 +1154,25 @@ class AiAssistantViewSet(viewsets.ViewSet):
                 _AVATAR_CACHE[q_lower] = precomputed
                 return Response(precomputed)
 
-        # 2. Fast DeepSeek generation with strict IIB domain guardrails
+        # 2. Fast DeepSeek generation with comprehensive IIB understanding
         system_prompt = (
-            "Sen Olmazor tumani IIB (Ichki ishlar bo'limi) sun'iy intellekt yordamchisisan.\n"
-            "QAT'IY QOIDA: Savol FAQAT Olmazor tumani IIB faoliyati, ichki ishlar xizmatlari, ariza berish, "
-            "tergovchi qabuli, pasport, navbatchilik 102 va fuqarolar xavfsizligiga oid bo'lishi shart. "
-            "Agar savol IIB va ichki ishlar sohasiga mutlaqo aloqador bo'lmasa (masalan: kim nimani kashf qilgan/yaratgan, "
-            "Apple, ob-havo, taom tayyorlash, umumiy bilimlar, shaxsiy suhbat va h.k.), unga ASLO javob berma!\n"
-            "Bunday holatda FAQAT mana shu matnni so'zma-so'z qaytar:\n"
-            f'"{_OFFTOPIC_DECLINE_UZ}"\n'
-            "Agar savol IIBga oid bo'lsa, 1 ta lo'nda qisqa gapda (maksimum 12-15 so'z) o'zbek tilida lotin alifbosida javob ber."
+            "Sen Toshkent shahri Olmazor tumani IIB (Ichki ishlar bo'limi) tergovchi-inspektor Jasur Akromovichsan.\n"
+            "VAZIFANG: Fuqarolarning jinoyatlar (o'g'rilik, telefon o'g'irlanishi, talonchilik, firibgarlik, yo'qolgan buyumlar, "
+            "tan jarohati, do'pposlash, janjal, bezorilik, avariya), arizalar, tergovchi qabuli, navbatchilik 102 va fuqarolar xavfsizligi "
+            "haqidagi barcha murojaatlariga to'g'ri, professional va aniq yo'l-yo'riq ko'rsatish.\n"
+            "AGAR FUQARO JINOYAT YOKI MUAMMO AYTSA (masalan: telefonimni o'g'irlashdi, pulimni aldab oldi, urishdi, hujjatim yo'qoldi va h.k.): "
+            "darhol 102 ga qo'ng'iroq qilishni yoki Olmazor tumani IIB navbatchilik qismiga kelib ariza qoldirishni, tezkor guruh surishtiruv boshlashini ayt.\n"
+            "JAVOB TALABI: O'zbek tilida, lotin alifbosida, 1-2 ta lo'nda qisqa gapda (maksimum 15-20 so'z), xushmuomala rasmiy uslubda javob ber.\n"
+            "FAQATGINA agar savol IIB, xavfsizlik va huquqqa mutlaqo aloqasiz bo'lsa (masalan: taom pishirish, dasturlash kodi, kino syujeti), "
+            f'mana shu matnni so\'zma-so\'z qaytar:\n"{_OFFTOPIC_DECLINE_UZ}"'
         )
         try:
             answer_text = deepseek_chat([
                 {'role': 'system', 'content': system_prompt},
                 {'role': 'user', 'content': query},
-            ], temperature=0.1, timeout=2.5, max_tokens=45)
+            ], temperature=0.1, timeout=4.0, max_tokens=60)
         except Exception:
-            answer_text = "Sizning murojaatingiz bo'yicha Olmazor tumani IIB navbatchilik qismiga murojaat qilishingiz yoki 102 raqamiga qo'ng'iroq qilishingiz mumkin."
+            answer_text = "Sizning murojaatingiz bo'yicha darhol 102 raqamiga qo'ng'iroq qiling yoki Olmazor tumani IIB navbatchilik qismiga murojaat qiling."
 
         # 3. Audio synthesis or instant precomputed decline audio
         audio_url = None
@@ -1142,6 +1185,7 @@ class AiAssistantViewSet(viewsets.ViewSet):
                 audio_url = synthesize_uzbekvoice_audio_url(answer_text, model='jasur')
             except Exception as e:
                 logger.error('UzbekVoice synthesis error in avatar_session: %s', e)
+                audio_url = _PRECOMPUTED_ANSWERS['ariza']['audio_url']
 
         result = {
             'answer_text': answer_text,
@@ -1149,6 +1193,21 @@ class AiAssistantViewSet(viewsets.ViewSet):
         }
         _AVATAR_CACHE[q_lower] = result
         return Response(result)
+
+    @action(detail=False, methods=['post'], url_path='avatar-transcribe')
+    def avatar_transcribe(self, request):
+        audio_file = request.FILES.get('audio') or request.FILES.get('file')
+        if not audio_file:
+            return Response({'error': 'No audio file provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lang = request.data.get('language') or 'uz'
+        try:
+            audio_bytes = audio_file.read()
+            text = transcribe_audio_uzbekvoice(audio_bytes, language=lang)
+            return Response({'text': text})
+        except Exception as e:
+            logger.error('STT error in avatar_transcribe: %s', e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=False, methods=['post'], url_path='tts')
     def tts(self, request):

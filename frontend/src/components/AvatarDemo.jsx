@@ -14,6 +14,26 @@ const PRECOMPUTED_ANSWERS = {
     text: "Ariza topshirish uchun IIB navbatchilik qismiga yoki jamoatchilik xizmati xonasiga shaxsan murojaat qilishingiz mumkin. O'zingiz bilan pasportingizni olishni unutmang.",
     audio: '/precomputed_ariza.wav?v=4',
   },
+  ogir: {
+    text: "Telefon yoki buyumingiz o'g'irlangan bo'lsa, zudlik bilan 102 ga qo'ng'iroq qiling yoki Olmazor tumani IIB navbatchilik qismiga kelib ariza qoldiring. Tezkor guruh ishni o'rganadi.",
+    audio: '/precomputed_ariza.wav?v=4',
+  },
+  "o'g'ri": {
+    text: "Telefon yoki buyumingiz o'g'irlangan bo'lsa, zudlik bilan 102 ga qo'ng'iroq qiling yoki Olmazor tumani IIB navbatchilik qismiga kelib ariza qoldiring. Tezkor guruh ishni o'rganadi.",
+    audio: '/precomputed_ariza.wav?v=4',
+  },
+  firibgar: {
+    text: "Firibgarlik holati bo'yicha darhol bank kartangizni bloklang va Olmazor tumani IIB navbatchilik qismiga kelib ariza qoldiring.",
+    audio: '/precomputed_ariza.wav?v=4',
+  },
+  urish: {
+    text: "Tan jarohati yoki janjal holati yuzasidan zudlik bilan 102 raqamiga xabar bering, navbatchi guruh va profilaktika inspektori yetib keladi.",
+    audio: '/precomputed_ariza.wav?v=4',
+  },
+  kaltak: {
+    text: "Tan jarohati yoki janjal holati yuzasidan zudlik bilan 102 raqamiga xabar bering, navbatchi guruh va profilaktika inspektori yetib keladi.",
+    audio: '/precomputed_ariza.wav?v=4',
+  },
   pasport: {
     text: "Pasport yo'qolganda darhol hududiy IIB migratsiya va fuqarolikni rasmiylashtirish bo'limiga ariza bering. Sizga vaqtinchalik ma'lumotnoma rasmiylashtirib beriladi.",
     audio: '/precomputed_pasport.wav?v=4',
@@ -39,6 +59,10 @@ const PRECOMPUTED_ANSWERS = {
     audio: '/precomputed_aloqa.wav?v=4',
   },
   telefon: {
+    text: "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
+    audio: '/precomputed_aloqa.wav?v=4',
+  },
+  telofon: {
     text: "Olmazor tumani IIB navbatchilik qismi telefoni: 71-230-50-85 yoki favqulodda 102 raqami.",
     audio: '/precomputed_aloqa.wav?v=4',
   },
@@ -69,15 +93,19 @@ function AvatarDemo({ lang = 'uz', onBack }) {
   const [loading, setLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState('');
 
   const audioRef = useRef(null);
   const lastAudioRef = useRef(GREETING_AUDIO);
   const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const mediaStreamRef = useRef(null);
   const idleVideoRef = useRef(null);
   const talkingVideoRef = useRef(null);
 
-  // Setup SpeechRecognition
+  // Setup SpeechRecognition as fallback
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
@@ -114,6 +142,9 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch (e) {}
       }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      }
       if (audioRef.current) {
         audioRef.current.pause();
       }
@@ -131,7 +162,8 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       '/precomputed_salom.wav?v=4',
       '/precomputed_rahmat.wav?v=4',
       '/precomputed_aloqa.wav?v=4',
-      '/precomputed_manzil.wav?v=4'
+      '/precomputed_manzil.wav?v=4',
+      '/precomputed_decline.wav?v=4',
     ];
     audioUrls.forEach(src => {
       const a = new Audio();
@@ -142,10 +174,11 @@ function AvatarDemo({ lang = 'uz', onBack }) {
 
   const playSpeech = (audioUrl, onFinish) => {
     if (audioRef.current) {
-      audioRef.current.pause();
+      try { audioRef.current.pause(); } catch (e) {}
     }
 
-    lastAudioRef.current = audioUrl;
+    const targetAudio = audioUrl || '/precomputed_ariza.wav?v=4';
+    lastAudioRef.current = targetAudio;
     const audio = new Audio();
     audio.preload = 'auto';
     audioRef.current = audio;
@@ -162,7 +195,7 @@ function AvatarDemo({ lang = 'uz', onBack }) {
       idleVid.pause();
     }
 
-    audio.src = audioUrl;
+    audio.src = targetAudio;
 
     audio.onended = () => {
       setIsSpeaking(false);
@@ -177,7 +210,16 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     };
 
     audio.onerror = (err) => {
-      console.warn('Audio playback error:', err);
+      console.warn('Audio playback error on', targetAudio, err);
+      if (targetAudio !== '/precomputed_ariza.wav?v=4') {
+        audio.src = '/precomputed_ariza.wav?v=4';
+        audio.play().catch(() => {
+          setIsSpeaking(false);
+          if (talkingVid) talkingVid.pause();
+          if (idleVid) idleVid.play().catch(() => {});
+        });
+        return;
+      }
       setIsSpeaking(false);
       if (talkingVid) talkingVid.pause();
       if (idleVid) idleVid.play().catch(() => {});
@@ -205,7 +247,15 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     setInCall(false);
     setIsSpeaking(false);
     setIsListening(false);
+    setIsTranscribing(false);
     setLoading(false);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch (e) {}
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(t => t.stop());
+      mediaStreamRef.current = null;
+    }
     if (talkingVideoRef.current) {
       talkingVideoRef.current.pause();
       talkingVideoRef.current.currentTime = 0;
@@ -221,28 +271,123 @@ function AvatarDemo({ lang = 'uz', onBack }) {
     }
   };
 
-  const toggleMic = () => {
-    if (!recognitionRef.current) {
-      setError(lang === 'ru' ? 'Браузер не поддерживает распознавание речи' : "Brauzeringiz ovoz tanishni qo'llab-quvvatlamaydi. Matn yozing.");
-      return;
+  const startRecording = async () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsSpeaking(false);
+      if (talkingVideoRef.current) {
+        talkingVideoRef.current.pause();
+        talkingVideoRef.current.currentTime = 0;
+      }
     }
 
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        setIsSpeaking(false);
-        if (talkingVideoRef.current) {
-          talkingVideoRef.current.pause();
-          talkingVideoRef.current.currentTime = 0;
+    setError('');
+
+    // 1. Primary: MediaRecorder with backend UzbekVoice STT
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaStreamRef.current = stream;
+        audioChunksRef.current = [];
+
+        let mimeType = '';
+        if (typeof MediaRecorder.isTypeSupported === 'function') {
+          if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+            mimeType = 'audio/webm;codecs=opus';
+          } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+            mimeType = 'audio/webm';
+          } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+          }
         }
+
+        const options = mimeType ? { mimeType } : undefined;
+        const recorder = new MediaRecorder(stream, options);
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        recorder.onstop = async () => {
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach(t => t.stop());
+            mediaStreamRef.current = null;
+          }
+
+          const currentChunks = [...audioChunksRef.current];
+          if (currentChunks.length === 0) return;
+
+          const recordedBlob = new Blob(currentChunks, { type: mimeType || 'audio/webm' });
+          if (recordedBlob.size < 400) return;
+
+          setIsTranscribing(true);
+          try {
+            const formData = new FormData();
+            formData.append('audio', recordedBlob, 'speech.webm');
+            formData.append('language', lang === 'ru' ? 'ru' : 'uz');
+
+            const res = await axios.post(`${API_BASE}/avatar/transcribe/`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              timeout: 15000,
+            });
+
+            const transcript = (res.data.text || '').trim();
+            if (transcript) {
+              sendQuery(transcript);
+            } else {
+              setError(lang === 'ru' ? 'Речь не распознана, повторите пожалуйста' : "Ovoz aniqlanmadi, iltimos qaytadan ayting.");
+            }
+          } catch (err) {
+            console.error('Transcription error:', err);
+            setError(lang === 'ru' ? 'Ошибка распознавания голоса' : "Ovozni aniqlashda xatolik yuz berdi.");
+          } finally {
+            setIsTranscribing(false);
+          }
+        };
+
+        recorder.start(250);
+        mediaRecorderRef.current = recorder;
+        setIsListening(true);
+        return;
+      } catch (err) {
+        console.warn('getUserMedia error, falling back to Web Speech API:', err);
       }
+    }
+
+    // 2. Fallback: Web Speech API (if getUserMedia fails or is denied)
+    if (recognitionRef.current) {
       try {
         recognitionRef.current.start();
+        setIsListening(true);
       } catch (e) {
         console.warn('Mic start failed:', e);
+        setError(lang === 'ru' ? 'Микрофон недоступен' : "Mikrofon ruxsati berilmadi yoki ulanmadi.");
       }
+    } else {
+      setError(lang === 'ru' ? 'Микрофон не поддерживается браузером' : "Brauzeringiz mikrofondan foydalanishni qo'llab-quvvatlamaydi.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+    } else if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+    }
+    setIsListening(false);
+  };
+
+  const toggleMic = () => {
+    if (isListening) {
+      stopRecording();
+    } else {
+      startRecording();
     }
   };
 
@@ -490,15 +635,28 @@ function AvatarDemo({ lang = 'uz', onBack }) {
               <button
                 type="button"
                 onClick={toggleMic}
-                disabled={loading}
+                disabled={loading || isTranscribing}
                 className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 transition-all shadow-2xl ${
-                  isListening
+                  isTranscribing
+                    ? 'bg-blue-600 text-white animate-spin'
+                    : isListening
                     ? 'bg-red-600 text-white animate-pulse ring-4 ring-red-400/40'
                     : 'bg-neutral-900/85 hover:bg-neutral-800 text-white backdrop-blur-xl border border-white/25 active:scale-95'
                 }`}
-                title={isListening ? "Eshitishni to'xtatish" : "Mikrofonni yoqish"}
+                title={
+                  isTranscribing
+                    ? "Ovoz aniqlanmoqda..."
+                    : isListening
+                    ? "Yozishni to'xtatish va yuborish"
+                    : "Ovozli savol berish (mikrofon)"
+                }
               >
-                {isListening ? (
+                {isTranscribing ? (
+                  <svg className="w-5 h-5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                  </svg>
+                ) : isListening ? (
                   <div className="relative">
                     <span className="absolute -inset-1 rounded-full bg-red-400 animate-ping opacity-75" />
                     <svg className="w-5 h-5 relative" fill="currentColor" viewBox="0 0 24 24">
@@ -520,7 +678,13 @@ function AvatarDemo({ lang = 'uz', onBack }) {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder={isListening ? "Sizni eshityapman..." : "Savolingizni yozing yoki mikrofonda ayting..."}
+                  placeholder={
+                    isTranscribing
+                      ? (lang === 'ru' ? "Распознавание речи..." : "Ovoz matnga aylantirilmoqda...")
+                      : isListening
+                      ? (lang === 'ru' ? "Говорите... (нажмите микрофон для отправки)" : "Gapiring, eshityapman... (yuborish uchun bosing)")
+                      : (lang === 'ru' ? "Savolingizni yozing yoki mikrofonda ayting..." : "Savolingizni yozing yoki mikrofonda ayting...")
+                  }
                   className="flex-1 min-w-0 bg-transparent text-white placeholder-white/50 text-xs sm:text-sm focus:outline-none"
                 />
                 <button

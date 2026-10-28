@@ -133,3 +133,52 @@ def ensure_precomputed_file(key_name: str, text: str, voice_id: str = None) -> s
     public_base = getattr(settings, 'PUBLIC_BASE_URL', 'https://tqtb-olmazor.uz').rstrip('/')
     return f'{public_base}/media/tts/precomputed_{key_name}.wav'
 
+
+def convert_audio_to_wav16k(audio_bytes: bytes) -> bytes:
+    """Converts uploaded browser audio (webm, mp4, ogg, wav) to 16kHz mono WAV bytes using PyAV."""
+    import av
+    inp = io.BytesIO(audio_bytes)
+    container = av.open(inp)
+    stream = container.streams.audio[0]
+    resampler = av.AudioResampler(format="s16", layout="mono", rate=16000)
+    out_wav = io.BytesIO()
+    with wave.open(out_wav, "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(16000)
+        for frame in container.decode(stream):
+            for r_frame in resampler.resample(frame):
+                wf.writeframes(r_frame.to_ndarray().tobytes())
+    return out_wav.getvalue()
+
+
+def transcribe_audio_uzbekvoice(audio_bytes: bytes, language: str = 'uz') -> str:
+    """Transcribes audio using UzbekVoice.ai STT API."""
+    if not audio_bytes:
+        return ''
+
+    # Convert to standard 16kHz mono WAV if needed
+    try:
+        wav_bytes = convert_audio_to_wav16k(audio_bytes)
+    except Exception as e:
+        logger.warning('Audio conversion failed, using raw bytes: %s', e)
+        wav_bytes = audio_bytes
+
+    import requests
+    api_key = getattr(settings, 'UZBEKVOICE_API_KEY', '5b9118bc-3676-4ab0-b500-026b3a6372b1:c504ec5b-d67a-4e85-a935-ed2e21e9d08e')
+
+    resp = requests.post(
+        'https://uzbekvoice.ai/api/v1/stt',
+        headers={'Authorization': api_key},
+        files={'file': ('speech.wav', wav_bytes, 'audio/wav')},
+        data={'language': language or 'uz', 'model': 'general', 'blocking': 'true'},
+        timeout=15
+    )
+    if resp.status_code != 200:
+        raise UzbekVoiceTtsError(f'STT request failed with status {resp.status_code}: {resp.text}')
+
+    data = resp.json()
+    result = data.get('result', {})
+    text = (result.get('text') or '').strip()
+    return text
+
