@@ -558,15 +558,44 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
       <div className="flex-1 w-full min-w-0 space-y-6 lg:ml-64">
         
         {activePanel === 'materials' && (
-          <div className="relative max-w-sm">
-            <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gov-muted" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
-              className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-gov-surface focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
+              <SearchIcon className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gov-muted" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={lang === 'ru' ? 'Поиск по ID, имени или телефону...' : 'ID, ism yoki telefon bo\'yicha qidirish...'}
+                className="w-full pl-9 pr-3 py-2 text-xs border border-gov-border rounded bg-gov-surface focus:outline-none focus:ring-2 focus:ring-gov-primary/30"
+              />
+            </div>
+            <FilterPill
+              icon={<TrendUpIcon className="h-3.5 w-3.5" />}
+              value={sortOrder}
+              defaultValue=""
+              onChange={e => setSortOrder(e.target.value)}
+              options={[
+                { value: '', label: lang === 'ru' ? 'Сортировка: по умолчанию' : 'Saralash: standart' },
+                { value: 'closest', label: lang === 'ru' ? 'Ближайший срок' : 'Yaqin muddat' },
+              ]}
             />
+            <button
+              type="button"
+              onClick={() => setOnlyRepeatFilter(prev => !prev)}
+              className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border transition-all shrink-0 ${
+                onlyRepeatFilter
+                  ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-1 ring-amber-500/40'
+                  : 'bg-gov-surface border-gov-border text-gov-text hover:bg-gov-light'
+              }`}
+              title={lang === 'ru' ? 'Показать только повторные обращения граждан' : 'Faqat takroriy murojaatlarni ko\'rsatish'}
+            >
+              <RepeatIcon className={`h-3.5 w-3.5 ${onlyRepeatFilter ? 'text-white' : 'text-amber-600'} shrink-0`} />
+              <span>
+                {lang === 'ru'
+                  ? `Повторные (${citizenRepeatIndex.repeatTotalMaterialsCount})`
+                  : `Takroriy (${citizenRepeatIndex.repeatTotalMaterialsCount})`}
+              </span>
+            </button>
           </div>
         )}
 
@@ -641,33 +670,6 @@ function InvestigatorView({ lang, onViewDetails, user, onOpenSettings, sidebarOp
                 { value: 'закрыт_в_срок', label: lang === 'ru' ? 'Закрыт в срок' : 'Muddatida yopildi' },
               ]}
             />
-            <FilterPill
-              icon={<TrendUpIcon className="h-3.5 w-3.5" />}
-              value={sortOrder}
-              defaultValue=""
-              onChange={e => setSortOrder(e.target.value)}
-              options={[
-                { value: '', label: lang === 'ru' ? 'Сортировка: по умолчанию' : 'Saralash: standart' },
-                { value: 'closest', label: lang === 'ru' ? 'Ближайший срок' : 'Yaqin muddat' },
-              ]}
-            />
-            <button
-              type="button"
-              onClick={() => setOnlyRepeatFilter(prev => !prev)}
-              className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full border transition-all shrink-0 ${
-                onlyRepeatFilter
-                  ? 'bg-amber-500 text-white border-amber-600 shadow-sm ring-1 ring-amber-500/40'
-                  : 'bg-gov-surface border-gov-border text-gov-text hover:bg-gov-light'
-              }`}
-              title={lang === 'ru' ? 'Показать только повторные обращения граждан' : 'Faqat takroriy murojaatlarni ko\'rsatish'}
-            >
-              <RepeatIcon className={`h-3.5 w-3.5 ${onlyRepeatFilter ? 'text-white' : 'text-amber-600'} shrink-0`} />
-              <span>
-                {lang === 'ru'
-                  ? `Повторные (${citizenRepeatIndex.repeatTotalMaterialsCount})`
-                  : `Takroriy (${citizenRepeatIndex.repeatTotalMaterialsCount})`}
-              </span>
-            </button>
             {(dateRange !== 'all' || monthFilter || difficulty || materialType || sourceFrom || statusFilter || quickStatusGroup || sortOrder || searchQuery || onlyRepeatFilter) && (
               <button
                 onClick={() => { setDateRange('all'); setMonthFilter(''); setDifficulty(''); setMaterialType(''); setSourceFrom(''); setStatusFilter(''); setQuickStatusGroup(''); setSortOrder(''); setSearchQuery(''); setOnlyRepeatFilter(false); }}
