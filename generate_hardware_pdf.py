@@ -41,7 +41,7 @@ def generate_hardware_server_pdf():
         'DocTitle',
         parent=styles['Heading1'],
         fontName=font_bold,
-        fontSize=12.5,
+        fontSize=12,
         leading=15,
         textColor=colors.black,
         alignment=1,
@@ -55,8 +55,8 @@ def generate_hardware_server_pdf():
         fontSize=8.5,
         leading=11,
         textColor=colors.black,
-        spaceBefore=5,
-        spaceAfter=3
+        spaceBefore=4,
+        spaceAfter=2
     )
     
     body_style = ParagraphStyle(
@@ -78,7 +78,7 @@ def generate_hardware_server_pdf():
     
     # Title
     story.append(Paragraph("СПЕЦИФИКАЦИЯ ОБОРУДОВАНИЯ И ЕЖЕМЕСЯЧНЫХ РАСХОДОВ", title_style))
-    story.append(HRFlowable(width="100%", thickness=1, color=colors.black, spaceAfter=5))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.black, spaceAfter=4))
     
     # SECTION 1: Hardware Table
     story.append(Paragraph("1. ЕДИНОРАЗОВАЯ ЗАКУПКА ОБОРУДОВАНИЯ «ПОД КЛЮЧ»", section_title))
@@ -154,8 +154,8 @@ def generate_hardware_server_pdf():
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#ebebeb')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
         ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#f0f0f0')),
-        ('TOPPADDING', (0,0), (-1,-1), 2.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('ALIGN', (0,0), (0,-1), 'CENTER'),
@@ -163,10 +163,10 @@ def generate_hardware_server_pdf():
         ('ALIGN', (4,0), (4,-1), 'RIGHT'),
     ]))
     story.append(t_hw)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
 
-    # SECTION 2: Monthly Operational Expenses (AI + AI Voice)
-    story.append(Paragraph("2. ЕЖЕМЕСЯЧНЫЕ РАСХОДЫ (ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ И ГОЛОСОВОЙ ИИ)", section_title))
+    # SECTION 2: Monthly Operational Expenses (AI + AI Voice + Face ID + Maintenance)
+    story.append(Paragraph("2. ЕЖЕМЕСЯЧНЫЕ ЭКСПЛУАТАЦИОННЫЕ И СЕРВИСНЫЕ РАСХОДЫ", section_title))
     
     monthly_data = [
         [
@@ -178,8 +178,8 @@ def generate_hardware_server_pdf():
         ],
         [
             Paragraph("1", body_style),
-            Paragraph("<b>Искусственный интеллект (AI)</b><br/>DeepSeek V3 / R1 (LLM)", body_style),
-            Paragraph("~15 000 000 токенов/мес. Юридический анализ материалов, формулирование фабул, извлечение ключевых фактов, подготовка проектов постановлений и отчетов", body_style),
+            Paragraph("<b>Искусственный интеллект (AI)</b><br/>DeepSeek V3 / R1", body_style),
+            Paragraph("~15 000 000 токенов/мес. Юридический анализ материалов, формулирование фабул, извлечение ключевых фактов, подготовка проектов постановлений", body_style),
             Paragraph("Ежемесячно", body_style),
             Paragraph("450 000", body_style)
         ],
@@ -198,11 +198,25 @@ def generate_hardware_server_pdf():
             Paragraph("420 000", body_style)
         ],
         [
+            Paragraph("4", body_style),
+            Paragraph("<b>Биометрическая подписка (Face ID)</b><br/>Подписка распознавания лиц", body_style),
+            Paragraph("До 10 000 проверок/мес. Модуль биометрической верификации и идентификации личности по лицу (Face Recognition / Liveness Detection)", body_style),
+            Paragraph("Ежемесячно", body_style),
+            Paragraph("1 500 000", body_style)
+        ],
+        [
+            Paragraph("5", body_style),
+            Paragraph("<b>Техническое обслуживание сервера</b><br/>Регламентное администрирование", body_style),
+            Paragraph("Ежемесячное администрирование серверной инфраструктуры, круглосуточный мониторинг 24/7, создание резервных копий (Backup), обновление ПО и безопасность", body_style),
+            Paragraph("Ежемесячно", body_style),
+            Paragraph("2 500 000", body_style)
+        ],
+        [
             Paragraph("", body_bold),
             Paragraph("<b>ИТОГО ЕЖЕМЕСЯЧНО:</b>", body_bold),
-            Paragraph("<b>Пакет AI и AI Voice на 800+ активных пользователей системы</b>", body_bold),
+            Paragraph("<b>Сервисные подписки (AI, Voice, Face ID) и регламентное обслуживание сервера</b>", body_bold),
             Paragraph("<b>В МЕСЯЦ:</b>", body_bold),
-            Paragraph("<b>1 470 000 UZS<br/>(~$115 / мес)</b>", body_bold)
+            Paragraph("<b>5 470 000 UZS<br/>(~$427 / мес)</b>", body_bold)
         ]
     ]
 
@@ -211,8 +225,8 @@ def generate_hardware_server_pdf():
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#ebebeb')),
         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
         ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#f0f0f0')),
-        ('TOPPADDING', (0,0), (-1,-1), 2.5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+        ('TOPPADDING', (0,0), (-1,-1), 2),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
         ('ALIGN', (0,0), (0,-1), 'CENTER'),
@@ -220,21 +234,21 @@ def generate_hardware_server_pdf():
         ('ALIGN', (4,0), (4,-1), 'RIGHT'),
     ]))
     story.append(t_mo)
-    story.append(Spacer(1, 5))
+    story.append(Spacer(1, 4))
 
     # Consolidated Grand Total Box
     grand_data = [
         [
             Paragraph("<b>СВОДНЫЙ ИТОГ:</b>", body_bold),
             Paragraph("<b>Единоразовая закупка оборудования («под ключ»): 164 000 000 UZS (~$12 800)</b><br/>"
-                      "<b>Ежемесячные эксплуатационные расходы (AI + AI Voice): 1 470 000 UZS/мес (~$115/мес)</b>", body_style)
+                      "<b>Ежемесячные сервисные и эксплуатационные расходы: 5 470 000 UZS/мес (~$427/мес)</b>", body_style)
         ]
     ]
     t_grand = Table(grand_data, colWidths=[100, doc.width - 100], style=[
         ('BOX', (0,0), (-1,-1), 1, colors.black),
         ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8f8f8')),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ('LEFTPADDING', (0,0), (-1,-1), 6),
         ('RIGHTPADDING', (0,0), (-1,-1), 6),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
@@ -242,7 +256,7 @@ def generate_hardware_server_pdf():
     story.append(t_grand)
 
     doc.build(story)
-    print("PDF with hardware + monthly AI/Voice generated successfully at:", pdf_filename)
+    print("PDF with hardware + monthly Face ID/Maintenance generated successfully at:", pdf_filename)
 
 if __name__ == '__main__':
     generate_hardware_server_pdf()
