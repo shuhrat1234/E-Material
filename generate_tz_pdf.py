@@ -35,9 +35,9 @@ class NumberedCanvas(canvas.Canvas):
         # Running header (pages 2+)
         if self._pageNumber > 1:
             self.line(28, 815, 567, 815)
-            self.drawString(28, 819, "АИС «E-Material» — Полная функционально-техническая спецификация разделов")
+            self.drawString(28, 819, "АИС «E-Material» — Полное техническое задание на программный комплекс")
         
-        # Footer (all pages) - ONLY page number, NO departmental text
+        # Footer (all pages) - ONLY clean page number, NO departmental text
         self.line(28, 35, 567, 35)
         page_text = f"Страница {self._pageNumber} из {page_count}"
         self.drawRightString(567, 25, page_text)
@@ -123,45 +123,45 @@ def generate_full_tz_pdf():
     story = []
     
     # =========================================================
-    # PAGE 1: TITLE + ARCHITECTURE + MAIN SECTIONS (BO'LIMLAR)
+    # PAGE 1: TITLE + SOFTWARE ARCHITECTURE + MAIN SECTIONS (BO'LIMLAR)
     # =========================================================
-    story.append(Paragraph("ТЕХНИЧЕСКОЕ ЗАДАНИЕ: ПОЛНАЯ СПЕЦИФИКАЦИЯ РАЗДЕЛОВ, ЭКРАННЫХ ФОРМ И ФУНКЦИЙ", title_style))
+    story.append(Paragraph("ТЕХНИЧЕСКОЕ ЗАДАНИЕ: ПРОГРАММНЫЙ КОМПЛЕКС СИСТЕМЫ", title_style))
     story.append(Paragraph("Автоматизированная информационная система электронного производства «E-Material»", subtitle_style))
     story.append(HRFlowable(width="100%", thickness=1, color=colors.black, spaceAfter=5))
     
-    # 1. Technical Stack
-    story.append(Paragraph("1. АРХИТЕКТУРА И ТЕХНИЧЕСКИЙ СТЕК СИСТЕМЫ", sec_title))
+    # 1. Software Architecture & Technology Stack (NO PHYSICAL HARDWARE)
+    story.append(Paragraph("1. ПРОГРАММНАЯ АРХИТЕКТУРА И СТЕК ТЕХНОЛОГИЙ", sec_title))
     stack_data = [
-        [Paragraph("<b>Компонент</b>", body_bold), Paragraph("<b>Используемый стек</b>", body_bold), Paragraph("<b>Техническое описание и назначение</b>", body_bold)],
+        [Paragraph("<b>Уровень архитектуры</b>", body_bold), Paragraph("<b>Используемый стек ПО</b>", body_bold), Paragraph("<b>Техническое описание и реализуемые функции</b>", body_bold)],
         [
-            Paragraph("<b>Сервер приложений (Backend)</b>", body_style),
-            Paragraph("Python 3.11+, Django REST Framework, Daphne (ASGI), Django Channels, Celery, Redis", body_style),
-            Paragraph("Асинхронная архитектура; протокол WebSocket для мгновенных push-уведомлений о дедлайнах; фоновые очереди Celery для пакетной генерации защищенных PDF и парсинга данных.", body_style)
+            Paragraph("<b>Серверная часть (Backend API)</b>", body_style),
+            Paragraph("Python 3.11+, Django REST Framework, Daphne (ASGI), Django Channels", body_style),
+            Paragraph("Микросервисная модульная архитектура; асинхронный сетевой протокол WebSocket для доставки оперативных уведомлений в реальном времени; REST API для взаимодействия с клиентами.", body_style)
         ],
         [
-            Paragraph("<b>Пользовательский интерфейс (Frontend)</b>", body_style),
-            Paragraph("React 18, Vite, Tailwind CSS, Lucide React, PyAV / MediaRecorder Audio API", body_style),
-            Paragraph("Одностраничное веб-приложение (SPA) с оптимизированным откликом без перезагрузки страниц, адаптивная верстка (десктоп, планшет, мобильный), прямой захват аудиопотока с микрофона.", body_style)
+            Paragraph("<b>Фоновая обработка и очереди</b>", body_style),
+            Paragraph("Celery Distributed Task Queue, Redis In-Memory Store", body_style),
+            Paragraph("Асинхронные очереди фоновых задач: пакетная генерация процессуальных документов в PDF, расчет таймеров процессуальных сроков, обработка очередей SMS и банковских выписок.", body_style)
         ],
         [
-            Paragraph("<b>База данных (Database)</b>", body_style),
+            Paragraph("<b>Клиентский веб-интерфейс (Frontend)</b>", body_style),
+            Paragraph("React 18, Vite, Tailwind CSS, Lucide React, Web Audio API", body_style),
+            Paragraph("Одностраничное приложение (Single Page Application, SPA); мгновенный отклик интерфейса без перезагрузки страниц; адаптивная верстка (десктоп, планшет, мобильный, киоск).", body_style)
+        ],
+        [
+            Paragraph("<b>Система управления базами данных</b>", body_style),
             Paragraph("PostgreSQL 15+ Enterprise", body_style),
-            Paragraph("Реляционная СУБД с транзакционной целостностью ACID, оптимизированными составными индексами B-Tree, связями дропперов и платежных реквизитов, партиционированием таблиц аудита.", body_style)
+            Paragraph("Реляционная СУБД с транзакционной целостностью ACID, B-Tree индексами, связями транзакций и фигурантов, партиционированием таблиц аудита и защитой на уровне строк (RLS).", body_style)
         ],
         [
-            Paragraph("<b>Аппаратный сервер (Hardware On-Premise)</b>", body_style),
-            Paragraph("Стоечный сервер Dell PowerEdge R750 / HPE DL380 2U (32 ядра / 64 потока, 64 GB ECC RAM)", body_style),
-            Paragraph("Размещение в выделенной серверной комнате (закрытый контур). 2x 960GB NVMe SSD (RAID 1 под ОС и БД) + 4x 4TB Enterprise SAS HDD (RAID 10, 8TB полезных под хранение вещдоков).", body_style)
+            Paragraph("<b>Интеллектуальное ядро (AI Core)</b>", body_style),
+            Paragraph("DeepSeek LLM / UzbekVoice AI (STT & TTS) / Face ID Engine", body_style),
+            Paragraph("Модуль семантического анализа фабул и статей УК; потоковое преобразование речи в текст на узбекском/русском языках; биометрическая верификация лиц с Liveness Detection.", body_style)
         ],
         [
-            Paragraph("<b>Аппаратный модуль ИИ (GPU)</b>", body_style),
-            Paragraph("NVIDIA RTX 4090 / RTX A5000 24GB", body_style),
-            Paragraph("Серверный графический ускоритель для 100% автономного запуска локальных моделей ИИ (LLM / STT) внутри закрытой сети без передачи служебных данных во внешний интернет.", body_style)
-        ],
-        [
-            Paragraph("<b>Отказоустойчивость и безопасность</b>", body_style),
-            Paragraph("Nginx Reverse Proxy, TLS 1.3, ИБП On-Line 3000VA, Dual PSU 800W, Cron Backups", body_style),
-            Paragraph("Шифрование трафика по ГОСТ/TLS; аппаратное резервирование электропитания; ежедневное автоматическое создание полных дампов БД и зашифрованного архива медиафайлов.", body_style)
+            Paragraph("<b>Сетевой уровень и веб-сервер</b>", body_style),
+            Paragraph("Nginx Reverse Proxy, TLS 1.3, SSL-терминация, Gzip", body_style),
+            Paragraph("Балансировка нагрузки, кэширование статических ресурсов, шифрование трафика по защищенному протоколу HTTPS/TLS 1.3, фильтрация вредоносных HTTP-запросов.", body_style)
         ]
     ]
     t_stack = Table(stack_data, colWidths=[120, 155, 263])
@@ -177,7 +177,7 @@ def generate_full_tz_pdf():
     story.append(Spacer(1, 4))
 
     # 2. Main Menu Sections (BO'LIMLAR)
-    story.append(Paragraph("2. СПЕЦИФИКАЦИЯ ОСНОВНЫХ РАЗДЕЛОВ СИСТЕМЫ (БОЛЬШАЯ ПАНЕЛЬ / BO'LIMLAR)", sec_title))
+    story.append(Paragraph("2. СПЕЦИФИКАЦИЯ ОСНОВНЫХ РАЗДЕЛОВ МЕНЮ СИСТЕМЫ (РАЗДЕЛЫ / BO'LIMLAR)", sec_title))
     bolimlar_data = [
         [Paragraph("<b>№</b>", body_bold), Paragraph("<b>Раздел меню (Интерфейс)</b>", body_bold), Paragraph("<b>Назначение, элементы управления и сценарии использования</b>", body_bold)],
         [
@@ -337,7 +337,7 @@ def generate_full_tz_pdf():
     story.append(PageBreak())
 
     # =========================================================
-    # PAGE 3: CORE FUNCTIONS + SECURITY + RELIABILITY
+    # PAGE 3: CORE FUNCTIONS + SECURITY + SOFTWARE METRICS
     # =========================================================
     story.append(Paragraph("5. СПЕЦИФИКАЦИЯ СКВОЗНЫХ ИНТЕЛЛЕКТУАЛЬНЫХ ФУНКЦИЙ И ПОДСИСТЕМ", sec_title))
     funcs_data = [
@@ -389,7 +389,7 @@ def generate_full_tz_pdf():
     # 6. Information Security
     story.append(Paragraph("6. ТРЕБОВАНИЯ К ИНФОРМАЦИОННОЙ БЕЗОПАСНОСТИ И ЗАЩИТЕ ДАННЫХ", sec_title))
     sec_data = [
-        [Paragraph("<b>Параметр</b>", body_bold), Paragraph("<b>Техническая реализация</b>", body_bold), Paragraph("<b>Гарантируемый результат</b>", body_bold)],
+        [Paragraph("<b>Параметр безопасности</b>", body_bold), Paragraph("<b>Техническая реализация в ПО</b>", body_bold), Paragraph("<b>Гарантируемый результат защиты</b>", body_bold)],
         [
             Paragraph("<b>Разграничение доступа (RBAC)</b>", body_style),
             Paragraph("Ролевой доступ на уровне сущностей БД (Django Permissions + PostgreSQL RLS).", body_style),
@@ -401,14 +401,14 @@ def generate_full_tz_pdf():
             Paragraph("Невозможность скрытого удаления или изменения материалов должностными лицами.", body_style)
         ],
         [
-            Paragraph("<b>Защита сетевого периметра</b>", body_style),
-            Paragraph("On-Premise контур, WAF-фильтрация (Nginx ModSecurity), TLS 1.3, изоляция портов.", body_style),
-            Paragraph("Защита от DDoS-атак, SQL-инъекций, межсайтового скриптинга (XSS) и сетевого сканирования.", body_style)
+            Paragraph("<b>Защита веб-трафика</b>", body_style),
+            Paragraph("Шифрование каналов связи TLS 1.3, защита от CSRF-атак, XSS-фильтрация, изоляция API-токенов.", body_style),
+            Paragraph("Защита от перехвата служебного трафика, инъекций и подделки пользовательских запросов.", body_style)
         ],
         [
-            Paragraph("<b>Резервирование и целостность</b>", body_style),
-            Paragraph("RAID 10, онлайн-ИБП 3kVA с чистой синусоидой, инкрементальный Cron-бэкап каждые 24 часа.", body_style),
-            Paragraph("Гарантированное восстановление работоспособности системы (RTO < 2ч, RPO < 24ч).", body_style)
+            Paragraph("<b>Целостность данных и бэкапы</b>", body_style),
+            Paragraph("Транзакционная целостность PostgreSQL ACID, ежедневные автоматические дампы базы и медиафайлов.", body_style),
+            Paragraph("Гарантированное восстановление работоспособности системы без потери процессуальных данных.", body_style)
         ]
     ]
     t_sec = Table(sec_data, colWidths=[120, 185, 233])
@@ -423,29 +423,29 @@ def generate_full_tz_pdf():
     story.append(t_sec)
     story.append(Spacer(1, 4))
 
-    # 7. Reliability
-    story.append(Paragraph("7. ПОКАЗАТЕЛИ НАДЕЖНОСТИ И ЭКСПЛУАТАЦИИ СИСТЕМЫ", sec_title))
+    # 7. Software Performance Metrics
+    story.append(Paragraph("7. ПОКАЗАТЕЛИ ПРОИЗВОДИТЕЛЬНОСТИ И НАДЕЖНОСТИ ПРОГРАММНОГО КОМПЛЕКСА", sec_title))
     rel_data = [
-        [Paragraph("<b>Показатель</b>", body_bold), Paragraph("<b>Нормативное значение</b>", body_bold), Paragraph("<b>Механизм обеспечения</b>", body_bold)],
+        [Paragraph("<b>Показатель</b>", body_bold), Paragraph("<b>Нормативное значение</b>", body_bold), Paragraph("<b>Механизм программного обеспечения</b>", body_bold)],
         [
-            Paragraph("<b>Коэффициент готовности (Uptime)</b>", body_style),
+            Paragraph("<b>Коэффициент доступности ПО</b>", body_style),
             Paragraph("Не менее 99.9% в режиме 24/7/365", body_style),
-            Paragraph("Резервирование блоков питания, онлайн-ИБП, автоперезапуск сервисов через Systemd.", body_style)
+            Paragraph("Менеджер процессов Systemd, асинхронные воркеры, автовосстановление после сбоев.", body_style)
         ],
         [
-            Paragraph("<b>Пиковая одновременная нагрузка</b>", body_style),
-            Paragraph("До 1 000 одновременных сессий", body_style),
-            Paragraph("Асинхронные воркеры Daphne, пул соединений PostgreSQL PgBouncer, кэширование Redis.", body_style)
+            Paragraph("<b>Одновременная нагрузка</b>", body_style),
+            Paragraph("До 1 000 одновременных активных сессий", body_style),
+            Paragraph("Неблокирующий сервер Daphne ASGI, пул подключений PgBouncer, кэш сессий Redis.", body_style)
         ],
         [
-            Paragraph("<b>Время отклика интерфейса</b>", body_style),
-            Paragraph("Не более 0.5 секунды на операцию", body_style),
-            Paragraph("Клиентский рендеринг React SPA, оптимизированные индексы БД, быстрые накопители NVMe.", body_style)
+            Paragraph("<b>Скорость отклика интерфейса</b>", body_style),
+            Paragraph("Не более 0.5 секунды на ключевые операции", body_style),
+            Paragraph("Клиентский SPA-рендеринг React, сжатие Gzip, оптимизированные индексы PostgreSQL.", body_style)
         ],
         [
-            Paragraph("<b>Регламент резервного копирования</b>", body_style),
+            Paragraph("<b>Регламент восстановления БД</b>", body_style),
             Paragraph("RPO не более 24 часов, RTO не более 2 часов", body_style),
-            Paragraph("Ежедневный дамп базы pg_dump, архивация медиафайлов, контрольные тесты развертывания.", body_style)
+            Paragraph("Автоматизированные скрипты восстановления из дампов pg_restore и архивов медиа.", body_style)
         ]
     ]
     t_rel = Table(rel_data, colWidths=[120, 155, 263])
@@ -460,7 +460,7 @@ def generate_full_tz_pdf():
     story.append(t_rel)
 
     doc.build(story, canvasmaker=NumberedCanvas)
-    print("Full comprehensive TZ PDF with all menu pages generated successfully at:", pdf_filename)
+    print("Software-only TZ PDF generated successfully at:", pdf_filename)
 
 if __name__ == '__main__':
     generate_full_tz_pdf()
