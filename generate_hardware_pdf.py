@@ -196,14 +196,11 @@ def generate_hardware_server_pdf():
     story.append(t_hw)
     story.append(Spacer(1, 6))
 
-    # Notes section
-    story.append(Paragraph("УСЛОВИЯ И ГАРАНТИЙНЫЕ ОБЯЗАТЕЛЬСТВА", section_title))
+    # Payment terms only
+    story.append(Paragraph("УСЛОВИЯ ОПЛАТЫ", section_title))
     notes_data = [
         [
-            Paragraph("• <b>Срок поставки и запуска:</b> 10-15 рабочих дней с момента оплаты.<br/>"
-                      "• <b>Гарантия на оборудование:</b> Сервер Dell/HPE - 36 месяцев; ИБП и сетевое оборудование - 24 месяца.<br/>"
-                      "• <b>Автономность:</b> Система работает без выхода во внешнюю сеть интернет; данные не передаются третьим лицам.<br/>"
-                      "• <b>Оплата:</b> Безналичный расчет перечислением (с НДС 12%).", body_style)
+            Paragraph("• <b>Форма оплаты:</b> Безналичный расчет перечислением (с учетом НДС 12%).", body_style)
         ]
     ]
     t_notes = Table(notes_data, colWidths=[doc.width], style=[
