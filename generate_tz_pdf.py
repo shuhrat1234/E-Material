@@ -32,11 +32,6 @@ class NumberedCanvas(canvas.Canvas):
         self.setStrokeColor(colors.black)
         self.setLineWidth(0.5)
         
-        # Running header (pages 2+)
-        if self._pageNumber > 1:
-            self.line(28, 815, 567, 815)
-            self.drawString(28, 819, "АИС «E-Material» — Полное техническое задание на программный комплекс")
-        
         # Footer (all pages) - ONLY clean page number, NO departmental text
         self.line(28, 35, 567, 35)
         page_text = f"Страница {self._pageNumber} из {page_count}"
