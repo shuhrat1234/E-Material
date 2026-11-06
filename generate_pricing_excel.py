@@ -50,9 +50,9 @@ def create_pricing_excel():
     ws1.row_dimensions[2].height = 18
 
     # =============================================================
-    # 1-JADVAL: HPE PROLIANT DL380 GEN11 SERVER USKUNASI (650 MLN SO'M)
+    # 1-JADVAL: HPE PROLIANT DL380 GEN11 SERVER USKUNASI (821 071 500 SO'M)
     # =============================================================
-    ws1['A4'] = "1. ASOSIY SERVER USKUNASI SPETSIFIKATSIYASI (HPE PROLIANT DL380 GEN11 12 LFF — BIR MARTALIK XARID)"
+    ws1['A4'] = "1. ASOSIY SERVER USKUNASI SPETSIFIKATSIYASI (HPE PROLIANT DL380 GEN11 12 LFF + 2 SFF NVME — BIR MARTALIK XARID)"
     ws1['A4'].font = font_sec_title
     ws1.row_dimensions[4].height = 22
 
@@ -73,15 +73,16 @@ def create_pricing_excel():
     ws1.row_dimensions[5].height = 24
 
     server_specs = [
-        (1, "Server modeli va shassisi", "HPE ProLiant DL380 Gen11 12 LFF (Large Form Factor) 2U Rack Server", "1 dona", "Korporativ sanoat darajasidagi 2U stoichniy server, 12 ta katta disk uyasi"),
+        (1, "Server modeli va korpusi", "HPE ProLiant DL380 Gen11 12 LFF + 2 SFF SATA/SAS/NVMe 2U Rack Server", "1 dona", "2U sanoat darajasidagi korpus: 12 ta LFF (HDD) va 2 ta SFF (NVMe) uya"),
         (2, "Markaziy protsessor (CPU)", "2x Intel Xeon Gold 6542Y (48 yadro / 96 oqim, 2.9 - 4.1 GHz, 120MB Cache)", "2 dona", "5-avlod Xeon Scalable: parallel 1000+ so'rovlar, fon hisob-kitoblari va tahlil"),
         (3, "Tezkor xotira (RAM)", "512 GB: 16x 32GB DDR5-5200MHz ECC Registered RDIMM", "16 dona", "Yuqori tezlikdagi DDR5 xotira: PostgreSQL MB, Redis kesh va virtualizatsiya"),
-        (4, "Tizim yuklash diski (OS Boot)", "HPE NS204i-u Gen11 NVMe Hot Plug Boot Device + 2x 240GB NVMe SSD (RAID 1)", "1 kompl.", "Proxmox VE gipervizori uchun ajratilgan alohida apparatli xavfsiz yuklovchi"),
-        (5, "Virtual mashinalar diski (VMs)", "2x 1.92 TB Enterprise SATA SSD (RAID 1 apparatli oyna)", "2 dona", "Tezkor virtual mashinalar, Django ilovasi va PostgreSQL operativ bazasi"),
+        (4, "Tizim yuklash diski (OS Boot)", "HPE NS204i-u Gen11 NVMe Hot Plug Boot Device + 2x 480GB NVMe SSD (RAID 1)", "1 kompl.", "Proxmox VE gipervizori uchun ajratilgan alohida apparatli xavfsiz yuklovchi"),
+        (5, "Virtual mashinalar diski (VMs)", "2x 1.92 TB NVMe U.3 Enterprise SSD (RAID 1 apparatli oyna)", "2 dona", "Yuqori tezlikdagi U.3 NVMe: o'ta tezkor DB tranzaksiyalari va virtual mashinalar"),
         (6, "Ma'lumotlar arxivi (Data Storage)", "10x 24 TB Enterprise SAS/SATA HDD, 7200 RPM (RAID 10, 120 TB foydali hajm)", "10 dona", "Kiber ashyoviy dalillar, to'lov ko'chirmalari, audio/video arxivlar ombori"),
-        (7, "Apparatli RAID kontroller", "HPE Smart Array MR416i-o Gen11 x16 Lanes + HPE Smart Storage Battery (BBU)", "1 dona", "Elektr toki uzilganda xotira keshini saqlovchi batareyali apparatli kontroller"),
-        (8, "Tarmoq adapteri (Network)", "HPE Ethernet 10Gb 2-port SFP+ Adapter", "1 dona", "Optik tolali 10 Gbit/s o'tkazuvchanlikka ega yuqori tezlikdagi tarmoq portlari"),
-        (9, "Elektr ta'minoti (PSU)", "2x 1600W HPE Flex Slot Platinum Hot-Plug Redundant Power Supply (1+1)", "2 dona", "Ikkita mustaqil 1600W quvvat bloki: biri ishdan chiqqanda uzluksiz ishlash"),
+        (7, "Apparatli RAID kontroller", "HPE SR932i-p Gen10 Plus x32 Lanes 8GB Wide Cache NVMe/SAS 24G PCIe4 x16", "1 dona", "Flagman Tri-Mode kontroller: 8GB kesh va 32 ta liniya bilan maksimal tezlik"),
+        (8, "Kontroller zaxira batareyasi", "HPE 96W Smart Storage Lithium-ion Battery with 145mm Cable", "1 dona", "Elektr toki uzilganda 8GB keshdagi ma'lumotlarni to'liq saqlab qoluvchi BBU"),
+        (9, "Tarmoq adapteri (Network)", "HPE Ethernet 10Gb 2-port SFP+ Adapter", "1 dona", "Optik tolali 10 Gbit/s o'tkazuvchanlikka ega yuqori tezlikdagi tarmoq portlari"),
+        (10, "Elektr ta'minoti (PSU)", "2x 1600W HPE Flex Slot Platinum Hot-Plug Redundant Power Supply (1+1)", "2 dona", "Ikkita mustaqil 1600W quvvat bloki: biri ishdan chiqqanda uzluksiz ishlash"),
     ]
 
     for row_idx, (num, comp, spec, qty, desc) in enumerate(server_specs, start=6):
@@ -128,7 +129,7 @@ def create_pricing_excel():
     ws1.cell(row=row_srv_tot, column=4).font = font_bold
     ws1.cell(row=row_srv_tot, column=4).fill = total_fill
 
-    c_srv_price = ws1.cell(row=row_srv_tot, column=5, value="650 000 000 UZS (~$50 780)")
+    c_srv_price = ws1.cell(row=row_srv_tot, column=5, value="821 071 500 UZS (~$64 146)")
     c_srv_price.font = font_bold
     c_srv_price.alignment = align_right
     c_srv_price.border = double_bottom_border
@@ -304,7 +305,7 @@ def create_pricing_excel():
     ws1.row_dimensions[row_sum_head+1].height = 24
 
     grand_breakdown = [
-        (1, "HPE ProLiant DL380 Gen11 Server xaridi", "2x 6542Y / 512GB RAM / 120TB RAID10", "Bir martalik to'lov (Mulkiy xarid)", "650 000 000 so'm (~$50 780)"),
+        (1, "HPE ProLiant DL380 Gen11 Server xaridi", "2x 6542Y / 512GB RAM / 120TB RAID10 + NVMe", "Bir martalik to'lov (Mulkiy xarid)", "821 071 500 so'm (~$64 146)"),
         (2, "Rasmiy servis SMS xabarlari (UIN, chaqiruv)", "Mobiuz / Beeline / Ucell / Uzmobile", "Oylik xizmat (40 000 ta SMS)", "5 600 000 so'm / oy (~$438)"),
         (3, "Google Gemini 2.0 Flash AI tahlili va fabula", "Gemini 2.0 Flash API Key", "Oylik xizmat (~30M token)", "250 000 so'm / oy (~$20)"),
         (4, "Ovozni matnga aylantirish (STT)", "UzbekVoice.ai STT", "Oylik xizmat (1 500 daqiqa)", "600 000 so'm / oy (~$47)"),
@@ -345,7 +346,7 @@ def create_pricing_excel():
     c_g_lbl.border = double_bottom_border
     c_g_lbl.fill = total_fill
 
-    c_g_cap = ws1.cell(row=row_grand_tot, column=3, value="SERVER USKUNASI: 650 000 000 UZS")
+    c_g_cap = ws1.cell(row=row_grand_tot, column=3, value="SERVER USKUNASI: 821 071 500 UZS")
     c_g_cap.font = font_bold
     c_g_cap.border = double_bottom_border
     c_g_cap.fill = total_fill
@@ -371,7 +372,7 @@ def create_pricing_excel():
 
     # Save
     wb.save(excel_path)
-    print("Excel with 650M HPE Gen11 server created successfully at:", excel_path)
+    print("Excel with 821M HPE Gen11 server created successfully at:", excel_path)
 
 if __name__ == '__main__':
     create_pricing_excel()
