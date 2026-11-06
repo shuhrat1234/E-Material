@@ -8,7 +8,7 @@ def create_pricing_excel():
     wb = openpyxl.Workbook()
     
     # -------------------------------------------------------------
-    # SHEET 1: YAGONA JADVAL (Barcha ma'lumotlar 1-sahifada)
+    # SHEET 1: YAGONA JADVAL (Faqat eng so'nggi Gemini 2.0 modeli bilan)
     # -------------------------------------------------------------
     ws1 = wb.active
     ws1.title = "SMS va Gemini AI Narxlari"
@@ -27,8 +27,8 @@ def create_pricing_excel():
         bottom=Side(style='double', color='000000')
     )
     
-    font_main_title = Font(name='Arial', size=14, bold=True, color='000000')
-    font_sec_title = Font(name='Arial', size=11, bold=True, color='000000')
+    font_main_title = Font(name='Arial', size=13, bold=True, color='000000')
+    font_sec_title = Font(name='Arial', size=10.5, bold=True, color='000000')
     font_subtitle = Font(name='Arial', size=9, italic=True, color='333333')
     font_header = Font(name='Arial', size=9.5, bold=True, color='000000')
     font_data = Font(name='Arial', size=9, color='000000')
@@ -154,15 +154,15 @@ def create_pricing_excel():
     ws1.row_dimensions[row_sms_tot].height = 22
 
     # =============================================================
-    # 2-JADVAL: GOOGLE GEMINI AI API KEY NARXLARI (AN'IQ VA TO'LIQ)
+    # 2-JADVAL: GOOGLE GEMINI 2.0 FLASH (FAQAT ENG SO'NGGI MODEL)
     # =============================================================
-    row_ai_head = row_sms_tot + 3
-    ws1.cell(row=row_ai_head, column=1, value="2. GOOGLE GEMINI AI API KEY TARIF REJASI VA TO'LOV TIZIMI").font = font_sec_title
+    row_ai_head = row_sms_tot + 2
+    ws1.cell(row=row_ai_head, column=1, value="2. GOOGLE GEMINI AI API KEY TARIF REJASI (FAQAT ENG SO'NGGI MODEL: GEMINI 2.0 FLASH)").font = font_sec_title
     ws1.row_dimensions[row_ai_head].height = 22
 
     headers_ai = [
         "№",
-        "Gemini modeli va tarif nomi",
+        "Gemini modeli nomi",
         "So'rov turi (Token / Resurs)",
         "Narxi (USD / 1M token)",
         "Narxi (So'm / 1M token)",
@@ -177,14 +177,12 @@ def create_pricing_excel():
         cell.border = thin_border
     ws1.row_dimensions[row_ai_head+1].height = 26
 
+    # ONLY LATEST GENERATION: GEMINI 2.0 FLASH
     gemini_details = [
-        (1, "Gemini 1.5 Flash (Tavsiya - Asosiy)", "Kiruvchi matn (Input Prompts)", "$0.075 / 1M", "960 so'm / 1M token", "Arizalar matnidan faktlar ajratish, fabula tuzish, moddalash"),
-        (2, "Gemini 1.5 Flash (Tavsiya - Asosiy)", "Chiquvchi matn (Output Completion)", "$0.300 / 1M", "3 840 so'm / 1M token", "Tayyor qaror matnlari, xulosa va jadvallarni shakllantirish"),
-        (3, "Gemini 1.5 Flash Vision (Multimodal)", "To'lov cheklari / Skrinshotlar (Rasm)", "$0.150 / 1M", "1 920 so'm / 1M token", "Cheklar, Click/Payme kvitansiyalari va skrinshotlarni o'qish"),
-        (4, "Gemini 1.5 Pro (Yuqori intellekt)", "Kiruvchi matn (Input Prompts)", "$1.250 / 1M", "16 000 so'm / 1M token", "Murakkab iqtisodiy kiberjinoyatlar, ko'p tomli tergov tahlili"),
-        (5, "Gemini 1.5 Pro (Yuqori intellekt)", "Chiquvchi matn (Output Completion)", "$5.000 / 1M", "64 000 so'm / 1M token", "Keng qamrovli analitik ma'lumotnomalar va yuridik xulosalar"),
-        (6, "Gemini 2.0 Flash (Eng yangi avlod)", "Real vaqt rejimi (Interaktiv)", "$0.100 / 1M", "1 280 so'm / 1M token", "Interaktiv AI-kiosk va raqamli avatar bilan jonli suhbat"),
-        (7, "Gemini API Bepul rejim (Free Tier)", "Bepul sinov va test kvotasi", "$0.000 (0 so'm)", "0 so'm", "Dasturchilar testi: daqiqasiga 15 ta so'rov, kuniga 1 500 ta so'rov bepul"),
+        (1, "Gemini 2.0 Flash (Eng so'nggi avlod)", "Kiruvchi matn (Input Prompts)", "$0.100 / 1M", "1 280 so'm / 1M token", "Arizalar matnidan faktlarni ajratish, fabula tuzish, JK moddalarini aniqlash"),
+        (2, "Gemini 2.0 Flash (Eng so'nggi avlod)", "Chiquvchi matn (Output Completion)", "$0.400 / 1M", "5 120 so'm / 1M token", "Tayyor qarorlar loyihasi, ekspert xulosalari va analitik ma'lumotnomalar"),
+        (3, "Gemini 2.0 Flash (Multimodal)", "To'lov cheklari / Skrinshotlar (Rasm)", "$0.100 / 1M", "1 280 so'm / 1M token", "To'lov cheklari, bank kvitansiyalari va yozishmalar skrinshotlarini o'qish"),
+        (4, "Gemini 2.0 Flash (Audio rejimi)", "Ovozli muloqot (Real vaqt)", "$0.700 / 1M", "8 960 so'm / 1M token", "Interaktiv AI-kiosk va raqamli avatar bilan jonli ovozli suhbat"),
     ]
 
     for row_idx, (num, m_name, req_type, p_usd, p_uzs, task_desc) in enumerate(gemini_details, start=row_ai_head+2):
@@ -194,7 +192,7 @@ def create_pricing_excel():
         c1.border = thin_border
 
         c2 = ws1.cell(row=row_idx, column=2, value=m_name)
-        c2.font = font_bold if "Flash" in m_name else font_data
+        c2.font = font_bold
         c2.border = thin_border
 
         c3 = ws1.cell(row=row_idx, column=3, value=req_type)
@@ -242,11 +240,9 @@ def create_pricing_excel():
 
     grand_breakdown = [
         (1, "Rasmiy servis SMS xabarlari (UIN, chaqiruv, qaror)", "Mobiuz / Beeline / Ucell / Uzmobile", "40 000 ta SMS", 5600000, "$438"),
-        (2, "Google Gemini AI matn tahlili va fabula", "Gemini 1.5 Flash API Key", "~25 000 000 token", 200000, "$16"),
-        (3, "To'lov cheklari va skrinshotlar tahlili", "Gemini 1.5 Flash Vision", "~5 000 ta chek / rasm", 100000, "$8"),
-        (4, "Murakkab tahliliy ma'lumotnomalar", "Gemini 1.5 Pro API Key", "~3 000 000 token", 180000, "$14"),
-        (5, "O'zbek tilidagi nutqni matnga aylantirish (STT)", "UzbekVoice.ai STT", "1 500 daqiqa", 600000, "$47"),
-        (6, "O'zbek tilida ovozli javob qaytarish (TTS)", "UzbekVoice.ai TTS", "1 000 daqiqa", 420000, "$33"),
+        (2, "Sun'iy intellekt tahlili, fabula va cheklar", "Google Gemini 2.0 Flash (Eng so'nggi)", "~30 000 000 token", 250000, "$20"),
+        (3, "O'zbek tilidagi nutqni matnga aylantirish (STT)", "UzbekVoice.ai STT", "1 500 daqiqa", 600000, "$47"),
+        (4, "O'zbek tilida ovozli javob qaytarish (TTS)", "UzbekVoice.ai TTS", "1 000 daqiqa", 420000, "$33"),
     ]
 
     for row_idx, (num, s_name, p_name, vol, u_uzs, u_usd) in enumerate(grand_breakdown, start=row_sum_head+2):
@@ -260,7 +256,7 @@ def create_pricing_excel():
         c2.border = thin_border
 
         c3 = ws1.cell(row=row_idx, column=3, value=p_name)
-        c3.font = font_data
+        c3.font = font_bold if "Gemini" in p_name else font_data
         c3.border = thin_border
 
         c4 = ws1.cell(row=row_idx, column=4, value=vol)
@@ -285,7 +281,7 @@ def create_pricing_excel():
     ws1.cell(row=row_grand_tot, column=1, value="").border = double_bottom_border
     ws1.cell(row=row_grand_tot, column=1).fill = total_fill
 
-    c_g_lbl = ws1.cell(row=row_grand_tot, column=2, value="JAMI OYLIK XARAJATLAR (40 000 SMS + GEMINI AI + OVOZ):")
+    c_g_lbl = ws1.cell(row=row_grand_tot, column=2, value="JAMI OYLIK XARAJATLAR (40 000 SMS + GEMINI 2.0 + OVOZ):")
     c_g_lbl.font = font_bold
     c_g_lbl.border = double_bottom_border
     c_g_lbl.fill = total_fill
@@ -301,7 +297,7 @@ def create_pricing_excel():
     c_g_uzs.border = double_bottom_border
     c_g_uzs.fill = total_fill
 
-    c_g_usd = ws1.cell(row=row_grand_tot, column=6, value="~$556 / oy")
+    c_g_usd = ws1.cell(row=row_grand_tot, column=6, value="~$537 / oy")
     c_g_usd.font = font_bold
     c_g_usd.alignment = align_right
     c_g_usd.border = double_bottom_border
@@ -310,15 +306,15 @@ def create_pricing_excel():
 
     # Column widths
     ws1.column_dimensions['A'].width = 6
-    ws1.column_dimensions['B'].width = 38
-    ws1.column_dimensions['C'].width = 32
+    ws1.column_dimensions['B'].width = 40
+    ws1.column_dimensions['C'].width = 34
     ws1.column_dimensions['D'].width = 28
     ws1.column_dimensions['E'].width = 30
-    ws1.column_dimensions['F'].width = 46
+    ws1.column_dimensions['F'].width = 48
 
     # Save
     wb.save(excel_path)
-    print("Consolidated single-sheet Excel created at:", excel_path)
+    print("Excel with ONLY latest Gemini 2.0 model created successfully at:", excel_path)
 
 if __name__ == '__main__':
     create_pricing_excel()
